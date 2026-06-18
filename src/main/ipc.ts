@@ -39,6 +39,16 @@ export function registerIpc(): void {
   ipcMain.handle('templates:remove', (_e, index: number) => session.removeTemplate(index))
   ipcMain.handle('templates:list', () => session.templateSummaries())
 
+  ipcMain.handle('azan:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open AZAN (athan) month file',
+      properties: ['openFile'],
+      filters: [{ name: 'Text', extensions: ['txt'] }]
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    return session.loadAzan(res.filePaths[0])
+  })
+
   ipcMain.handle('programMap:load', () => session.loadProgramMap())
   ipcMain.handle('programMap:save', (_e, map: ProgramMap) => session.saveProgramMap(map))
 

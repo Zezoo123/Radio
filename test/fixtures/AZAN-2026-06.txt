@@ -1,0 +1,449 @@
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    01   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:10:02|+|AZ22-01RB|FEA|AZAN فجر
+12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:53:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:29:02|+|AZ22-03RB|FEA|AZAN عصر
+19:52:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:52:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:23:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:23:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    02   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:10:02|+|AZ22-01RB|FEA|AZAN فجر
+12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:53:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:29:02|+|AZ22-03RB|FEA|AZAN عصر
+19:52:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:52:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:24:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:24:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    03   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:10:02|+|AZ22-01RB|FEA|AZAN فجر
+12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:53:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:29:02|+|AZ22-03RB|FEA|AZAN عصر
+19:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:53:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:25:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:25:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    04   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:53:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:29:02|+|AZ22-03RB|FEA|AZAN عصر
+19:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:53:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:25:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:25:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    05   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:53:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:29:02|+|AZ22-03RB|FEA|AZAN عصر
+19:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:54:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:26:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:26:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    06   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:54:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:54:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:27:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:27:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    07   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:54:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:55:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:27:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:27:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    08   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:54:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:55:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:28:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:28:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    09   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:54:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:55:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:28:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:28:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    10   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:54:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:54:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:56:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:29:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    11   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:55:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:56:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:29:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:29:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    12   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:55:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:30:02|+|AZ22-03RB|FEA|AZAN عصر
+19:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:57:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:30:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    13   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:55:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:31:02|+|AZ22-03RB|FEA|AZAN عصر
+19:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:57:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:30:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:30:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    14   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:55:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:31:02|+|AZ22-03RB|FEA|AZAN عصر
+19:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:57:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:31:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    15   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:55:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:55:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:31:02|+|AZ22-03RB|FEA|AZAN عصر
+19:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:58:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:31:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    16   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:56:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:31:02|+|AZ22-03RB|FEA|AZAN عصر
+19:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:58:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:31:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    17   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:56:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:31:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:31:02|+|AZ22-03RB|FEA|AZAN عصر
+19:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:58:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:32:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    18   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:07:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:07:02|+|AZ22-01RB|FEA|AZAN فجر
+12:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:56:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:32:02|+|AZ22-03RB|FEA|AZAN عصر
+19:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:59:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:32:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    19   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:56:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:32:02|+|AZ22-03RB|FEA|AZAN عصر
+19:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:59:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:32:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    20   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:56:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:56:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:32:02|+|AZ22-03RB|FEA|AZAN عصر
+19:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:59:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    21   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:57:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:32:02|+|AZ22-03RB|FEA|AZAN عصر
+19:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:59:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    22   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:57:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:32:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:32:02|+|AZ22-03RB|FEA|AZAN عصر
+19:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+19:59:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    23   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:08:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:08:02|+|AZ22-01RB|FEA|AZAN فجر
+12:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:57:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:33:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    24   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:57:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:57:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:33:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    25   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:58:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:33:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    26   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:09:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:09:02|+|AZ22-01RB|FEA|AZAN فجر
+12:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:58:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:33:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:34:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    27   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:10:02|+|AZ22-01RB|FEA|AZAN فجر
+12:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:58:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:34:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:34:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    28   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:10:02|+|AZ22-01RB|FEA|AZAN فجر
+12:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:58:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:34:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:34:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    29   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:11:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:11:02|+|AZ22-01RB|FEA|AZAN فجر
+12:58:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:58:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:34:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:34:02|+|AZ22-05RB|FEA|AZAN عشاء
+
+|||COMMENT|------------------------------------------------------------------------------------
+|||COMMENT|--------------------=§§    30   -   06   -   2026   §§=--------------------
+|||COMMENT|------------------------------------------------------------------------------------
+
+04:11:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+04:11:02|+|AZ22-01RB|FEA|AZAN فجر
+12:59:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+12:59:02|+|AZ22-02RB|FEA|AZAN ظهر
+16:34:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+16:34:02|+|AZ22-03RB|FEA|AZAN عصر
+20:00:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+20:00:02|+|AZ22-04RB|FEA|AZAN مغرب
+21:33:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN
+21:33:02|+|AZ22-05RB|FEA|AZAN عشاء

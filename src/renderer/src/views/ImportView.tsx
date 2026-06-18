@@ -1,13 +1,22 @@
-import type { GridSummary, TemplateSummary } from '../../../main/session'
+import type { AzanSummary, GridSummary, TemplateSummary } from '../../../main/session'
 
 interface Props {
   grid: GridSummary | null
   templates: TemplateSummary[]
+  azan: AzanSummary | null
   onGrid: (g: GridSummary | null) => void
   onTemplates: (t: TemplateSummary[]) => void
+  onAzan: (a: AzanSummary | null) => void
 }
 
-export function ImportView({ grid, templates, onGrid, onTemplates }: Props): JSX.Element {
+export function ImportView({
+  grid,
+  templates,
+  azan,
+  onGrid,
+  onTemplates,
+  onAzan
+}: Props): JSX.Element {
   async function openGrid(): Promise<void> {
     const summary = await window.api.openGrid()
     if (summary) onGrid(summary)
@@ -23,6 +32,11 @@ export function ImportView({ grid, templates, onGrid, onTemplates }: Props): JSX
 
   async function removeTemplate(index: number): Promise<void> {
     onTemplates(await window.api.removeTemplate(index))
+  }
+
+  async function openAzan(): Promise<void> {
+    const summary = await window.api.openAzan()
+    if (summary) onAzan(summary)
   }
 
   return (
@@ -105,6 +119,32 @@ export function ImportView({ grid, templates, onGrid, onTemplates }: Props): JSX
           </table>
         ) : (
           <p className="empty">No templates added.</p>
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>Athan (AZAN file)</h2>
+          <button className="btn" onClick={openAzan}>
+            {azan ? 'Replace…' : 'Open AZAN month…'}
+          </button>
+        </div>
+        {azan ? (
+          <div className="grid-info">
+            <div>
+              <span className="k">File</span> {azan.fileName}
+            </div>
+            <div>
+              <span className="k">Months</span> {azan.months.join(', ')}
+            </div>
+            <div>
+              <span className="k">Days</span> {azan.dayCount}
+            </div>
+          </div>
+        ) : (
+          <p className="empty">
+            No athan file. Load the AZAN month file for exact official prayer times.
+          </p>
         )}
       </section>
     </div>

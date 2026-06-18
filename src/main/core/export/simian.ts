@@ -73,9 +73,10 @@ export function sectionLines(section: Section): string[] {
   return [sectionHeaderLine(section.code, section.group), ...section.events.map(eventLine)]
 }
 
-/** Lines for one day: date header block followed by each section. */
+/** Lines for one day: date header, then athan rows, then each section. */
 export function dayLines(day: ScheduleDay): string[] {
   const lines = dateHeaderBlock(day.year, day.month, day.day)
+  if (day.athanLines?.length) lines.push(...day.athanLines)
   for (const section of day.sections) lines.push(...sectionLines(section))
   return lines
 }

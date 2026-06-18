@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { GridSummary, TemplateSummary } from '../../main/session'
+import type { AzanSummary, GridSummary, TemplateSummary } from '../../main/session'
 import type { ProgramMap } from '../../main/core/programMap'
 import type { CalendarDate } from '../../main/core/types'
 import { ImportView } from './views/ImportView'
@@ -12,6 +12,7 @@ export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
   const [grid, setGrid] = useState<GridSummary | null>(null)
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
+  const [azan, setAzan] = useState<AzanSummary | null>(null)
   const [programMap, setProgramMap] = useState<ProgramMap>({})
 
   useEffect(() => {
@@ -52,6 +53,8 @@ export default function App(): JSX.Element {
           <div className={`dot ${grid ? 'on' : ''}`} /> Grid {grid ? 'loaded' : 'none'}
           <br />
           <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
+          <br />
+          <div className={`dot ${azan ? 'on' : ''}`} /> Athan {azan ? 'loaded' : 'none'}
         </div>
       </aside>
 
@@ -60,14 +63,16 @@ export default function App(): JSX.Element {
           <ImportView
             grid={grid}
             templates={templates}
+            azan={azan}
             onGrid={setGrid}
             onTemplates={setTemplates}
+            onAzan={setAzan}
           />
         )}
         {view === 'programs' && (
           <ProgramsView grid={grid} programMap={programMap} onSaved={setProgramMap} />
         )}
-        {view === 'export' && <ExportView grid={grid} templates={templates} />}
+        {view === 'export' && <ExportView grid={grid} templates={templates} azan={azan} />}
       </main>
     </div>
   )

@@ -29,6 +29,8 @@ export interface ScheduleDay {
   month: number
   /** 1-31. */
   day: number
+  /** Verbatim athan rows (from the AZAN file) emitted right after the header. */
+  athanLines?: string[]
   sections: Section[]
 }
 

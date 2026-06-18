@@ -1,20 +1,21 @@
 import { useState } from 'react'
-import type { GridSummary, TemplateSummary } from '../../../main/session'
+import type { AzanSummary, GridSummary, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 
 interface Props {
   grid: GridSummary | null
   templates: TemplateSummary[]
+  azan: AzanSummary | null
 }
 
-export function ExportView({ grid, templates }: Props): JSX.Element {
+export function ExportView({ grid, templates, azan }: Props): JSX.Element {
   const [start, setStart] = useState('2026-06-01')
   const [end, setEnd] = useState('2026-06-01')
   const [preview, setPreview] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
   const [status, setStatus] = useState('')
 
-  const ready = Boolean(grid) || templates.length > 0
+  const ready = Boolean(grid) || templates.length > 0 || Boolean(azan)
   const range = (): [ReturnType<typeof toCalendarDate>, ReturnType<typeof toCalendarDate>] => [
     toCalendarDate(start),
     toCalendarDate(end)

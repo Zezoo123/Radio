@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GridSummary, TemplateSummary } from '../main/session'
+import type { AzanSummary, GridSummary, TemplateSummary } from '../main/session'
 import type { ProgramMap } from '../main/core/programMap'
 import type { CalendarDate } from '../main/core/types'
 
@@ -24,6 +24,8 @@ const api = {
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),
+
+  openAzan: (): Promise<AzanSummary | null> => ipcRenderer.invoke('azan:open'),
 
   loadProgramMap: (): Promise<ProgramMap> => ipcRenderer.invoke('programMap:load'),
   saveProgramMap: (map: ProgramMap): Promise<void> => ipcRenderer.invoke('programMap:save', map),

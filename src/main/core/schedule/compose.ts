@@ -6,14 +6,13 @@ import { programsForDate, type StationGrid } from '../parsers/stationGrid'
 import type { ProgramMap } from '../programMap'
 
 /**
- * Assembles the section-grouped day(s) the station exports to Simian. Each
- * source becomes its own section block (programs, then one per element
- * template), under the per-day date header. Times are sorted within each
- * section, matching the sample files.
+ * Assembles the section-grouped day(s) the station exports to Simian: per-day
+ * date header, then the verbatim athan block (from the AZAN file, if loaded),
+ * then a program section and one section per element template. Times are sorted
+ * within each section, matching the sample files.
  *
- * NOTE: athan and hourly-comment blocks are intentionally not emitted yet — the
- * exact row formats are pending the user's example lines. They will slot in here
- * as additional sections / comment blocks without disturbing this structure.
+ * NOTE: hourly-comment rows are not emitted yet — that row format is still
+ * pending the user's example. They will slot in here without disturbing this.
  */
 
 export interface ComposeOptions {
@@ -23,6 +22,8 @@ export interface ComposeOptions {
   programSection?: { code: string; label: string }
   /** Element templates, emitted as sections in this order. */
   templates?: ElementTemplate[]
+  /** Verbatim athan rows for a given date (from the AZAN file), if loaded. */
+  athanLinesForDate?: (date: CalendarDate) => string[] | null
 }
 
 export interface ComposedSchedule {
@@ -50,7 +51,15 @@ function composeOneDay(
     sections.push(sectionForDate(tpl, date))
   }
 
-  return { ...date, sections }
+  const athanLines = opts.athanLinesForDate?.(date) ?? undefined
+  if (opts.athanLinesForDate && !athanLines) {
+    warnings.add(
+      `No athan times for ${date.year}-${String(date.month).padStart(2, '0')}-${String(
+        date.day
+      ).padStart(2, '0')} (load the matching AZAN month file)`
+    )
+  }
+  return { ...date, athanLines, sections }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {

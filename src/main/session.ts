@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { app } from 'electron'
 import { parseElementTemplate, type ElementTemplate } from './core/parsers/elementTemplate'
+import { athanLinesForDate, parseAzanFile, type AzanFile } from './core/parsers/azanFile'
 import {
   listGridSheets,
   parseStationGrid,
@@ -29,6 +30,12 @@ export interface TemplateSummary {
   timeCount: number
 }
 
+export interface AzanSummary {
+  fileName: string
+  months: string[]
+  dayCount: number
+}
+
 interface LoadedGrid {
   fileName: string
   filePath: string
@@ -46,6 +53,7 @@ class Session {
   private grid: LoadedGrid | null = null
   private templates: LoadedTemplate[] = []
   private programMap: ProgramMap = {}
+  private azan: { fileName: string; file: AzanFile } | null = null
 
   private mapPath(): string {
     return join(app.getPath('userData'), 'program-map.json')
@@ -116,14 +124,33 @@ class Session {
     }))
   }
 
+  async loadAzan(filePath: string): Promise<AzanSummary> {
+    const file = await parseAzanFile(filePath)
+    this.azan = { fileName: basename(filePath), file }
+    return this.azanSummary()
+  }
+
+  private azanSummary(): AzanSummary {
+    if (!this.azan) throw new Error('No AZAN file loaded')
+    return {
+      fileName: this.azan.fileName,
+      months: this.azan.file.months.map(
+        (m) => `${m.year}-${String(m.month).padStart(2, '0')}`
+      ),
+      dayCount: this.azan.file.byDay.size
+    }
+  }
+
   private composeOptions(programLabel?: string): ComposeOptions {
+    const azan = this.azan
     return {
       grid: this.grid?.grid,
       programMap: this.programMap,
       programSection: this.grid
         ? { code: 'PRG', label: programLabel || this.grid.grid.title || 'PROGRAMS' }
         : undefined,
-      templates: this.templates.map((t) => t.template)
+      templates: this.templates.map((t) => t.template),
+      athanLinesForDate: azan ? (date) => athanLinesForDate(azan.file, date) : undefined
     }
   }
 
