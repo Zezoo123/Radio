@@ -1,0 +1,62 @@
+import { writeFile } from 'node:fs/promises'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { session } from './session'
+import type { ProgramMap } from './core/programMap'
+import type { CalendarDate } from './core/types'
+
+const XLSX_FILTER = { name: 'Excel files', extensions: ['xlsx', 'xlsm'] }
+
+interface RangeArg {
+  start: CalendarDate
+  end: CalendarDate
+}
+
+export function registerIpc(): void {
+  ipcMain.handle('app:ping', () => 'pong')
+
+  ipcMain.handle('grid:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open station grid',
+      properties: ['openFile'],
+      filters: [XLSX_FILTER]
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    return session.loadGrid(res.filePaths[0])
+  })
+
+  ipcMain.handle('grid:selectSheet', (_e, sheet: string) => session.selectGridSheet(sheet))
+
+  ipcMain.handle('templates:add', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Add element templates',
+      properties: ['openFile', 'multiSelections'],
+      filters: [XLSX_FILTER]
+    })
+    if (res.canceled || res.filePaths.length === 0) return session.templateSummaries()
+    return session.addTemplates(res.filePaths)
+  })
+
+  ipcMain.handle('templates:remove', (_e, index: number) => session.removeTemplate(index))
+  ipcMain.handle('templates:list', () => session.templateSummaries())
+
+  ipcMain.handle('programMap:load', () => session.loadProgramMap())
+  ipcMain.handle('programMap:save', (_e, map: ProgramMap) => session.saveProgramMap(map))
+
+  ipcMain.handle('schedule:preview', (_e, { start, end }: RangeArg) => session.preview(start, end))
+
+  ipcMain.handle('schedule:export', async (_e, { start, end }: RangeArg) => {
+    const { text, warnings } = session.preview(start, end)
+    const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
+      start.day
+    ).padStart(2, '0')}.txt`
+    const win = BrowserWindow.getFocusedWindow() ?? undefined
+    const res = await dialog.showSaveDialog(win!, {
+      title: 'Export Simian log',
+      defaultPath: defaultName,
+      filters: [{ name: 'Text', extensions: ['txt'] }]
+    })
+    if (res.canceled || !res.filePath) return { saved: false, warnings }
+    await writeFile(res.filePath, text, 'utf-8')
+    return { saved: true, path: res.filePath, warnings }
+  })
+}

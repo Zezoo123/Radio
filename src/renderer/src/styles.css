@@ -5,7 +5,10 @@
   --text: #e6e9ef;
   --muted: #8b93a3;
   --accent: #4f8cff;
+  --accent-2: #3a6fd6;
   --border: #2a3038;
+  --ok: #49c281;
+  --warn: #e0a23c;
 }
 
 * {
@@ -17,6 +20,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
+  font-size: 14px;
 }
 
 .app-shell {
@@ -29,12 +33,22 @@ body {
   background: var(--panel);
   border-right: 1px solid var(--border);
   padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .brand {
   font-weight: 700;
   font-size: 15px;
   padding: 8px 10px 18px;
+  display: flex;
+  flex-direction: column;
+}
+.brand-sub {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
 }
 
 nav {
@@ -44,6 +58,9 @@ nav {
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   text-align: left;
   background: transparent;
   border: none;
@@ -53,29 +70,193 @@ nav {
   font-size: 14px;
   cursor: pointer;
 }
-
-.nav-item:hover {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
+.nav-item:hover,
 .nav-item.active {
   background: var(--panel-2);
   color: var(--text);
 }
 
+.badge {
+  background: var(--warn);
+  color: #1a1205;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+}
+
+.sidebar-foot {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.9;
+  padding: 10px;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  margin-right: 6px;
+}
+.dot.on {
+  background: var(--ok);
+}
+
 .content {
-  padding: 32px 36px;
+  padding: 28px 34px;
   overflow: auto;
+}
+.view {
+  max-width: 920px;
 }
 
 h1 {
   font-size: 22px;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
-
+h2 {
+  font-size: 15px;
+  margin: 0;
+}
 .muted {
   color: var(--muted);
-  max-width: 620px;
   line-height: 1.5;
+}
+.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+.ok {
+  color: var(--ok);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 16px 0;
+}
+.card.warn {
+  border-color: var(--warn);
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+label {
+  color: var(--muted);
+}
+
+.btn {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover {
+  border-color: var(--accent);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--accent-2);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.grid-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+.grid-info .k {
+  display: inline-block;
+  width: 80px;
+  color: var(--muted);
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tbl th,
+.tbl td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.tbl th {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tbl tr.unmapped td:first-child {
+  border-left: 3px solid var(--warn);
+}
+
+input,
+select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.tbl input {
+  width: 100%;
+}
+
+.preview {
+  width: 100%;
+  height: 360px;
+  margin-top: 12px;
+  background: #0b0d11;
+  color: #cdd3df;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre;
+  resize: vertical;
+}
+
+.card.warn ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--warn);
 }

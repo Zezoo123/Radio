@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
+import { registerIpc } from './ipc'
 
 const isDev = !app.isPackaged
 
@@ -30,6 +31,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  registerIpc()
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
