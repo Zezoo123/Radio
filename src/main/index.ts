@@ -14,7 +14,7 @@ function createWindow(): void {
     backgroundColor: '#0f1115',
     title: 'Radio Scheduler',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
@@ -22,6 +22,19 @@ function createWindow(): void {
   })
 
   win.once('ready-to-show', () => win.show())
+
+  // Surface renderer problems to the main-process log (otherwise a failed load
+  // just shows a blank window).
+  win.webContents.on('console-message', (_e, level, message, line, source) => {
+    console.log(`[renderer:${level}] ${message} (${source}:${line})`)
+  })
+  win.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    console.error(`[renderer] did-fail-load ${code} ${desc} ${url}`)
+  })
+  win.webContents.on('render-process-gone', (_e, details) => {
+    console.error(`[renderer] process gone: ${details.reason}`)
+  })
+  if (isDev) win.webContents.openDevTools({ mode: 'detach' })
 
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
