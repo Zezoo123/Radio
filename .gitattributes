@@ -1,0 +1,3 @@
+# Preserve exact bytes (CRLF) of Simian sample/golden fixtures.
+test/fixtures/*.sample.txt -text
+test/fixtures/*.expected.txt -text
