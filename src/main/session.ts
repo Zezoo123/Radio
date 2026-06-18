@@ -3,6 +3,8 @@ import { basename, join } from 'node:path'
 import { app } from 'electron'
 import { parseElementTemplate, type ElementTemplate } from './core/parsers/elementTemplate'
 import { athanLinesForDate, parseAzanFile, type AzanFile } from './core/parsers/azanFile'
+import { computeAthanLines } from './core/prayer/athanRows'
+import { DEFAULT_HOURLY, type HourlyOptions } from './core/schedule/hourly'
 import {
   listGridSheets,
   parseStationGrid,
@@ -36,6 +38,14 @@ export interface AzanSummary {
   dayCount: number
 }
 
+export type AthanMode = 'off' | 'import' | 'calculate'
+
+export interface AppConfig {
+  athanMode: AthanMode
+  hourly: HourlyOptions
+  hasAzan: boolean
+}
+
 interface LoadedGrid {
   fileName: string
   filePath: string
@@ -54,6 +64,8 @@ class Session {
   private templates: LoadedTemplate[] = []
   private programMap: ProgramMap = {}
   private azan: { fileName: string; file: AzanFile } | null = null
+  private athanMode: AthanMode = 'off'
+  private hourly: HourlyOptions = { ...DEFAULT_HOURLY }
 
   private mapPath(): string {
     return join(app.getPath('userData'), 'program-map.json')
@@ -127,7 +139,22 @@ class Session {
   async loadAzan(filePath: string): Promise<AzanSummary> {
     const file = await parseAzanFile(filePath)
     this.azan = { fileName: basename(filePath), file }
+    if (this.athanMode === 'off') this.athanMode = 'import'
     return this.azanSummary()
+  }
+
+  getConfig(): AppConfig {
+    return { athanMode: this.athanMode, hourly: this.hourly, hasAzan: Boolean(this.azan) }
+  }
+
+  setAthanMode(mode: AthanMode): AppConfig {
+    this.athanMode = mode
+    return this.getConfig()
+  }
+
+  setHourly(hourly: HourlyOptions): AppConfig {
+    this.hourly = hourly
+    return this.getConfig()
   }
 
   private azanSummary(): AzanSummary {
@@ -143,6 +170,12 @@ class Session {
 
   private composeOptions(programLabel?: string): ComposeOptions {
     const azan = this.azan
+    let athanSource: ComposeOptions['athanLinesForDate']
+    if (this.athanMode === 'import' && azan) {
+      athanSource = (date) => athanLinesForDate(azan.file, date)
+    } else if (this.athanMode === 'calculate') {
+      athanSource = (date) => computeAthanLines(date)
+    }
     return {
       grid: this.grid?.grid,
       programMap: this.programMap,
@@ -150,7 +183,8 @@ class Session {
         ? { code: 'PRG', label: programLabel || this.grid.grid.title || 'PROGRAMS' }
         : undefined,
       templates: this.templates.map((t) => t.template),
-      athanLinesForDate: azan ? (date) => athanLinesForDate(azan.file, date) : undefined
+      athanLinesForDate: athanSource,
+      hourly: this.hourly
     }
   }
 

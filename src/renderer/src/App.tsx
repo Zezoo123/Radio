@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AzanSummary, GridSummary, TemplateSummary } from '../../main/session'
+import type { AppConfig, AzanSummary, GridSummary, TemplateSummary } from '../../main/session'
 import type { ProgramMap } from '../../main/core/programMap'
 import type { CalendarDate } from '../../main/core/types'
 import { ImportView } from './views/ImportView'
@@ -14,10 +14,12 @@ export default function App(): JSX.Element {
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [azan, setAzan] = useState<AzanSummary | null>(null)
   const [programMap, setProgramMap] = useState<ProgramMap>({})
+  const [config, setConfig] = useState<AppConfig | null>(null)
 
   useEffect(() => {
     window.api.loadProgramMap().then(setProgramMap)
     window.api.listTemplates().then(setTemplates)
+    window.api.getConfig().then(setConfig)
   }, [])
 
   const unmappedCount = grid
@@ -64,15 +66,25 @@ export default function App(): JSX.Element {
             grid={grid}
             templates={templates}
             azan={azan}
+            config={config}
             onGrid={setGrid}
             onTemplates={setTemplates}
             onAzan={setAzan}
+            onConfig={setConfig}
           />
         )}
         {view === 'programs' && (
           <ProgramsView grid={grid} programMap={programMap} onSaved={setProgramMap} />
         )}
-        {view === 'export' && <ExportView grid={grid} templates={templates} azan={azan} />}
+        {view === 'export' && (
+          <ExportView
+            grid={grid}
+            templates={templates}
+            azan={azan}
+            config={config}
+            onConfig={setConfig}
+          />
+        )}
       </main>
     </div>
   )

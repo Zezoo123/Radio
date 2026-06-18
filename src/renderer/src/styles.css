@@ -260,3 +260,35 @@ select:focus {
   padding-left: 18px;
   color: var(--warn);
 }
+
+.seg {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.seg-btn {
+  background: var(--panel);
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.seg-btn:last-child {
+  border-right: none;
+}
+.seg-btn.on {
+  background: var(--accent);
+  color: #fff;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.check input {
+  width: auto;
+}

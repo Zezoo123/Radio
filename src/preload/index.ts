@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AzanSummary, GridSummary, TemplateSummary } from '../main/session'
+import type {
+  AppConfig,
+  AthanMode,
+  AzanSummary,
+  GridSummary,
+  TemplateSummary
+} from '../main/session'
 import type { ProgramMap } from '../main/core/programMap'
+import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { CalendarDate } from '../main/core/types'
 
 export interface ExportResult {
@@ -26,6 +33,12 @@ const api = {
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),
 
   openAzan: (): Promise<AzanSummary | null> => ipcRenderer.invoke('azan:open'),
+
+  getConfig: (): Promise<AppConfig> => ipcRenderer.invoke('config:get'),
+  setAthanMode: (mode: AthanMode): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setAthanMode', mode),
+  setHourly: (hourly: HourlyOptions): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setHourly', hourly),
 
   loadProgramMap: (): Promise<ProgramMap> => ipcRenderer.invoke('programMap:load'),
   saveProgramMap: (map: ProgramMap): Promise<void> => ipcRenderer.invoke('programMap:save', map),

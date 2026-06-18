@@ -4,6 +4,7 @@ import { serialize } from '../export/simian'
 import { sectionForDate, type ElementTemplate } from '../parsers/elementTemplate'
 import { programsForDate, type StationGrid } from '../parsers/stationGrid'
 import type { ProgramMap } from '../programMap'
+import { hourlyMarkerLines, DEFAULT_HOURLY, type HourlyOptions } from './hourly'
 
 /**
  * Assembles the section-grouped day(s) the station exports to Simian: per-day
@@ -24,6 +25,8 @@ export interface ComposeOptions {
   templates?: ElementTemplate[]
   /** Verbatim athan rows for a given date (from the AZAN file), if loaded. */
   athanLinesForDate?: (date: CalendarDate) => string[] | null
+  /** Top-of-hour comment markers. */
+  hourly?: HourlyOptions
 }
 
 export interface ComposedSchedule {
@@ -59,7 +62,11 @@ function composeOneDay(
       ).padStart(2, '0')} (load the matching AZAN month file)`
     )
   }
-  return { ...date, athanLines, sections }
+
+  const hourly = opts.hourly ?? DEFAULT_HOURLY
+  const hourlyLines = hourlyMarkerLines(hourly)
+
+  return { ...date, hourlyLines, athanLines, sections }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {

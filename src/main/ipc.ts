@@ -1,7 +1,8 @@
 import { writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { session } from './session'
+import { session, type AthanMode } from './session'
 import type { ProgramMap } from './core/programMap'
+import type { HourlyOptions } from './core/schedule/hourly'
 import type { CalendarDate } from './core/types'
 
 const XLSX_FILTER = { name: 'Excel files', extensions: ['xlsx', 'xlsm'] }
@@ -48,6 +49,10 @@ export function registerIpc(): void {
     if (res.canceled || !res.filePaths[0]) return null
     return session.loadAzan(res.filePaths[0])
   })
+
+  ipcMain.handle('config:get', () => session.getConfig())
+  ipcMain.handle('config:setAthanMode', (_e, mode: AthanMode) => session.setAthanMode(mode))
+  ipcMain.handle('config:setHourly', (_e, hourly: HourlyOptions) => session.setHourly(hourly))
 
   ipcMain.handle('programMap:load', () => session.loadProgramMap())
   ipcMain.handle('programMap:save', (_e, map: ProgramMap) => session.saveProgramMap(map))
