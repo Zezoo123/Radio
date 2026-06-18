@@ -1,0 +1,16 @@
+node_modules/
+out/
+dist/
+build/
+.vite/
+*.log
+.DS_Store
+coverage/
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
