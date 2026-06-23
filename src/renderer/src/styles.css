@@ -428,26 +428,68 @@ input[type='color'] {
   outline-offset: -1px;
 }
 
-/* Date-token bar */
-.token-bar {
+/* Insert dialog */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
+  justify-content: center;
+  z-index: 50;
 }
-.token-btn {
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  width: 460px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.insert-group {
+  margin-top: 14px;
+}
+.insert-group h3 {
+  margin: 0 0 2px;
+  font-size: 13px;
+}
+.insert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.insert-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  color: var(--accent);
-  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  font-size: 12px;
-  padding: 3px 8px;
-  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
   cursor: pointer;
 }
-.token-btn:hover {
+.insert-item:hover:not(:disabled) {
   border-color: var(--accent);
+}
+.insert-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.insert-label {
+  width: 96px;
+  font-weight: 600;
 }
 code {
   background: var(--panel-2);

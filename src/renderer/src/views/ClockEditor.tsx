@@ -1,9 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { FormatRow, HourFormat } from '../../../main/core/format/types'
-import { TOKEN_PRESETS } from '../../../main/core/format/tokens'
+import { InsertDialog } from './InsertDialog'
 
 const CUES: Cue[] = ['+', '@', '#']
+
+type Field = 'name' | 'description'
 
 interface Props {
   formats: HourFormat[]
@@ -24,23 +26,60 @@ export function ClockEditor({
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
 
-  // Track the focused Name input so token buttons insert at its caret.
-  const nameEl = useRef<HTMLInputElement | null>(null)
-  const nameRow = useRef<number | null>(null)
+  // Track the last-focused editable field + caret so Insert lands in the right spot.
+  const focusedEl = useRef<HTMLInputElement | null>(null)
+  const focusedRow = useRef<number | null>(null)
+  const focusedField = useRef<Field | null>(null)
+  const selStart = useRef(0)
+  const selEnd = useRef(0)
 
-  function insertToken(token: string): void {
-    if (!selected) return
-    const el = nameEl.current
-    const i = nameRow.current
-    if (!el || i == null) return
-    const start = el.selectionStart ?? el.value.length
-    const end = el.selectionEnd ?? start
-    const cur = selected.rows[i]?.name ?? ''
-    patchRow(i, { name: cur.slice(0, start) + token + cur.slice(end) })
+  const [insertOpen, setInsertOpen] = useState(false)
+  const [insertLabel, setInsertLabel] = useState<string | null>(null)
+
+  function track(e: { currentTarget: HTMLInputElement }, row: number, field: Field): void {
+    const el = e.currentTarget
+    focusedEl.current = el
+    focusedRow.current = row
+    focusedField.current = field
+    selStart.current = el.selectionStart ?? el.value.length
+    selEnd.current = el.selectionEnd ?? selStart.current
+  }
+
+  const fieldHandlers = (row: number, field: Field) => ({
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => track(e, row, field),
+    onSelect: (e: React.SyntheticEvent<HTMLInputElement>) => track(e, row, field),
+    onKeyUp: (e: React.KeyboardEvent<HTMLInputElement>) => track(e, row, field),
+    onMouseUp: (e: React.MouseEvent<HTMLInputElement>) => track(e, row, field)
+  })
+
+  function openInsert(): void {
+    const row = focusedRow.current
+    const field = focusedField.current
+    setInsertLabel(
+      row != null && field ? `Row ${row + 1} · ${field === 'name' ? 'Name' : 'Description'}` : null
+    )
+    setInsertOpen(true)
+  }
+
+  function insertText(text: string): void {
+    const el = focusedEl.current
+    const row = focusedRow.current
+    const field = focusedField.current
+    if (!selected || row == null || !field) return
+    const cur = (field === 'name' ? selected.rows[row].name : selected.rows[row].description) ?? ''
+    const start = selStart.current
+    const end = selEnd.current
+    const next = cur.slice(0, start) + text + cur.slice(end)
+    patchRow(row, field === 'name' ? { name: next } : { description: next || undefined })
+    setInsertOpen(false)
     requestAnimationFrame(() => {
-      el.focus()
-      const pos = start + token.length
-      el.setSelectionRange(pos, pos)
+      if (el) {
+        el.focus()
+        const pos = start + text.length
+        el.setSelectionRange(pos, pos)
+        selStart.current = pos
+        selEnd.current = pos
+      }
     })
   }
 
@@ -106,21 +145,6 @@ export function ClockEditor({
               </button>
             </div>
 
-            <div className="token-bar">
-              <span className="muted">Insert date token into Name:</span>
-              {TOKEN_PRESETS.map((t) => (
-                <button
-                  key={t.token}
-                  className="token-btn"
-                  title={t.token}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertToken(t.token)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
             <table className="tbl">
               <thead>
                 <tr>
@@ -169,25 +193,21 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.name}
-                        onFocus={(e) => {
-                          nameEl.current = e.target
-                          nameRow.current = i
-                        }}
+                        {...fieldHandlers(i, 'name')}
                         onChange={(e) => patchRow(i, { name: e.target.value })}
                       />
                     </td>
                     <td>
                       <input
                         value={row.category ?? ''}
-                        onChange={(e) =>
-                          patchRow(i, { category: e.target.value || undefined })
-                        }
+                        onChange={(e) => patchRow(i, { category: e.target.value || undefined })}
                       />
                     </td>
                     <td>
                       <input
                         dir="auto"
                         value={row.description ?? ''}
+                        {...fieldHandlers(i, 'description')}
                         onChange={(e) =>
                           patchRow(i, { description: e.target.value || undefined })
                         }
@@ -202,12 +222,25 @@ export function ClockEditor({
                 ))}
               </tbody>
             </table>
-            <button className="btn" style={{ marginTop: 10 }} onClick={addRow}>
-              + Add row
-            </button>
+
+            <div className="row" style={{ marginTop: 10 }}>
+              <button className="btn" onClick={addRow}>
+                + Add row
+              </button>
+              <button className="btn" onClick={openInsert}>
+                Insert…
+              </button>
+            </div>
           </>
         )}
       </div>
+
+      <InsertDialog
+        open={insertOpen}
+        targetLabel={insertLabel}
+        onPick={insertText}
+        onClose={() => setInsertOpen(false)}
+      />
     </div>
   )
 }
