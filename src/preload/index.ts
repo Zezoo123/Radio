@@ -9,6 +9,7 @@ import type {
 import type { ProgramMap } from '../main/core/programMap'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { FormatSet } from '../main/core/format/types'
+import type { Sequential } from '../main/core/sequential/types'
 import type { CalendarDate } from '../main/core/types'
 
 export interface ExportResult {
@@ -53,6 +54,14 @@ const api = {
     ipcRenderer.invoke('formats:exportForDate', { set, date }),
   exportFormatWeek: (set: FormatSet): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('formats:exportWeek', set),
+  previewFormatForDate: (set: FormatSet, date: CalendarDate): Promise<string> =>
+    ipcRenderer.invoke('formats:previewForDate', { set, date }),
+
+  listSequentials: (): Promise<Sequential[]> => ipcRenderer.invoke('sequentials:list'),
+  saveSequential: (seq: Sequential): Promise<Sequential[]> =>
+    ipcRenderer.invoke('sequentials:save', seq),
+  deleteSequential: (id: string): Promise<Sequential[]> =>
+    ipcRenderer.invoke('sequentials:delete', id),
 
   preview: (start: CalendarDate, end: CalendarDate): Promise<PreviewResult> =>
     ipcRenderer.invoke('schedule:preview', { start, end }),

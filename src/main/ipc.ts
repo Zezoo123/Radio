@@ -2,8 +2,11 @@ import { writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { session, type AthanMode } from './session'
 import { formatStore } from './formats'
-import { serializeForDate, serializeWeek } from './core/format/expand'
+import { serializeWeek } from './core/format/expand'
+import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
+import { sequentialStore } from './sequentials'
 import type { FormatSet } from './core/format/types'
+import type { Sequential } from './core/sequential/types'
 import type { ProgramMap } from './core/programMap'
 import type { HourlyOptions } from './core/schedule/hourly'
 import type { CalendarDate } from './core/types'
@@ -79,13 +82,31 @@ export function registerIpc(): void {
   ipcMain.handle('formats:load', () => formatStore.load())
   ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))
 
+  ipcMain.handle('sequentials:list', () => sequentialStore.load())
+  ipcMain.handle('sequentials:save', (_e, seq: Sequential) => sequentialStore.upsert(seq))
+  ipcMain.handle('sequentials:delete', (_e, id: string) => sequentialStore.remove(id))
+
+  // Dry-run: resolve with a date-seeded rng and DO NOT persist queue advances.
+  ipcMain.handle(
+    'formats:previewForDate',
+    async (_e, { set, date }: { set: FormatSet; date: CalendarDate }) => {
+      const sequentials = await sequentialStore.load()
+      return resolveForDate(set, date, sequentials, seededRngForDate(date)).text
+    }
+  )
+
   ipcMain.handle(
     'formats:exportForDate',
     async (_e, { set, date }: { set: FormatSet; date: CalendarDate }) => {
+      const sequentials = await sequentialStore.load()
+      const { text, sequentials: advanced } = resolveForDate(set, date, sequentials)
       const stamp = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
         date.day
       ).padStart(2, '0')}`
-      return saveText(serializeForDate(set, date), `format_${stamp}.txt`)
+      const result = await saveText(text, `format_${stamp}.txt`)
+      // Only persist the rotation advance if the file was actually written.
+      if (result.saved) await sequentialStore.save(advanced)
+      return result
     }
   )
   ipcMain.handle('formats:exportWeek', async (_e, set: FormatSet) =>
