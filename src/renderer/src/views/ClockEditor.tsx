@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { FormatRow, HourFormat } from '../../../main/core/format/types'
+import { TOKEN_PRESETS } from '../../../main/core/format/tokens'
 
 const CUES: Cue[] = ['+', '@', '#']
 
@@ -21,6 +23,26 @@ export function ClockEditor({
   onDeleteFormat
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
+
+  // Track the focused Name input so token buttons insert at its caret.
+  const nameEl = useRef<HTMLInputElement | null>(null)
+  const nameRow = useRef<number | null>(null)
+
+  function insertToken(token: string): void {
+    if (!selected) return
+    const el = nameEl.current
+    const i = nameRow.current
+    if (!el || i == null) return
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? start
+    const cur = selected.rows[i]?.name ?? ''
+    patchRow(i, { name: cur.slice(0, start) + token + cur.slice(end) })
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + token.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
 
   function patchRow(index: number, patch: Partial<FormatRow>): void {
     if (!selected) return
@@ -84,6 +106,21 @@ export function ClockEditor({
               </button>
             </div>
 
+            <div className="token-bar">
+              <span className="muted">Insert date token into Name:</span>
+              {TOKEN_PRESETS.map((t) => (
+                <button
+                  key={t.token}
+                  className="token-btn"
+                  title={t.token}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertToken(t.token)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
             <table className="tbl">
               <thead>
                 <tr>
@@ -132,6 +169,10 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.name}
+                        onFocus={(e) => {
+                          nameEl.current = e.target
+                          nameRow.current = i
+                        }}
                         onChange={(e) => patchRow(i, { name: e.target.value })}
                       />
                     </td>

@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { session, type AthanMode } from './session'
 import { formatStore } from './formats'
-import { serializeDay, serializeWeek } from './core/format/expand'
+import { serializeForDate, serializeWeek } from './core/format/expand'
 import type { FormatSet } from './core/format/types'
 import type { ProgramMap } from './core/programMap'
 import type { HourlyOptions } from './core/schedule/hourly'
@@ -80,9 +80,13 @@ export function registerIpc(): void {
   ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))
 
   ipcMain.handle(
-    'formats:exportDay',
-    async (_e, { set, weekday, label }: { set: FormatSet; weekday: number; label: string }) =>
-      saveText(serializeDay(set, weekday), `format_${label}.txt`)
+    'formats:exportForDate',
+    async (_e, { set, date }: { set: FormatSet; date: CalendarDate }) => {
+      const stamp = `${date.year}-${String(date.month).padStart(2, '0')}-${String(
+        date.day
+      ).padStart(2, '0')}`
+      return saveText(serializeForDate(set, date), `format_${stamp}.txt`)
+    }
   )
   ipcMain.handle('formats:exportWeek', async (_e, set: FormatSet) =>
     saveText(serializeWeek(set), 'format_week.txt')

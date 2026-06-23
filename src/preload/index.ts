@@ -46,12 +46,11 @@ const api = {
 
   loadFormats: (): Promise<FormatSet> => ipcRenderer.invoke('formats:load'),
   saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),
-  exportFormatDay: (
+  exportFormatForDate: (
     set: FormatSet,
-    weekday: number,
-    label: string
+    date: CalendarDate
   ): Promise<{ saved: boolean; path?: string }> =>
-    ipcRenderer.invoke('formats:exportDay', { set, weekday, label }),
+    ipcRenderer.invoke('formats:exportForDate', { set, date }),
   exportFormatWeek: (set: FormatSet): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('formats:exportWeek', set),
 

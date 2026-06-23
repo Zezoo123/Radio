@@ -2,13 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   emptyFormatSet,
   FORMAT_COLORS,
-  WEEKDAY_LABELS,
   type FormatSet,
   type HourFormat
 } from '../../../main/core/format/types'
-import { serializeWeek } from '../../../main/core/format/expand'
+import { serializeForDate, serializeWeek } from '../../../main/core/format/expand'
+import { weekday } from '../../../main/core/dates'
 import { ClockEditor } from './ClockEditor'
 import { WeekGrid } from './WeekGrid'
+import { toCalendarDate } from '../App'
+
+const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 type Tab = 'clocks' | 'grid'
 
@@ -17,7 +20,7 @@ export function FormatsView(): JSX.Element {
   const [tab, setTab] = useState<Tab>('clocks')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [erasing, setErasing] = useState(false)
-  const [exportDay, setExportDay] = useState(1)
+  const [exportDate, setExportDate] = useState('2026-06-01')
   const [status, setStatus] = useState('')
   const loaded = useRef(false)
 
@@ -35,7 +38,11 @@ export function FormatsView(): JSX.Element {
     window.api.saveFormats(set)
   }, [set])
 
-  const preview = useMemo(() => serializeWeek(set), [set])
+  const date = toCalendarDate(exportDate)
+  const preview = useMemo(
+    () => (date ? serializeForDate(set, date) : serializeWeek(set)),
+    [set, exportDate]
+  )
 
   function addFormat(): void {
     const format: HourFormat = {
@@ -77,8 +84,9 @@ export function FormatsView(): JSX.Element {
     setStatus(res.saved ? `Saved ${res.path}` : 'Export cancelled')
   }
 
-  async function doExportDay(): Promise<void> {
-    const res = await window.api.exportFormatDay(set, exportDay, WEEKDAY_LABELS[exportDay])
+  async function doExportForDate(): Promise<void> {
+    if (!date) return
+    const res = await window.api.exportFormatForDate(set, date)
     setStatus(res.saved ? `Saved ${res.path}` : 'Export cancelled')
   }
 
@@ -159,22 +167,28 @@ export function FormatsView(): JSX.Element {
         <div className="card-head">
           <h2>Export</h2>
           <div className="row">
-            <select value={exportDay} onChange={(e) => setExportDay(+e.target.value)}>
-              {WEEKDAY_LABELS.map((d, i) => (
-                <option key={d} value={i}>
-                  {d}
-                </option>
-              ))}
-            </select>
-            <button className="btn" onClick={doExportDay}>
-              Export day…
+            <label>
+              Date{' '}
+              <input
+                type="date"
+                value={exportDate}
+                onChange={(e) => setExportDate(e.target.value)}
+              />
+            </label>
+            <span className="muted">{date ? WEEKDAY_FULL[weekday(date)] : '—'}</span>
+            <button className="btn primary" disabled={!date} onClick={doExportForDate}>
+              Export for date…
             </button>
-            <button className="btn primary" onClick={doExportWeek}>
-              Export week…
+            <button className="btn" onClick={doExportWeek}>
+              Export week template…
             </button>
             {status && <span className="muted">{status}</span>}
           </div>
         </div>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Pick any date — the program finds the weekday and exports that day's schedule, with date
+          tokens (e.g. <code>[yymmdd]</code>) filled in. Preview below reflects the selected date.
+        </p>
         <textarea className="preview" readOnly value={preview} spellCheck={false} dir="auto" />
       </div>
     </div>
