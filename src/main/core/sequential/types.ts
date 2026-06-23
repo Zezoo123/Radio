@@ -18,4 +18,6 @@ export interface Sequential {
   randomize: boolean
   /** Persisted remaining values in the current cycle (advances across exports). */
   queue: string[]
+  /** Last value played — used to avoid the same file twice in a row across cycles. */
+  last?: string
 }

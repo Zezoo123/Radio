@@ -145,12 +145,15 @@ export function SequentialEditor({
         </div>
 
         <div className="card" style={{ marginTop: 12 }}>
-          <span className="muted">Generates {values.length} file(s): </span>
+          <span className="muted">Rotates through {values.length} file name(s): </span>
           {values.length ? (
             <code>{sample.join(', ')}</code>
           ) : (
             <span className="empty">invalid range</span>
           )}
+          <p className="muted" style={{ margin: '6px 0 0' }}>
+            These are the names written into the log; Simian looks them up in its own database.
+          </p>
         </div>
 
         <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>

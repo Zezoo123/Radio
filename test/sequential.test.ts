@@ -70,6 +70,38 @@ describe('queue rotation', () => {
   })
 })
 
+describe('never the same file twice in a row', () => {
+  it('has no adjacent repeats over a long random stream', () => {
+    const r = makeResolver([seq({ randomize: true, start: '0', end: '3' })], mulberry32(7))
+    let prev: string | null = null
+    for (let i = 0; i < 200; i++) {
+      const v = r.pop('JNG')
+      expect(v).not.toBe(prev) // includes the cycle-boundary case
+      prev = v
+    }
+  })
+
+  it('guards the boundary across separate exports too', () => {
+    let s = seq({ randomize: true, start: '0', end: '3' })
+    let prev: string | null = null
+    // Each "export" pops the whole cycle, then we persist and continue.
+    for (let e = 0; e < 20; e++) {
+      const r = makeResolver([s], mulberry32(100 + e))
+      for (let i = 0; i < 4; i++) {
+        const v = r.pop('JNG')
+        expect(v).not.toBe(prev)
+        prev = v
+      }
+      s = r.updated()[0] // persist queue + last for the next export
+    }
+  })
+
+  it('single-value range unavoidably repeats (no crash)', () => {
+    const r = makeResolver([seq({ start: '5', end: '5' })], mulberry32(1))
+    expect([r.pop('JNG'), r.pop('JNG')]).toEqual(['JNG-05', 'JNG-05'])
+  })
+})
+
 describe('rotation continues across exports (persisted queue)', () => {
   it('carries the remaining queue into the next export', () => {
     let s = seq({ randomize: false }) // 0-2, queue starts []

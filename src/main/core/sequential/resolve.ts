@@ -33,18 +33,32 @@ export interface SequentialResolver {
  * state, so rotation continues across exports.
  */
 export function makeResolver(sequentials: Sequential[], rng: Rng): SequentialResolver {
-  const work = new Map<string, { seq: Sequential; queue: string[] }>()
-  for (const seq of sequentials) work.set(seq.name, { seq, queue: seq.queue.slice() })
+  const work = new Map<string, { seq: Sequential; queue: string[]; last?: string }>()
+  for (const seq of sequentials) work.set(seq.name, { seq, queue: seq.queue.slice(), last: seq.last })
 
   return {
     pop(name: string): string | null {
       const entry = work.get(name)
       if (!entry) return null
-      if (entry.queue.length === 0) entry.queue = refillQueue(entry.seq, rng)
-      return entry.queue.shift() ?? null
+      if (entry.queue.length === 0) {
+        const next = refillQueue(entry.seq, rng)
+        // Never repeat the same file twice in a row: if a fresh cycle would
+        // start with the value just played, swap it deeper into the cycle.
+        if (next.length > 1 && entry.last !== undefined && next[0] === entry.last) {
+          const j = 1 + Math.floor(rng() * (next.length - 1))
+          ;[next[0], next[j]] = [next[j], next[0]]
+        }
+        entry.queue = next
+      }
+      const value = entry.queue.shift() ?? null
+      if (value !== null) entry.last = value
+      return value
     },
     updated(): Sequential[] {
-      return sequentials.map((seq) => ({ ...seq, queue: work.get(seq.name)?.queue ?? seq.queue }))
+      return sequentials.map((seq) => {
+        const w = work.get(seq.name)
+        return w ? { ...seq, queue: w.queue, last: w.last } : seq
+      })
     }
   }
 }

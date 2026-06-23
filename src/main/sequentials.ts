@@ -22,10 +22,10 @@ class SequentialStore {
     await writeFile(this.filePath(), JSON.stringify(list, null, 2), 'utf-8')
   }
 
-  /** Create or update a sequential by id. Editing resets its queue. */
+  /** Create or update a sequential by id. Editing resets its queue + history. */
   async upsert(seq: Sequential): Promise<Sequential[]> {
     const list = await this.load()
-    const next: Sequential = { ...normalize(seq), queue: [] }
+    const next: Sequential = { ...normalize(seq), queue: [], last: undefined }
     const i = list.findIndex((s) => s.id === seq.id)
     if (i >= 0) list[i] = next
     else list.push(next)
