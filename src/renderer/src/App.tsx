@@ -5,8 +5,9 @@ import type { CalendarDate } from '../../main/core/types'
 import { ImportView } from './views/ImportView'
 import { ProgramsView } from './views/ProgramsView'
 import { ExportView } from './views/ExportView'
+import { FormatsView } from './views/FormatsView'
 
-type View = 'import' | 'programs' | 'export'
+type View = 'import' | 'programs' | 'formats' | 'export'
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
@@ -29,6 +30,7 @@ export default function App(): JSX.Element {
   const nav: { id: View; label: string; badge?: number }[] = [
     { id: 'import', label: 'Import' },
     { id: 'programs', label: 'Programs', badge: unmappedCount || undefined },
+    { id: 'formats', label: 'Formats' },
     { id: 'export', label: 'Export' }
   ]
 
@@ -76,6 +78,7 @@ export default function App(): JSX.Element {
         {view === 'programs' && (
           <ProgramsView grid={grid} programMap={programMap} onSaved={setProgramMap} />
         )}
+        {view === 'formats' && <FormatsView />}
         {view === 'export' && (
           <ExportView
             grid={grid}
