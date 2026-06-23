@@ -70,6 +70,32 @@ describe('queue rotation', () => {
   })
 })
 
+describe('rotation continues across exports (persisted queue)', () => {
+  it('carries the remaining queue into the next export', () => {
+    let s = seq({ randomize: false }) // 0-2, queue starts []
+    const fmt: HourFormat = {
+      id: 'f1',
+      name: 'F',
+      color: '#fff',
+      rows: [{ minute: 0, second: 0, cue: '+', name: '{JNG}' }]
+    }
+    const set = emptyFormatSet()
+    set.formats.push(fmt)
+    set.grid.cells[4][8] = 'f1'
+    set.grid.cells[4][9] = 'f1' // two uses per "export"
+
+    const exportOnce = (): string[] => {
+      const res = resolveForDate(set, { year: 2026, month: 6, day: 18 }, [s], mulberry32(1))
+      s = res.sequentials[0] // persist advanced queue for next time
+      return res.text.trim().split('\r\n').map((l) => l.split('|')[2])
+    }
+
+    expect(exportOnce()).toEqual(['JNG-00', 'JNG-01']) // queue now [JNG-02]
+    expect(exportOnce()).toEqual(['JNG-02', 'JNG-00']) // drained then refilled, continues
+    expect(exportOnce()).toEqual(['JNG-01', 'JNG-02'])
+  })
+})
+
 describe('resolveForDate — distinct files across a day', () => {
   it('three uses in a day produce three distinct files in time order', () => {
     const fmt: HourFormat = {
