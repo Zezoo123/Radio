@@ -63,9 +63,13 @@ export function sectionHeaderLine(code: string, group: string): string {
   )
 }
 
-/** `HH:MM:SS|cue|NAME` */
+/** `HH:MM:SS|cue|NAME`, plus `|Category|Description` when either is set. */
 export function eventLine(event: ScheduleEvent): string {
-  return `${event.time}|${event.cue}|${event.name}`
+  const base = `${event.time}|${event.cue}|${event.name}`
+  if (event.category !== undefined || event.description !== undefined) {
+    return `${base}|${event.category ?? ''}|${event.description ?? ''}`
+  }
+  return base
 }
 
 /** Lines for one section: header (always) followed by its events. */

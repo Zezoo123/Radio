@@ -8,6 +8,10 @@ export interface ScheduleEvent {
   cue: Cue
   /** Audio file name Simian resolves against its database, e.g. `ADS_1710_A`. */
   name: string
+  /** Optional Simian Category column (e.g. `FEA`, `AUDIO`). */
+  category?: string
+  /** Optional Simian Description column. */
+  description?: string
 }
 
 /**
