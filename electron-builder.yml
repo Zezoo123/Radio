@@ -1,0 +1,49 @@
+appId: com.radioscheduler.app
+productName: Radio Scheduler
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: build
+
+# Package the built app (out/) + production node_modules. Everything else is
+# excluded so the installer stays lean. electron-builder bundles Electron +
+# Node + Chromium, so the result needs no dependencies on the target machine.
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!test/**'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!vitest.config.{js,ts,mjs,cjs}'
+  - '!tsconfig*.json'
+  - '!electron-builder.yml'
+  - '!{.gitignore,.gitattributes,.npmrc,README.md,MEMORY.md}'
+  - '!{.env,.env.*}'
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  # Skip embedding version metadata/signing into the .exe via rcedit — that step
+  # needs Wine, which can't run on current macOS. Building on Windows (CI) stamps
+  # it properly. Has no effect on the app's functionality.
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Radio Scheduler
+  artifactName: ${productName}-Setup-${version}.${ext}
+  uninstallDisplayName: Radio Scheduler
+
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

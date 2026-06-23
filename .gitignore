@@ -1,7 +1,8 @@
 node_modules/
 out/
 dist/
-build/
+# build/ holds electron-builder resources (icons) and should be committed;
+# only ignore the transient build output dirs above.
 .vite/
 *.log
 .DS_Store
