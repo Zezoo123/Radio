@@ -1,6 +1,9 @@
 import { writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { session, type AthanMode } from './session'
+import { formatStore } from './formats'
+import { serializeDay, serializeWeek } from './core/format/expand'
+import type { FormatSet } from './core/format/types'
 import type { ProgramMap } from './core/programMap'
 import type { HourlyOptions } from './core/schedule/hourly'
 import type { CalendarDate } from './core/types'
@@ -10,6 +13,22 @@ const XLSX_FILTER = { name: 'Excel files', extensions: ['xlsx', 'xlsm'] }
 interface RangeArg {
   start: CalendarDate
   end: CalendarDate
+}
+
+/** Show a save dialog and write text to the chosen path. */
+async function saveText(
+  text: string,
+  defaultName: string
+): Promise<{ saved: boolean; path?: string }> {
+  const win = BrowserWindow.getFocusedWindow() ?? undefined
+  const res = await dialog.showSaveDialog(win!, {
+    title: 'Export',
+    defaultPath: defaultName,
+    filters: [{ name: 'Text', extensions: ['txt'] }]
+  })
+  if (res.canceled || !res.filePath) return { saved: false }
+  await writeFile(res.filePath, text, 'utf-8')
+  return { saved: true, path: res.filePath }
 }
 
 export function registerIpc(): void {
@@ -56,6 +75,18 @@ export function registerIpc(): void {
 
   ipcMain.handle('programMap:load', () => session.loadProgramMap())
   ipcMain.handle('programMap:save', (_e, map: ProgramMap) => session.saveProgramMap(map))
+
+  ipcMain.handle('formats:load', () => formatStore.load())
+  ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))
+
+  ipcMain.handle(
+    'formats:exportDay',
+    async (_e, { set, weekday, label }: { set: FormatSet; weekday: number; label: string }) =>
+      saveText(serializeDay(set, weekday), `format_${label}.txt`)
+  )
+  ipcMain.handle('formats:exportWeek', async (_e, set: FormatSet) =>
+    saveText(serializeWeek(set), 'format_week.txt')
+  )
 
   ipcMain.handle('schedule:preview', (_e, { start, end }: RangeArg) => session.preview(start, end))
 

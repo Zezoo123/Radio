@@ -8,6 +8,7 @@ import type {
 } from '../main/session'
 import type { ProgramMap } from '../main/core/programMap'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
+import type { FormatSet } from '../main/core/format/types'
 import type { CalendarDate } from '../main/core/types'
 
 export interface ExportResult {
@@ -42,6 +43,17 @@ const api = {
 
   loadProgramMap: (): Promise<ProgramMap> => ipcRenderer.invoke('programMap:load'),
   saveProgramMap: (map: ProgramMap): Promise<void> => ipcRenderer.invoke('programMap:save', map),
+
+  loadFormats: (): Promise<FormatSet> => ipcRenderer.invoke('formats:load'),
+  saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),
+  exportFormatDay: (
+    set: FormatSet,
+    weekday: number,
+    label: string
+  ): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('formats:exportDay', { set, weekday, label }),
+  exportFormatWeek: (set: FormatSet): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('formats:exportWeek', set),
 
   preview: (start: CalendarDate, end: CalendarDate): Promise<PreviewResult> =>
     ipcRenderer.invoke('schedule:preview', { start, end }),
