@@ -2,6 +2,7 @@ import type { CalendarDate } from '../types'
 import { eventLine } from '../export/simian'
 import { weekday } from '../dates'
 import { dayRows } from './expand'
+import { substituteDateTokens } from './tokens'
 import type { FormatSet } from './types'
 import type { Sequential } from '../sequential/types'
 import { makeResolver, substituteSequentialTokens } from '../sequential/resolve'
@@ -32,16 +33,20 @@ export function resolveForDate(
   sequentials: Sequential[],
   rng: Rng = Math.random
 ): ResolvedDay {
-  const events = dayRows(set, weekday(date), date)
+  // Expand without date substitution so sequential prefixes stay intact for
+  // lookup, then resolve {sequential} → template, then fill [date] tokens. This
+  // also lets a sequential's prefix itself contain date tokens.
+  const events = dayRows(set, weekday(date))
   const resolver = makeResolver(sequentials, rng)
   const pop = (name: string): string | null => resolver.pop(name)
+  const apply = (text: string): string =>
+    substituteDateTokens(substituteSequentialTokens(text, pop), date)
 
   const lines = events.map((ev) =>
     eventLine({
       ...ev,
-      name: substituteSequentialTokens(ev.name, pop),
-      description:
-        ev.description != null ? substituteSequentialTokens(ev.description, pop) : ev.description
+      name: apply(ev.name),
+      description: ev.description != null ? apply(ev.description) : ev.description
     })
   )
 

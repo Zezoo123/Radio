@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Sequential, SequentialMode } from '../../../main/core/sequential/types'
 import { sequentialValues } from '../../../main/core/sequential/values'
+import { substituteDateTokens } from '../../../main/core/format/tokens'
+
+function today(): { year: number; month: number; day: number } {
+  const d = new Date()
+  return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() }
+}
 
 interface Props {
   open: boolean
@@ -55,7 +61,9 @@ export function SequentialEditor({
     randomize,
     queue: []
   }
-  const values = sequentialValues(draft)
+  // Show the values with date tokens resolved for today, so the auto-populated
+  // date is visible (export uses the chosen export date).
+  const values = sequentialValues(draft).map((v) => substituteDateTokens(v, today()))
   const sample = values.length > 6 ? [...values.slice(0, 5), '…', values[values.length - 1]] : values
 
   async function save(): Promise<void> {

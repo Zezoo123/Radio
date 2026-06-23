@@ -128,6 +128,32 @@ describe('rotation continues across exports (persisted queue)', () => {
   })
 })
 
+describe('date tokens inside a sequential prefix', () => {
+  it('resolves the sequential then fills the date for the export date', () => {
+    const fmt: HourFormat = {
+      id: 'f1',
+      name: 'F',
+      color: '#fff',
+      rows: [
+        { minute: 0, second: 0, cue: '+', name: '{abc-[YYMMDD]}' },
+        { minute: 1, second: 0, cue: '+', name: '{abc-[YYMMDD]}' }
+      ]
+    }
+    const set = emptyFormatSet()
+    set.formats.push(fmt)
+    set.grid.cells[4][9] = 'f1' // Thursday, hour 9
+
+    const { text } = resolveForDate(
+      set,
+      { year: 2026, month: 6, day: 18 },
+      [seq({ name: 'abc-[YYMMDD]', randomize: false, start: '0', end: '2' })],
+      mulberry32(1)
+    )
+    // {abc-[YYMMDD]} → abc-[YYMMDD]-00 → abc-260618-00; second use rotates to -01
+    expect(text).toBe('09:00:00|+|abc-260618-00\r\n09:01:00|+|abc-260618-01\r\n')
+  })
+})
+
 describe('resolveForDate — distinct files across a day', () => {
   it('three uses in a day produce three distinct files in time order', () => {
     const fmt: HourFormat = {

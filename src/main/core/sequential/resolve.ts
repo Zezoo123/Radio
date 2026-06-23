@@ -2,7 +2,9 @@ import type { Sequential } from './types'
 import { sequentialValues } from './values'
 import type { Rng } from './rng'
 
-const TOKEN_RE = /\{([A-Za-z0-9_]+)\}/g
+// A sequential token is {name}; the name (= prefix) may contain hyphens and
+// even date tokens (e.g. {abc-[YYMMDD]}), so allow anything but braces.
+const TOKEN_RE = /\{([^{}]+)\}/g
 
 function shuffle<T>(arr: T[], rng: Rng): T[] {
   const out = arr.slice()
