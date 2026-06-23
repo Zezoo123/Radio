@@ -35,6 +35,9 @@ export function ClockEditor({
 
   const [insertOpen, setInsertOpen] = useState(false)
   const [insertLabel, setInsertLabel] = useState<string | null>(null)
+  // Which insertable field the cursor is in (drives the Insert button's enabled
+  // state). null while editing Min/Sec/Cue/Category or the format name.
+  const [activeField, setActiveField] = useState<Field | null>(null)
 
   function track(e: { currentTarget: HTMLInputElement }, row: number, field: Field): void {
     const el = e.currentTarget
@@ -46,11 +49,17 @@ export function ClockEditor({
   }
 
   const fieldHandlers = (row: number, field: Field) => ({
-    onFocus: (e: React.FocusEvent<HTMLInputElement>) => track(e, row, field),
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
+      track(e, row, field)
+      setActiveField(field)
+    },
     onSelect: (e: React.SyntheticEvent<HTMLInputElement>) => track(e, row, field),
     onKeyUp: (e: React.KeyboardEvent<HTMLInputElement>) => track(e, row, field),
     onMouseUp: (e: React.MouseEvent<HTMLInputElement>) => track(e, row, field)
   })
+
+  // Inputs that are NOT insert targets clear the active field on focus.
+  const nonTargetFocus = { onFocus: () => setActiveField(null) }
 
   function openInsert(): void {
     const row = focusedRow.current
@@ -132,12 +141,14 @@ export function ClockEditor({
               <input
                 value={selected.name}
                 placeholder="Format name"
+                {...nonTargetFocus}
                 onChange={(e) => onChangeFormat({ ...selected, name: e.target.value })}
                 style={{ minWidth: 200 }}
               />
               <input
                 type="color"
                 value={selected.color}
+                {...nonTargetFocus}
                 onChange={(e) => onChangeFormat({ ...selected, color: e.target.value })}
               />
               <button className="btn-link" onClick={() => onDeleteFormat(selected.id)}>
@@ -166,6 +177,7 @@ export function ClockEditor({
                         min={0}
                         max={59}
                         value={row.minute}
+                        {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { minute: clamp(+e.target.value) })}
                       />
                     </td>
@@ -175,12 +187,14 @@ export function ClockEditor({
                         min={0}
                         max={59}
                         value={row.second}
+                        {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { second: clamp(+e.target.value) })}
                       />
                     </td>
                     <td>
                       <select
                         value={row.cue}
+                        {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { cue: e.target.value as Cue })}
                       >
                         {CUES.map((c) => (
@@ -200,6 +214,7 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.category ?? ''}
+                        {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { category: e.target.value || undefined })}
                       />
                     </td>
@@ -227,7 +242,12 @@ export function ClockEditor({
               <button className="btn" onClick={addRow}>
                 + Add row
               </button>
-              <button className="btn" onClick={openInsert}>
+              <button
+                className="btn"
+                disabled={!activeField}
+                title={activeField ? '' : 'Click into a Name or Description field first'}
+                onClick={openInsert}
+              >
                 Insert…
               </button>
             </div>
