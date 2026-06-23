@@ -14,8 +14,8 @@ describe('date token substitution', () => {
     expect(substituteDateTokens('[ddmm]', DATE)).toBe('1806')
   })
 
-  it('handles [Day] and [DayNum] (Mon=1…Sun=7)', () => {
-    expect(substituteDateTokens('1234-[Day]', DATE)).toBe('1234-THU')
+  it('handles [Day] (full name) and [DayNum] (Mon=1…Sun=7)', () => {
+    expect(substituteDateTokens('1234-[Day]', DATE)).toBe('1234-Thursday')
     expect(substituteDateTokens('[DayNum]', DATE)).toBe('4') // Thursday
     expect(substituteDateTokens('[DayNum]', { year: 2026, month: 6, day: 14 })).toBe('7') // Sunday
   })
@@ -40,6 +40,6 @@ describe('serializeForDate', () => {
     set.grid.cells[4][9] = 'f1'
 
     const text = serializeForDate(set, DATE)
-    expect(text).toBe('09:00:00|@|ID-THU||news 260618\r\n')
+    expect(text).toBe('09:00:00|@|ID-Thursday||news 260618\r\n')
   })
 })

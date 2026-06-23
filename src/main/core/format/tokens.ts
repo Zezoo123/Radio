@@ -10,7 +10,7 @@ import { weekday } from '../dates'
  * a token is preserved.
  */
 
-const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 /** Natural Grid day number: Monday=1 … Sunday=7. */
 function naturalDayNum(wd: number): number {
@@ -44,7 +44,7 @@ function tokenValue(token: string, date: CalendarDate): string | null {
     case 'ddmm':
       return dd + mm
     case 'day':
-      return DAY_ABBR[wd]
+      return DAY_NAMES[wd]
     case 'daynum':
       return String(naturalDayNum(wd))
     default:
@@ -67,6 +67,6 @@ export const TOKEN_PRESETS: { token: string; label: string }[] = [
   { token: '[mmddyy]', label: 'MMDDYY' },
   { token: '[ddmm]', label: 'DDMM' },
   { token: '[mmdd]', label: 'MMDD' },
-  { token: '[Day]', label: 'Day (MON)' },
+  { token: '[Day]', label: 'Day (Monday)' },
   { token: '[DayNum]', label: 'Day #' }
 ]
