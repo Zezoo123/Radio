@@ -491,6 +491,72 @@ input[type='color'] {
   width: 96px;
   font-weight: 600;
 }
+
+/* Categorized insert dialog */
+.wide-modal {
+  width: 560px;
+}
+.insert-cols {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+.insert-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--border);
+  padding-right: 10px;
+}
+.cat-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cat-item:hover,
+.cat-item.on {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.insert-body {
+  min-width: 0;
+}
+.seq-row {
+  justify-content: space-between;
+  cursor: default;
+}
+.seq-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.seq-pick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sequential editor form */
+.form-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+.form-grid > label:nth-child(odd) {
+  color: var(--muted);
+}
 code {
   background: var(--panel-2);
   padding: 1px 5px;

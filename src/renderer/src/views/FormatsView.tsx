@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   emptyFormatSet,
   FORMAT_COLORS,
   type FormatSet,
   type HourFormat
 } from '../../../main/core/format/types'
-import { serializeForDate, serializeWeek } from '../../../main/core/format/expand'
 import { weekday } from '../../../main/core/dates'
 import { ClockEditor } from './ClockEditor'
 import { WeekGrid } from './WeekGrid'
@@ -39,10 +38,24 @@ export function FormatsView(): JSX.Element {
   }, [set])
 
   const date = toCalendarDate(exportDate)
-  const preview = useMemo(
-    () => (date ? serializeForDate(set, date) : serializeWeek(set)),
-    [set, exportDate]
-  )
+  const [preview, setPreview] = useState('')
+
+  // Preview is a dry-run resolve in main (date + sequential tokens), so it does
+  // not advance the rotation queues.
+  useEffect(() => {
+    if (!date) {
+      setPreview('')
+      return
+    }
+    let cancelled = false
+    window.api.previewFormatForDate(set, date).then((t) => {
+      if (!cancelled) setPreview(t)
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [set, exportDate])
 
   function addFormat(): void {
     const format: HourFormat = {
