@@ -104,6 +104,21 @@ describe('[NEXT] token — load next day’s log', () => {
     expect(text).toContain('23:59:59|+|H260625|LOG|Thursday 260625 Log')
   })
 
+  it('a next-day date token ([TOKEN][NEXT]) strips cleanly to the next-day date', () => {
+    const set = emptyFormatSet()
+    set.defaultClocks!.push({
+      id: 'd',
+      name: 'D',
+      color: '#fff',
+      rows: [
+        { hour: 23, minute: 59, second: 59, cue: '+', name: 'H[YYMMDD][NEXT]', category: 'LOG' }
+      ]
+    })
+    set.dayDefaults![3] = 'd'
+    const { text } = resolveForDate(set, WED, [], mulberry32(1))
+    expect(text).toContain('23:59:59|+|H260625|LOG|') // clean, no stray spaces / no [NEXT]
+  })
+
   it('a normal date token still uses the export date', () => {
     const fmt: HourFormat = {
       id: 'f',
