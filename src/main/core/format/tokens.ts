@@ -68,6 +68,14 @@ export const TOKEN_PRESETS: { token: string; label: string }[] = [
   { token: '[ddmm]', label: 'DDMM' },
   { token: '[mmdd]', label: 'MMDD' },
   { token: '[Day]', label: 'Day (Monday)' },
-  { token: '[DayNum]', label: 'Day #' },
-  { token: '[NEXT]', label: 'Next day (for LOG)' }
+  { token: '[DayNum]', label: 'Day #' }
+]
+
+/** Tokens for the "Next day" insert category (loading the next day's log). */
+export const NEXTDAY_PRESETS: { token: string; label: string; hint: string }[] = [
+  {
+    token: '[NEXT]',
+    label: '[NEXT]',
+    hint: "Resolve this row's date tokens for the NEXT day (use with Category LOG)"
+  }
 ]

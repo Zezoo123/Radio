@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { TOKEN_PRESETS, substituteDateTokens } from '../../../main/core/format/tokens'
+import {
+  NEXTDAY_PRESETS,
+  TOKEN_PRESETS,
+  substituteDateTokens
+} from '../../../main/core/format/tokens'
 import type { Sequential } from '../../../main/core/sequential/types'
 import { SequentialEditor } from './SequentialEditor'
 
@@ -11,7 +15,7 @@ interface Props {
   onClose: () => void
 }
 
-type Category = 'date' | 'sequential'
+type Category = 'date' | 'sequential' | 'nextday'
 
 // A fixed sample date just for the date previews (Thu 2026-06-18).
 const SAMPLE = { year: 2026, month: 6, day: 18 }
@@ -60,6 +64,12 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
               onClick={() => setCategory('sequential')}
             >
               Sequential
+            </button>
+            <button
+              className={`cat-item ${category === 'nextday' ? 'on' : ''}`}
+              onClick={() => setCategory('nextday')}
+            >
+              Next day
             </button>
           </div>
 
@@ -125,6 +135,28 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
                         edit
                       </button>
                     </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {category === 'nextday' && (
+              <>
+                <p className="muted">
+                  Tells Simian to load the next day&apos;s log: put this in the last hour&apos;s clock
+                  with Category <code>LOG</code> and the log name in Description.
+                </p>
+                <div className="insert-list">
+                  {NEXTDAY_PRESETS.map((t) => (
+                    <button
+                      key={t.token}
+                      className="insert-item"
+                      disabled={disabled}
+                      onClick={() => onPick(t.token)}
+                    >
+                      <span className="insert-label">{t.label}</span>
+                      <span className="muted">{t.hint}</span>
+                    </button>
                   ))}
                 </div>
               </>
