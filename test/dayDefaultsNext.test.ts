@@ -81,6 +81,29 @@ describe('[NEXT] token — load next day’s log', () => {
     expect(text).toContain('23:59:59|+||LOG|062526C1')
   })
 
+  it('is row-level: name (log filename) + description both advance to next day', () => {
+    const set = emptyFormatSet()
+    set.defaultClocks!.push({
+      id: 'd',
+      name: 'D',
+      color: '#fff',
+      rows: [
+        {
+          hour: 23,
+          minute: 59,
+          second: 59,
+          cue: '+',
+          name: 'H[YYMMDD]',
+          category: 'LOG',
+          description: '[Day] [YYMMDD] Log [NEXT]'
+        }
+      ]
+    })
+    set.dayDefaults![3] = 'd' // Wednesday 2026-06-24 → next day Thu 2026-06-25
+    const { text } = resolveForDate(set, WED, [], mulberry32(1))
+    expect(text).toContain('23:59:59|+|H260625|LOG|Thursday 260625 Log')
+  })
+
   it('a normal date token still uses the export date', () => {
     const fmt: HourFormat = {
       id: 'f',

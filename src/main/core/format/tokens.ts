@@ -76,6 +76,6 @@ export const NEXTDAY_PRESETS: { token: string; label: string; hint: string }[] =
   {
     token: '[NEXT]',
     label: '[NEXT]',
-    hint: "Resolve this row's date tokens for the NEXT day (use with Category LOG)"
+    hint: "Resolve the whole row's date tokens (Name + Description) for the NEXT day"
   }
 ]

@@ -40,24 +40,27 @@ export function resolveForDate(
   const resolver = makeResolver(sequentials, rng)
   const pop = (name: string): string | null => resolver.pop(name)
   const nextDay = addDays(date, 1)
+  const NEXT_STRIP = /\s*\[NEXT\]\s*/gi
 
-  // A field containing [NEXT] (Natural Grid "load next day's log") resolves its
-  // date tokens for the next day; the [NEXT] marker is then stripped.
-  const applyDates = (text: string): string => {
-    if (/\[NEXT\]/i.test(text)) {
-      return substituteDateTokens(text.replace(/\s*\[NEXT\]\s*/gi, ' ').trim(), nextDay)
-    }
-    return substituteDateTokens(text, date)
-  }
-  const apply = (text: string): string => applyDates(substituteSequentialTokens(text, pop))
-
-  const lines = events.map((ev) =>
-    eventLine({
+  // [NEXT] (Natural Grid "load next day's log") is row-level: if EITHER the name
+  // or description contains it, the whole row's date tokens resolve for the next
+  // day (so the log filename and its description both advance), and the marker is
+  // stripped from both fields.
+  const lines = events.map((ev) => {
+    const name = substituteSequentialTokens(ev.name, pop)
+    const description =
+      ev.description != null ? substituteSequentialTokens(ev.description, pop) : ev.description
+    const rowNext =
+      /\[NEXT\]/i.test(name) || (description != null && /\[NEXT\]/i.test(description))
+    const when = rowNext ? nextDay : date
+    const fill = (text: string): string =>
+      substituteDateTokens(rowNext ? text.replace(NEXT_STRIP, ' ').trim() : text, when)
+    return eventLine({
       ...ev,
-      name: apply(ev.name),
-      description: ev.description != null ? apply(ev.description) : ev.description
+      name: fill(name),
+      description: description != null ? fill(description) : description
     })
-  )
+  })
 
   const text = lines.length ? lines.join(LINE_SEP) + LINE_SEP : ''
   return { text, sequentials: resolver.updated() }
