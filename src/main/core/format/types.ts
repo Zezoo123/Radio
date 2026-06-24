@@ -21,6 +21,8 @@ export interface FormatRow {
   name: string
   category?: string
   description?: string
+  /** When true, this row's date tokens resolve to the next day (the LOG row). */
+  nextDay?: boolean
 }
 
 export interface HourFormat {

@@ -12,6 +12,8 @@ export interface ScheduleEvent {
   category?: string
   /** Optional Simian Description column. */
   description?: string
+  /** When true, this row's date tokens resolve to the next calendar day. */
+  nextDay?: boolean
 }
 
 /**

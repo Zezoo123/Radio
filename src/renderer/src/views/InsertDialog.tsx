@@ -11,11 +11,10 @@ interface Props {
   onClose: () => void
 }
 
-type Category = 'date' | 'sequential' | 'nextday'
+type Category = 'date' | 'sequential'
 
-// Fixed sample dates just for the previews (Thu 2026-06-18, and the next day).
+// A fixed sample date just for the date previews (Thu 2026-06-18).
 const SAMPLE = { year: 2026, month: 6, day: 18 }
-const NEXT_SAMPLE = { year: 2026, month: 6, day: 19 }
 
 /** Categorized insert popup: Date tokens and Sequentials. */
 export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX.Element | null {
@@ -61,12 +60,6 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
               onClick={() => setCategory('sequential')}
             >
               Sequential
-            </button>
-            <button
-              className={`cat-item ${category === 'nextday' ? 'on' : ''}`}
-              onClick={() => setCategory('nextday')}
-            >
-              Next day
             </button>
           </div>
 
@@ -132,30 +125,6 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
                         edit
                       </button>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {category === 'nextday' && (
-              <>
-                <p className="muted">
-                  Inserts <strong>tomorrow&apos;s</strong> date. Used for the LOG row that tells Simian
-                  to load the next day&apos;s log (Category <code>LOG</code> in the last hour). Note:
-                  any date in that row resolves to the next day.
-                </p>
-                <div className="insert-list">
-                  {TOKEN_PRESETS.map((t) => (
-                    <button
-                      key={t.token}
-                      className="insert-item"
-                      disabled={disabled}
-                      onClick={() => onPick(`${t.token}[NEXT]`)}
-                    >
-                      <span className="insert-label">{t.label}</span>
-                      <code>{t.token}</code>
-                      <span className="muted">e.g. {substituteDateTokens(t.token, NEXT_SAMPLE)}</span>
-                    </button>
                   ))}
                 </div>
               </>

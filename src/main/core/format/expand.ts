@@ -31,7 +31,8 @@ function rowToEvent(row: FormatRow, hour: number, date?: CalendarDate): Schedule
     cue: row.cue,
     name: sub(row.name) ?? row.name,
     category: sub(row.category),
-    description: sub(row.description)
+    description: sub(row.description),
+    nextDay: row.nextDay
   }
 }
 

@@ -191,12 +191,13 @@ export function ClockEditor({
                   <th>Name / cart</th>
                   <th>Category</th>
                   <th>Description</th>
+                  <th style={{ width: 84 }}>Next day</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {selected.rows.map((row, i) => (
-                  <tr key={i}>
+                  <tr key={i} className={row.nextDay ? 'row-next' : ''}>
                     {showHour && (
                       <td>
                         <select
@@ -310,6 +311,16 @@ export function ClockEditor({
                           patchRow(i, { description: e.target.value || undefined })
                         }
                       />
+                    </td>
+                    <td>
+                      <button
+                        className={`day-toggle ${row.nextDay ? 'on' : ''}`}
+                        title="When on, this row's dates resolve to the next calendar day (for the load-next-day LOG row)"
+                        {...nonTargetFocus}
+                        onClick={() => patchRow(i, { nextDay: row.nextDay ? undefined : true })}
+                      >
+                        {row.nextDay ? 'next day' : 'today'}
+                      </button>
                     </td>
                     <td>
                       <button className="btn-link" onClick={() => removeRow(i)}>

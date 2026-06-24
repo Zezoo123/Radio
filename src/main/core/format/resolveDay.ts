@@ -50,8 +50,11 @@ export function resolveForDate(
     const name = substituteSequentialTokens(ev.name, pop)
     const description =
       ev.description != null ? substituteSequentialTokens(ev.description, pop) : ev.description
+    // Next-day applies if the row's toggle is on, or (legacy) a field has [NEXT].
     const rowNext =
-      /\[NEXT\]/i.test(name) || (description != null && /\[NEXT\]/i.test(description))
+      ev.nextDay === true ||
+      /\[NEXT\]/i.test(name) ||
+      (description != null && /\[NEXT\]/i.test(description))
     const when = rowNext ? nextDay : date
     const fill = (text: string): string =>
       substituteDateTokens(rowNext ? text.replace(NEXT_STRIP, ' ').trim() : text, when)
