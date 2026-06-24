@@ -12,6 +12,15 @@ import { toCalendarDate } from '../App'
 
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+/** Tomorrow (system date + 1) as YYYY-MM-DD — the default export date. */
+function tomorrowISO(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
 type Tab = 'clocks' | 'grid'
 
 export function FormatsView(): JSX.Element {
@@ -19,9 +28,10 @@ export function FormatsView(): JSX.Element {
   const [tab, setTab] = useState<Tab>('clocks')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [erasing, setErasing] = useState(false)
-  const [exportDate, setExportDate] = useState('2026-06-01')
+  const [exportDate, setExportDate] = useState(tomorrowISO)
   const [status, setStatus] = useState('')
   const loaded = useRef(false)
+  const dateRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     window.api.loadFormats().then((s) => {
@@ -183,11 +193,19 @@ export function FormatsView(): JSX.Element {
             <label>
               Date{' '}
               <input
+                ref={dateRef}
                 type="date"
                 value={exportDate}
                 onChange={(e) => setExportDate(e.target.value)}
               />
             </label>
+            <button
+              className="btn"
+              title="Open calendar"
+              onClick={() => dateRef.current?.showPicker?.()}
+            >
+              📅
+            </button>
             <span className="muted">{date ? WEEKDAY_FULL[weekday(date)] : '—'}</span>
             <button className="btn primary" disabled={!date} onClick={doExportForDate}>
               Export for date…
