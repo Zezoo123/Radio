@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { app } from 'electron'
 import {
   DEFAULT_CATEGORIES,
-  emptyDefaultDay,
+  emptyDayDefaults,
   emptyFormatSet,
   type FormatSet
 } from './core/format/types'
@@ -23,9 +23,10 @@ class FormatStore {
       if (!set.categories || set.categories.length === 0) {
         set.categories = [...DEFAULT_CATEGORIES]
       }
-      // Older files predate the default day (and the earlier per-weekday field).
-      if (!set.defaultDay || set.defaultDay.length !== 24) {
-        set.defaultDay = emptyDefaultDay()
+      // Older files predate default clocks / per-day default assignment.
+      if (!Array.isArray(set.defaultClocks)) set.defaultClocks = []
+      if (!set.dayDefaults || set.dayDefaults.length !== 7) {
+        set.dayDefaults = emptyDayDefaults()
       }
       return set
     } catch {

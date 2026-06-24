@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   DEFAULT_CATEGORIES,
-  emptyDefaultDay,
+  emptyDayDefaults,
   emptyFormatSet,
   FORMAT_COLORS,
   type FormatSet,
@@ -23,12 +23,13 @@ function tomorrowISO(): string {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
-type Tab = 'clocks' | 'grid'
+type Tab = 'clocks' | 'default' | 'grid'
 
 export function FormatsView(): JSX.Element {
   const [set, setSet] = useState<FormatSet>(emptyFormatSet())
   const [tab, setTab] = useState<Tab>('clocks')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedDefaultId, setSelectedDefaultId] = useState<string | null>(null)
   const [erasing, setErasing] = useState(false)
   const [exportDate, setExportDate] = useState(tomorrowISO)
   const [status, setStatus] = useState('')
@@ -100,8 +101,7 @@ export function FormatsView(): JSX.Element {
     setSet((s) => ({
       ...s,
       formats: s.formats.filter((f) => f.id !== id),
-      grid: { cells: s.grid.cells.map((row) => row.map((c) => (c === id ? null : c))) },
-      defaultDay: (s.defaultDay ?? emptyDefaultDay()).map((d) => (d === id ? null : d))
+      grid: { cells: s.grid.cells.map((row) => row.map((c) => (c === id ? null : c))) }
     }))
     if (selectedId === id) setSelectedId(null)
   }
@@ -114,11 +114,40 @@ export function FormatsView(): JSX.Element {
     })
   }
 
-  function assignDefault(hour: number, id: string | null): void {
+  // --- Default clocks (separate list; applied to whole days) ---
+  function addDefaultClock(): void {
+    const clocks = set.defaultClocks ?? []
+    const clock: HourFormat = {
+      id: crypto.randomUUID(),
+      name: `Default ${clocks.length + 1}`,
+      color: FORMAT_COLORS[clocks.length % FORMAT_COLORS.length],
+      rows: []
+    }
+    setSet((s) => ({ ...s, defaultClocks: [...(s.defaultClocks ?? []), clock] }))
+    setSelectedDefaultId(clock.id)
+  }
+
+  function changeDefaultClock(clock: HourFormat): void {
+    setSet((s) => ({
+      ...s,
+      defaultClocks: (s.defaultClocks ?? []).map((c) => (c.id === clock.id ? clock : c))
+    }))
+  }
+
+  function deleteDefaultClock(id: string): void {
+    setSet((s) => ({
+      ...s,
+      defaultClocks: (s.defaultClocks ?? []).filter((c) => c.id !== id),
+      dayDefaults: (s.dayDefaults ?? emptyDayDefaults()).map((d) => (d === id ? null : d))
+    }))
+    if (selectedDefaultId === id) setSelectedDefaultId(null)
+  }
+
+  function setDayDefault(wd: number, id: string | null): void {
     setSet((s) => {
-      const dd = (s.defaultDay ?? emptyDefaultDay()).slice()
-      dd[hour] = id
-      return { ...s, defaultDay: dd }
+      const dd = (s.dayDefaults ?? emptyDayDefaults()).slice()
+      dd[wd] = id
+      return { ...s, dayDefaults: dd }
     })
   }
 
@@ -146,6 +175,12 @@ export function FormatsView(): JSX.Element {
               Clocks
             </button>
             <button
+              className={`seg-btn ${tab === 'default' ? 'on' : ''}`}
+              onClick={() => setTab('default')}
+            >
+              Default clocks
+            </button>
+            <button
               className={`seg-btn ${tab === 'grid' ? 'on' : ''}`}
               onClick={() => setTab('grid')}
             >
@@ -170,6 +205,26 @@ export function FormatsView(): JSX.Element {
           onDeleteFormat={deleteFormat}
           onAddCategory={addCategory}
         />
+      )}
+
+      {tab === 'default' && (
+        <>
+          <p className="muted">
+            A <strong>default clock</strong> applies to <strong>every hour</strong> of a day (a base
+            clock). Create one or more here, then choose which one each day uses in the Week grid.
+            Default clocks are not painted onto the grid.
+          </p>
+          <ClockEditor
+            formats={set.defaultClocks ?? []}
+            categories={set.categories ?? DEFAULT_CATEGORIES}
+            selectedId={selectedDefaultId}
+            onSelect={setSelectedDefaultId}
+            onAddFormat={addDefaultClock}
+            onChangeFormat={changeDefaultClock}
+            onDeleteFormat={deleteDefaultClock}
+            onAddCategory={addCategory}
+          />
+        </>
       )}
 
       {tab === 'grid' && (
@@ -200,16 +255,17 @@ export function FormatsView(): JSX.Element {
           </div>
 
           <p className="muted" style={{ margin: '0 0 8px' }}>
-            The <strong>Default</strong> column is a full 24-hour day applied to every weekday,
-            layered under each day's grid. Paint it like the others.
+            Paint clocks onto the hours. The <strong>Default</strong> row picks a default clock per
+            day (or none) — it's applied to every hour, layered under what you paint.
           </p>
           <WeekGrid
             grid={set.grid}
             formats={set.formats}
-            defaultDay={set.defaultDay ?? emptyDefaultDay()}
+            defaultClocks={set.defaultClocks ?? []}
+            dayDefaults={set.dayDefaults ?? emptyDayDefaults()}
             paintId={erasing ? null : selectedId}
             onAssign={assign}
-            onAssignDefault={assignDefault}
+            onSetDayDefault={setDayDefault}
           />
         </>
       )}

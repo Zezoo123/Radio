@@ -38,18 +38,21 @@ function formatById(set: FormatSet, id: string | null): HourFormat | undefined {
   return id ? set.formats.find((f) => f.id === id) : undefined
 }
 
+function defaultClockById(set: FormatSet, id: string | null): HourFormat | undefined {
+  return id ? set.defaultClocks?.find((c) => c.id === id) : undefined
+}
+
 /**
- * All events for one weekday (0=Sun…6=Sat), time-sorted. The shared 24-hour
- * default day (if set) is layered on top of the per-hour grid format, hour by
- * hour. Pass `date` to substitute date-sensitive tokens.
+ * All events for one weekday (0=Sun…6=Sat), time-sorted. The day's chosen
+ * default clock (if any) is applied to EVERY hour, layered under the per-hour
+ * grid format. Pass `date` to substitute date-sensitive tokens.
  */
 export function dayRows(set: FormatSet, wd: number, date?: CalendarDate): ScheduleEvent[] {
   const events: ScheduleEvent[] = []
   const row = set.grid.cells[wd] ?? []
-  const defaultDay = set.defaultDay ?? []
+  const defaultClock = defaultClockById(set, set.dayDefaults?.[wd] ?? null)
   for (let hour = 0; hour < 24; hour++) {
-    const defaultFormat = formatById(set, defaultDay[hour] ?? null)
-    if (defaultFormat) events.push(...expandFormatAtHour(defaultFormat, hour, date))
+    if (defaultClock) events.push(...expandFormatAtHour(defaultClock, hour, date))
     const format = formatById(set, row[hour] ?? null)
     if (format) events.push(...expandFormatAtHour(format, hour, date))
   }

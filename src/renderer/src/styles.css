@@ -428,12 +428,20 @@ input[type='color'] {
   outline-offset: -1px;
 }
 
-/* Default day column in the week grid */
-.grid-tbl .def-col {
-  border-right: 2px solid var(--accent);
+/* Per-day default-clock selector row in the week grid */
+.grid-tbl .default-row th {
+  background: var(--panel-2);
+  border-bottom: 2px solid var(--accent);
+  padding: 4px;
 }
-.grid-tbl thead .def-col {
+.grid-tbl .default-row .hour-label {
   color: var(--accent);
+  font-size: 11px;
+}
+.grid-tbl .default-row select {
+  width: 100%;
+  font-size: 11px;
+  padding: 3px 4px;
 }
 
 /* Insert dialog */

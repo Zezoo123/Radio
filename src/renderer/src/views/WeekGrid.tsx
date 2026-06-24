@@ -5,12 +5,14 @@ import { WEEKDAY_LABELS } from '../../../main/core/format/types'
 interface Props {
   grid: WeekGridModel
   formats: HourFormat[]
-  /** The shared 24-hour default day (hour → format id). */
-  defaultDay: (string | null)[]
+  /** Default clocks available to assign per day. */
+  defaultClocks: HourFormat[]
+  /** Per-weekday default clock id (length 7). */
+  dayDefaults: (string | null)[]
   /** Active format id to paint, or null to erase. */
   paintId: string | null
   onAssign: (weekday: number, hour: number, id: string | null) => void
-  onAssignDefault: (hour: number, id: string | null) => void
+  onSetDayDefault: (weekday: number, id: string | null) => void
 }
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
@@ -19,10 +21,11 @@ const pad2 = (n: number): string => String(n).padStart(2, '0')
 export function WeekGrid({
   grid,
   formats,
-  defaultDay,
+  defaultClocks,
+  dayDefaults,
   paintId,
   onAssign,
-  onAssignDefault
+  onSetDayDefault
 }: Props): JSX.Element {
   const [painting, setPainting] = useState(false)
   const paintingRef = useRef(false)
@@ -39,40 +42,36 @@ export function WeekGrid({
   const byId = (id: string | null): HourFormat | undefined =>
     id ? formats.find((f) => f.id === id) : undefined
 
-  const startPaint = (fn: () => void): void => {
-    paintingRef.current = true
-    setPainting(true)
-    fn()
-  }
-
-  function cell(fmt: HourFormat | undefined, onPaint: () => void, key: string, extra = ''): JSX.Element {
-    return (
-      <td
-        key={key}
-        className={`grid-cell ${extra}`}
-        title={fmt?.name ?? ''}
-        style={fmt ? { background: fmt.color, color: '#0b0d11' } : undefined}
-        onMouseDown={() => startPaint(onPaint)}
-        onMouseEnter={() => {
-          if (paintingRef.current) onPaint()
-        }}
-      >
-        {fmt ? abbreviate(fmt.name) : ''}
-      </td>
-    )
-  }
-
   return (
     <div className={`week-grid ${painting ? 'painting' : ''}`}>
       <table className="grid-tbl">
         <thead>
           <tr>
             <th className="corner" />
-            <th className="def-col" title="Applied to every day">
-              Default
-            </th>
             {WEEKDAY_LABELS.map((d) => (
               <th key={d}>{d}</th>
+            ))}
+          </tr>
+          <tr className="default-row">
+            <th className="hour-label" title="Default clock applied to every hour of the day">
+              Default
+            </th>
+            {WEEKDAY_LABELS.map((_, wd) => (
+              <th key={wd}>
+                <select
+                  value={dayDefaults[wd] ?? ''}
+                  onChange={(e) => onSetDayDefault(wd, e.target.value || null)}
+                  disabled={defaultClocks.length === 0}
+                  title="Default clock for this day"
+                >
+                  <option value="">none</option>
+                  {defaultClocks.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name || '(unnamed)'}
+                    </option>
+                  ))}
+                </select>
+              </th>
             ))}
           </tr>
         </thead>
@@ -80,15 +79,27 @@ export function WeekGrid({
           {HOURS.map((hour) => (
             <tr key={hour}>
               <th className="hour-label">{pad2(hour)}</th>
-              {cell(
-                byId(defaultDay[hour] ?? null),
-                () => onAssignDefault(hour, paintId),
-                `def-${hour}`,
-                'def-col'
-              )}
-              {WEEKDAY_LABELS.map((_, wd) =>
-                cell(byId(grid.cells[wd]?.[hour] ?? null), () => onAssign(wd, hour, paintId), `${wd}-${hour}`)
-              )}
+              {WEEKDAY_LABELS.map((_, wd) => {
+                const fmt = byId(grid.cells[wd]?.[hour] ?? null)
+                return (
+                  <td
+                    key={wd}
+                    className="grid-cell"
+                    title={fmt?.name ?? ''}
+                    style={fmt ? { background: fmt.color, color: '#0b0d11' } : undefined}
+                    onMouseDown={() => {
+                      paintingRef.current = true
+                      setPainting(true)
+                      onAssign(wd, hour, paintId)
+                    }}
+                    onMouseEnter={() => {
+                      if (paintingRef.current) onAssign(wd, hour, paintId)
+                    }}
+                  >
+                    {fmt ? abbreviate(fmt.name) : ''}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>
