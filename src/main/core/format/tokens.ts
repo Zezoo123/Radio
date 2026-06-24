@@ -68,5 +68,6 @@ export const TOKEN_PRESETS: { token: string; label: string }[] = [
   { token: '[ddmm]', label: 'DDMM' },
   { token: '[mmdd]', label: 'MMDD' },
   { token: '[Day]', label: 'Day (Monday)' },
-  { token: '[DayNum]', label: 'Day #' }
+  { token: '[DayNum]', label: 'Day #' },
+  { token: '[NEXT]', label: 'Next day (for LOG)' }
 ]

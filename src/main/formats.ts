@@ -1,7 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app } from 'electron'
-import { emptyFormatSet, type FormatSet } from './core/format/types'
+import {
+  DEFAULT_CATEGORIES,
+  emptyDayDefaults,
+  emptyFormatSet,
+  type FormatSet
+} from './core/format/types'
 
 /** Persists the hour-format set (clocks + week grid) as JSON in userData. */
 class FormatStore {
@@ -14,6 +19,14 @@ class FormatStore {
       const set = JSON.parse(await readFile(this.filePath(), 'utf-8')) as FormatSet
       // Tolerate older/partial files.
       if (!set.formats || !set.grid) return emptyFormatSet()
+      // Older files predate the category list — seed it with the defaults.
+      if (!set.categories || set.categories.length === 0) {
+        set.categories = [...DEFAULT_CATEGORIES]
+      }
+      // Older files predate per-day default formats.
+      if (!set.dayDefaults || set.dayDefaults.length !== 7) {
+        set.dayDefaults = emptyDayDefaults()
+      }
       return set
     } catch {
       return emptyFormatSet()

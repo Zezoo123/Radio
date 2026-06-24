@@ -17,3 +17,9 @@ export function dateRange(start: CalendarDate, end: CalendarDate): CalendarDate[
 export function weekday(date: CalendarDate): number {
   return new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay()
 }
+
+/** The calendar date `n` days after (or before, if negative) the given date. */
+export function addDays(date: CalendarDate, n: number): CalendarDate {
+  const d = new Date(Date.UTC(date.year, date.month - 1, date.day) + n * 86400000)
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }
+}

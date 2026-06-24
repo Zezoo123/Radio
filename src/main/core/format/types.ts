@@ -36,9 +36,33 @@ export interface WeekGrid {
 export interface FormatSet {
   formats: HourFormat[]
   grid: WeekGrid
+  /** Categories offered in the row Category dropdown. User-extendable. */
+  categories?: string[]
+  /**
+   * Per-weekday default format id (length 7, weekday 0=Sun…6=Sat, or null).
+   * A day's default is applied to every hour, layered on top of the grid format.
+   */
+  dayDefaults?: (string | null)[]
 }
 
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** Built-in category options for a format row (the dropdown's defaults). */
+export const DEFAULT_CATEGORIES = [
+  'AUDIO',
+  'COMMENT',
+  'ADS',
+  'FEA',
+  'LI',
+  'LI_C',
+  'PROMO',
+  'MACRO',
+  'SER',
+  'INTRO',
+  'OUTRO',
+  'SW',
+  'LOG'
+]
 
 export const FORMAT_COLORS = [
   '#4f8cff',
@@ -56,6 +80,15 @@ export function emptyGrid(): WeekGrid {
   return { cells: Array.from({ length: 7 }, () => new Array<string | null>(24).fill(null)) }
 }
 
+export function emptyDayDefaults(): (string | null)[] {
+  return new Array<string | null>(7).fill(null)
+}
+
 export function emptyFormatSet(): FormatSet {
-  return { formats: [], grid: emptyGrid() }
+  return {
+    formats: [],
+    grid: emptyGrid(),
+    categories: [...DEFAULT_CATEGORIES],
+    dayDefaults: emptyDayDefaults()
+  }
 }

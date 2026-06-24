@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  DEFAULT_CATEGORIES,
+  emptyDayDefaults,
   emptyFormatSet,
   FORMAT_COLORS,
+  WEEKDAY_LABELS,
   type FormatSet,
   type HourFormat
 } from '../../../main/core/format/types'
@@ -79,6 +82,14 @@ export function FormatsView(): JSX.Element {
     setErasing(false)
   }
 
+  function addCategory(cat: string): void {
+    setSet((s) => {
+      const cur = s.categories ?? DEFAULT_CATEGORIES
+      if (cur.includes(cat)) return s
+      return { ...s, categories: [...cur, cat] }
+    })
+  }
+
   function changeFormat(format: HourFormat): void {
     setSet((s) => ({
       ...s,
@@ -88,8 +99,10 @@ export function FormatsView(): JSX.Element {
 
   function deleteFormat(id: string): void {
     setSet((s) => ({
+      ...s,
       formats: s.formats.filter((f) => f.id !== id),
-      grid: { cells: s.grid.cells.map((row) => row.map((c) => (c === id ? null : c))) }
+      grid: { cells: s.grid.cells.map((row) => row.map((c) => (c === id ? null : c))) },
+      dayDefaults: (s.dayDefaults ?? emptyDayDefaults()).map((d) => (d === id ? null : d))
     }))
     if (selectedId === id) setSelectedId(null)
   }
@@ -99,6 +112,14 @@ export function FormatsView(): JSX.Element {
       const cells = s.grid.cells.map((row) => row.slice())
       cells[weekday][hour] = id
       return { ...s, grid: { cells } }
+    })
+  }
+
+  function setDayDefault(wd: number, id: string | null): void {
+    setSet((s) => {
+      const dd = (s.dayDefaults ?? emptyDayDefaults()).slice()
+      dd[wd] = id
+      return { ...s, dayDefaults: dd }
     })
   }
 
@@ -142,11 +163,13 @@ export function FormatsView(): JSX.Element {
       {tab === 'clocks' && (
         <ClockEditor
           formats={set.formats}
+          categories={set.categories ?? DEFAULT_CATEGORIES}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onAddFormat={addFormat}
           onChangeFormat={changeFormat}
           onDeleteFormat={deleteFormat}
+          onAddCategory={addCategory}
         />
       )}
 
@@ -183,6 +206,30 @@ export function FormatsView(): JSX.Element {
             paintId={erasing ? null : selectedId}
             onAssign={assign}
           />
+
+          <div className="day-defaults">
+            <span className="muted">
+              Default format per day — applied to <strong>every hour</strong>, on top of the grid:
+            </span>
+            <div className="dd-row">
+              {WEEKDAY_LABELS.map((lbl, wd) => (
+                <label key={wd} className="dd-cell">
+                  <span>{lbl}</span>
+                  <select
+                    value={set.dayDefaults?.[wd] ?? ''}
+                    onChange={(e) => setDayDefault(wd, e.target.value || null)}
+                  >
+                    <option value="">(none)</option>
+                    {set.formats.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name || '(unnamed)'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          </div>
         </>
       )}
 

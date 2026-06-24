@@ -428,6 +428,27 @@ input[type='color'] {
   outline-offset: -1px;
 }
 
+/* Per-day default format selectors */
+.day-defaults {
+  margin-top: 14px;
+}
+.dd-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.dd-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dd-cell select {
+  min-width: 96px;
+}
+
 /* Insert dialog */
 .modal-overlay {
   position: fixed;

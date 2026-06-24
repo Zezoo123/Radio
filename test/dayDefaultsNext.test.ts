@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest'
+import { dayRows } from '@core/format/expand'
+import { resolveForDate } from '@core/format/resolveDay'
+import { emptyFormatSet, type HourFormat } from '@core/format/types'
+import { mulberry32 } from '@core/sequential/rng'
+
+// 2026-06-24 is a Wednesday (weekday 3).
+const WED = { year: 2026, month: 6, day: 24 }
+
+describe('per-day default format', () => {
+  it('applies the day default to every hour, layered with the grid format', () => {
+    const base: HourFormat = {
+      id: 'base',
+      name: 'Base',
+      color: '#fff',
+      rows: [{ minute: 0, second: 0, cue: '@', name: 'ID' }]
+    }
+    const special: HourFormat = {
+      id: 'sp',
+      name: 'Special',
+      color: '#fff',
+      rows: [{ minute: 30, second: 0, cue: '+', name: 'SHOW' }]
+    }
+    const set = emptyFormatSet()
+    set.formats.push(base, special)
+    set.dayDefaults![3] = 'base' // Wednesday default
+    set.grid.cells[3][9] = 'sp' // special only at hour 9
+
+    const events = dayRows(set, 3)
+    expect(events.filter((e) => e.name === 'ID')).toHaveLength(24) // default every hour
+    expect(events.some((e) => e.time === '00:00:00' && e.name === 'ID')).toBe(true)
+    expect(events.some((e) => e.time === '09:30:00' && e.name === 'SHOW')).toBe(true)
+  })
+
+  it('adds nothing when no default is set for that weekday', () => {
+    const set = emptyFormatSet()
+    set.formats.push({
+      id: 'sp',
+      name: 'Special',
+      color: '#fff',
+      rows: [{ minute: 0, second: 0, cue: '+', name: 'X' }]
+    })
+    set.grid.cells[3][9] = 'sp'
+    expect(dayRows(set, 3)).toHaveLength(1)
+  })
+})
+
+describe('[NEXT] token — load next day’s log', () => {
+  it("resolves date tokens for the next day and strips [NEXT]", () => {
+    const lastHour: HourFormat = {
+      id: 'last',
+      name: 'Last hour',
+      color: '#fff',
+      rows: [
+        { minute: 59, second: 59, cue: '+', name: '', category: 'LOG', description: '[MMDDYY]C1 [NEXT]' }
+      ]
+    }
+    const set = emptyFormatSet()
+    set.formats.push(lastHour)
+    set.grid.cells[3][23] = 'last' // Wednesday, last hour
+
+    const { text } = resolveForDate(set, WED, [], mulberry32(1))
+    // Export date Wed 2026-06-24 → next day 2026-06-25 → MMDDYY = 06 25 26
+    expect(text).toContain('23:59:59|+||LOG|062526C1')
+  })
+
+  it('a normal date token still uses the export date', () => {
+    const fmt: HourFormat = {
+      id: 'f',
+      name: 'F',
+      color: '#fff',
+      rows: [{ minute: 0, second: 0, cue: '+', name: 'TODAY[MMDDYY]' }]
+    }
+    const set = emptyFormatSet()
+    set.formats.push(fmt)
+    set.grid.cells[3][8] = 'f'
+    const { text } = resolveForDate(set, WED, [], mulberry32(1))
+    expect(text).toContain('08:00:00|+|TODAY062426') // export date 2026-06-24 → 06 24 26
+  })
+})

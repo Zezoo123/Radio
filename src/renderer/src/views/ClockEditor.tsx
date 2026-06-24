@@ -9,20 +9,27 @@ type Field = 'name' | 'description'
 
 interface Props {
   formats: HourFormat[]
+  categories: string[]
   selectedId: string | null
   onSelect: (id: string) => void
   onAddFormat: () => void
   onChangeFormat: (format: HourFormat) => void
   onDeleteFormat: (id: string) => void
+  onAddCategory: (category: string) => void
 }
+
+// Sentinel select value that switches a Category cell into "type a new one" mode.
+const ADD_CATEGORY = '__add__'
 
 export function ClockEditor({
   formats,
+  categories,
   selectedId,
   onSelect,
   onAddFormat,
   onChangeFormat,
-  onDeleteFormat
+  onDeleteFormat,
+  onAddCategory
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
 
@@ -38,6 +45,20 @@ export function ClockEditor({
   // Which insertable field the cursor is in (drives the Insert button's enabled
   // state). null while editing Min/Sec/Cue/Category or the format name.
   const [activeField, setActiveField] = useState<Field | null>(null)
+
+  // Row index whose Category cell is currently entering a brand-new category.
+  const [addingCatRow, setAddingCatRow] = useState<number | null>(null)
+  const [newCat, setNewCat] = useState('')
+
+  function commitNewCategory(index: number): void {
+    const cat = newCat.trim()
+    if (cat) {
+      onAddCategory(cat)
+      patchRow(index, { category: cat })
+    }
+    setAddingCatRow(null)
+    setNewCat('')
+  }
 
   function track(e: { currentTarget: HTMLInputElement }, row: number, field: Field): void {
     const el = e.currentTarget
@@ -212,11 +233,48 @@ export function ClockEditor({
                       />
                     </td>
                     <td>
-                      <input
-                        value={row.category ?? ''}
-                        {...nonTargetFocus}
-                        onChange={(e) => patchRow(i, { category: e.target.value || undefined })}
-                      />
+                      {addingCatRow === i ? (
+                        <input
+                          autoFocus
+                          placeholder="New category"
+                          value={newCat}
+                          {...nonTargetFocus}
+                          onChange={(e) => setNewCat(e.target.value)}
+                          onBlur={() => commitNewCategory(i)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitNewCategory(i)
+                            else if (e.key === 'Escape') {
+                              setAddingCatRow(null)
+                              setNewCat('')
+                            }
+                          }}
+                        />
+                      ) : (
+                        <select
+                          value={row.category ?? ''}
+                          {...nonTargetFocus}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            if (v === ADD_CATEGORY) {
+                              setNewCat('')
+                              setAddingCatRow(i)
+                            } else {
+                              patchRow(i, { category: v || undefined })
+                            }
+                          }}
+                        >
+                          <option value="">—</option>
+                          {row.category && !categories.includes(row.category) && (
+                            <option value={row.category}>{row.category}</option>
+                          )}
+                          {categories.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                          <option value={ADD_CATEGORY}>➕ Add new…</option>
+                        </select>
+                      )}
                     </td>
                     <td>
                       <input

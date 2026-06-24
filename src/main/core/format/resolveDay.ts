@@ -1,6 +1,6 @@
 import type { CalendarDate } from '../types'
 import { eventLine } from '../export/simian'
-import { weekday } from '../dates'
+import { addDays, weekday } from '../dates'
 import { dayRows } from './expand'
 import { substituteDateTokens } from './tokens'
 import type { FormatSet } from './types'
@@ -39,8 +39,17 @@ export function resolveForDate(
   const events = dayRows(set, weekday(date))
   const resolver = makeResolver(sequentials, rng)
   const pop = (name: string): string | null => resolver.pop(name)
-  const apply = (text: string): string =>
-    substituteDateTokens(substituteSequentialTokens(text, pop), date)
+  const nextDay = addDays(date, 1)
+
+  // A field containing [NEXT] (Natural Grid "load next day's log") resolves its
+  // date tokens for the next day; the [NEXT] marker is then stripped.
+  const applyDates = (text: string): string => {
+    if (/\[NEXT\]/i.test(text)) {
+      return substituteDateTokens(text.replace(/\s*\[NEXT\]\s*/gi, ' ').trim(), nextDay)
+    }
+    return substituteDateTokens(text, date)
+  }
+  const apply = (text: string): string => applyDates(substituteSequentialTokens(text, pop))
 
   const lines = events.map((ev) =>
     eventLine({
