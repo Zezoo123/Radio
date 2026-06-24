@@ -6,6 +6,12 @@ import type { Cue } from '../types'
  * a minute:second offset within whatever hour the format is assigned to.
  */
 export interface FormatRow {
+  /**
+   * Optional absolute hour (0-23). When set, the row fires only at that hour
+   * (once per day). When unset, it fires at every hour the clock is used —
+   * e.g. a top-of-hour ID in a default clock.
+   */
+  hour?: number
   /** Minute within the hour, 0-59. */
   minute: number
   /** Second within the minute, 0-59. */

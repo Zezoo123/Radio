@@ -223,6 +223,7 @@ export function FormatsView(): JSX.Element {
             onChangeFormat={changeDefaultClock}
             onDeleteFormat={deleteDefaultClock}
             onAddCategory={addCategory}
+            showHour
           />
         </>
       )}

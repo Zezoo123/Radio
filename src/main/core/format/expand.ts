@@ -18,6 +18,7 @@ export function expandFormatAtHour(
   date?: CalendarDate
 ): ScheduleEvent[] {
   return format.rows
+    .filter((row) => row.hour === undefined || row.hour === hour)
     .map((row) => rowToEvent(row, hour, date))
     .sort((a, b) => a.time.localeCompare(b.time))
 }

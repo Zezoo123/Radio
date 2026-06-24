@@ -16,10 +16,13 @@ interface Props {
   onChangeFormat: (format: HourFormat) => void
   onDeleteFormat: (id: string) => void
   onAddCategory: (category: string) => void
+  /** Show the per-row Hour column (default clocks only). */
+  showHour?: boolean
 }
 
 // Sentinel select value that switches a Category cell into "type a new one" mode.
 const ADD_CATEGORY = '__add__'
+const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
 export function ClockEditor({
   formats,
@@ -29,7 +32,8 @@ export function ClockEditor({
   onAddFormat,
   onChangeFormat,
   onDeleteFormat,
-  onAddCategory
+  onAddCategory,
+  showHour = false
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
 
@@ -180,6 +184,7 @@ export function ClockEditor({
             <table className="tbl">
               <thead>
                 <tr>
+                  {showHour && <th style={{ width: 88 }}>Hour</th>}
                   <th style={{ width: 64 }}>Min</th>
                   <th style={{ width: 64 }}>Sec</th>
                   <th style={{ width: 70 }}>Cue</th>
@@ -192,6 +197,26 @@ export function ClockEditor({
               <tbody>
                 {selected.rows.map((row, i) => (
                   <tr key={i}>
+                    {showHour && (
+                      <td>
+                        <select
+                          value={row.hour ?? ''}
+                          {...nonTargetFocus}
+                          onChange={(e) =>
+                            patchRow(i, {
+                              hour: e.target.value === '' ? undefined : Number(e.target.value)
+                            })
+                          }
+                        >
+                          <option value="">every</option>
+                          {HOURS.map((h) => (
+                            <option key={h} value={h}>
+                              {String(h).padStart(2, '0')}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    )}
                     <td>
                       <input
                         type="number"

@@ -33,6 +33,25 @@ describe('default clocks (one clock applies to a whole day)', () => {
     expect(events.some((e) => e.time === '09:30:00' && e.name === 'SHOW')).toBe(true)
   })
 
+  it('a row pinned to a specific hour fires only at that hour', () => {
+    const set = emptyFormatSet()
+    set.defaultClocks!.push({
+      id: 'd',
+      name: 'D',
+      color: '#fff',
+      rows: [
+        { minute: 0, second: 0, cue: '@', name: 'EVERY' }, // every hour
+        { hour: 6, minute: 30, second: 0, cue: '+', name: 'WAKEUP' } // 06:30 only
+      ]
+    })
+    set.dayDefaults![3] = 'd'
+    const events = dayRows(set, 3)
+    expect(events.filter((e) => e.name === 'EVERY')).toHaveLength(24)
+    const wake = events.filter((e) => e.name === 'WAKEUP')
+    expect(wake).toHaveLength(1)
+    expect(wake[0].time).toBe('06:30:00')
+  })
+
   it('only days that opt in get a default (different days can differ)', () => {
     const set = emptyFormatSet()
     set.defaultClocks!.push(base)
