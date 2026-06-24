@@ -428,25 +428,12 @@ input[type='color'] {
   outline-offset: -1px;
 }
 
-/* Per-day default format selectors */
-.day-defaults {
-  margin-top: 14px;
+/* Default day column in the week grid */
+.grid-tbl .def-col {
+  border-right: 2px solid var(--accent);
 }
-.dd-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-.dd-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.dd-cell select {
-  min-width: 96px;
+.grid-tbl thead .def-col {
+  color: var(--accent);
 }
 
 /* Insert dialog */

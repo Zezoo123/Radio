@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   DEFAULT_CATEGORIES,
-  emptyDayDefaults,
+  emptyDefaultDay,
   emptyFormatSet,
   FORMAT_COLORS,
-  WEEKDAY_LABELS,
   type FormatSet,
   type HourFormat
 } from '../../../main/core/format/types'
@@ -102,7 +101,7 @@ export function FormatsView(): JSX.Element {
       ...s,
       formats: s.formats.filter((f) => f.id !== id),
       grid: { cells: s.grid.cells.map((row) => row.map((c) => (c === id ? null : c))) },
-      dayDefaults: (s.dayDefaults ?? emptyDayDefaults()).map((d) => (d === id ? null : d))
+      defaultDay: (s.defaultDay ?? emptyDefaultDay()).map((d) => (d === id ? null : d))
     }))
     if (selectedId === id) setSelectedId(null)
   }
@@ -115,11 +114,11 @@ export function FormatsView(): JSX.Element {
     })
   }
 
-  function setDayDefault(wd: number, id: string | null): void {
+  function assignDefault(hour: number, id: string | null): void {
     setSet((s) => {
-      const dd = (s.dayDefaults ?? emptyDayDefaults()).slice()
-      dd[wd] = id
-      return { ...s, dayDefaults: dd }
+      const dd = (s.defaultDay ?? emptyDefaultDay()).slice()
+      dd[hour] = id
+      return { ...s, defaultDay: dd }
     })
   }
 
@@ -200,36 +199,18 @@ export function FormatsView(): JSX.Element {
             )}
           </div>
 
+          <p className="muted" style={{ margin: '0 0 8px' }}>
+            The <strong>Default</strong> column is a full 24-hour day applied to every weekday,
+            layered under each day's grid. Paint it like the others.
+          </p>
           <WeekGrid
             grid={set.grid}
             formats={set.formats}
+            defaultDay={set.defaultDay ?? emptyDefaultDay()}
             paintId={erasing ? null : selectedId}
             onAssign={assign}
+            onAssignDefault={assignDefault}
           />
-
-          <div className="day-defaults">
-            <span className="muted">
-              Default format per day — applied to <strong>every hour</strong>, on top of the grid:
-            </span>
-            <div className="dd-row">
-              {WEEKDAY_LABELS.map((lbl, wd) => (
-                <label key={wd} className="dd-cell">
-                  <span>{lbl}</span>
-                  <select
-                    value={set.dayDefaults?.[wd] ?? ''}
-                    onChange={(e) => setDayDefault(wd, e.target.value || null)}
-                  >
-                    <option value="">(none)</option>
-                    {set.formats.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name || '(unnamed)'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </div>
         </>
       )}
 

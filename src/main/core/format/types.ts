@@ -39,10 +39,11 @@ export interface FormatSet {
   /** Categories offered in the row Category dropdown. User-extendable. */
   categories?: string[]
   /**
-   * Per-weekday default format id (length 7, weekday 0=Sun…6=Sat, or null).
-   * A day's default is applied to every hour, layered on top of the grid format.
+   * A default 24-hour day (length 24, hour 0-23 → format id or null) applied to
+   * EVERY weekday, layered on top of that day's per-hour grid format. Each hour
+   * can be a different format.
    */
-  dayDefaults?: (string | null)[]
+  defaultDay?: (string | null)[]
 }
 
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -80,8 +81,8 @@ export function emptyGrid(): WeekGrid {
   return { cells: Array.from({ length: 7 }, () => new Array<string | null>(24).fill(null)) }
 }
 
-export function emptyDayDefaults(): (string | null)[] {
-  return new Array<string | null>(7).fill(null)
+export function emptyDefaultDay(): (string | null)[] {
+  return new Array<string | null>(24).fill(null)
 }
 
 export function emptyFormatSet(): FormatSet {
@@ -89,6 +90,6 @@ export function emptyFormatSet(): FormatSet {
     formats: [],
     grid: emptyGrid(),
     categories: [...DEFAULT_CATEGORIES],
-    dayDefaults: emptyDayDefaults()
+    defaultDay: emptyDefaultDay()
   }
 }

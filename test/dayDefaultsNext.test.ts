@@ -7,13 +7,19 @@ import { mulberry32 } from '@core/sequential/rng'
 // 2026-06-24 is a Wednesday (weekday 3).
 const WED = { year: 2026, month: 6, day: 24 }
 
-describe('per-day default format', () => {
-  it('applies the day default to every hour, layered with the grid format', () => {
-    const base: HourFormat = {
-      id: 'base',
-      name: 'Base',
+describe('default 24-hour day', () => {
+  it('layers the default day (per-hour) under the grid, applied to every weekday', () => {
+    const morning: HourFormat = {
+      id: 'm',
+      name: 'Morning',
       color: '#fff',
-      rows: [{ minute: 0, second: 0, cue: '@', name: 'ID' }]
+      rows: [{ minute: 0, second: 0, cue: '@', name: 'MORNING_ID' }]
+    }
+    const night: HourFormat = {
+      id: 'n',
+      name: 'Night',
+      color: '#fff',
+      rows: [{ minute: 0, second: 0, cue: '@', name: 'NIGHT_ID' }]
     }
     const special: HourFormat = {
       id: 'sp',
@@ -22,26 +28,23 @@ describe('per-day default format', () => {
       rows: [{ minute: 30, second: 0, cue: '+', name: 'SHOW' }]
     }
     const set = emptyFormatSet()
-    set.formats.push(base, special)
-    set.dayDefaults![3] = 'base' // Wednesday default
-    set.grid.cells[3][9] = 'sp' // special only at hour 9
+    set.formats.push(morning, night, special)
+    // Default day: different formats per hour (not the same every hour).
+    set.defaultDay![8] = 'm'
+    set.defaultDay![23] = 'n'
+    set.grid.cells[3][8] = 'sp' // Wednesday adds a show at 08:30
 
-    const events = dayRows(set, 3)
-    expect(events.filter((e) => e.name === 'ID')).toHaveLength(24) // default every hour
-    expect(events.some((e) => e.time === '00:00:00' && e.name === 'ID')).toBe(true)
-    expect(events.some((e) => e.time === '09:30:00' && e.name === 'SHOW')).toBe(true)
-  })
-
-  it('adds nothing when no default is set for that weekday', () => {
-    const set = emptyFormatSet()
-    set.formats.push({
-      id: 'sp',
-      name: 'Special',
-      color: '#fff',
-      rows: [{ minute: 0, second: 0, cue: '+', name: 'X' }]
-    })
-    set.grid.cells[3][9] = 'sp'
-    expect(dayRows(set, 3)).toHaveLength(1)
+    // The default applies to EVERY weekday (check two different ones).
+    for (const wd of [1, 3]) {
+      const events = dayRows(set, wd)
+      expect(events.some((e) => e.time === '08:00:00' && e.name === 'MORNING_ID')).toBe(true)
+      expect(events.some((e) => e.time === '23:00:00' && e.name === 'NIGHT_ID')).toBe(true)
+    }
+    // Wednesday also has the grid's show layered on top at 08:30.
+    const wed = dayRows(set, 3)
+    expect(wed.some((e) => e.time === '08:30:00' && e.name === 'SHOW')).toBe(true)
+    // Hours with no default and no grid format stay empty (e.g. 03:00).
+    expect(dayRows(set, 1).some((e) => e.time.startsWith('03:'))).toBe(false)
   })
 })
 

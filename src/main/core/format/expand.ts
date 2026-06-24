@@ -39,15 +39,16 @@ function formatById(set: FormatSet, id: string | null): HourFormat | undefined {
 }
 
 /**
- * All events for one weekday (0=Sun…6=Sat), time-sorted. The weekday's default
- * format (if set) is applied to every hour, layered on top of the per-hour grid
- * format. Pass `date` to substitute date-sensitive tokens.
+ * All events for one weekday (0=Sun…6=Sat), time-sorted. The shared 24-hour
+ * default day (if set) is layered on top of the per-hour grid format, hour by
+ * hour. Pass `date` to substitute date-sensitive tokens.
  */
 export function dayRows(set: FormatSet, wd: number, date?: CalendarDate): ScheduleEvent[] {
   const events: ScheduleEvent[] = []
   const row = set.grid.cells[wd] ?? []
-  const defaultFormat = formatById(set, set.dayDefaults?.[wd] ?? null)
+  const defaultDay = set.defaultDay ?? []
   for (let hour = 0; hour < 24; hour++) {
+    const defaultFormat = formatById(set, defaultDay[hour] ?? null)
     if (defaultFormat) events.push(...expandFormatAtHour(defaultFormat, hour, date))
     const format = formatById(set, row[hour] ?? null)
     if (format) events.push(...expandFormatAtHour(format, hour, date))
