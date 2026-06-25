@@ -276,8 +276,7 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.name}
-                        placeholder={row.logRow ? '(empty)' : ''}
-                        disabled={row.logRow}
+                        placeholder={row.logRow ? 'log file name (optional)' : ''}
                         {...fieldHandlers(i, 'name')}
                         onChange={(e) => patchRow(i, { name: e.target.value })}
                       />
