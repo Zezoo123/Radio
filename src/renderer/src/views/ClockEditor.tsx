@@ -15,6 +15,7 @@ interface Props {
   onAddFormat: () => void
   onChangeFormat: (format: HourFormat) => void
   onDeleteFormat: (id: string) => void
+  onDuplicateFormat: (id: string) => void
   onAddCategory: (category: string) => void
   /** Show the per-row Hour column (default clocks only). */
   showHour?: boolean
@@ -35,6 +36,7 @@ export function ClockEditor({
   onAddFormat,
   onChangeFormat,
   onDeleteFormat,
+  onDuplicateFormat,
   onAddCategory,
   showHour = false
 }: Props): JSX.Element {
@@ -195,6 +197,9 @@ export function ClockEditor({
                 {...nonTargetFocus}
                 onChange={(e) => onChangeFormat({ ...selected, color: e.target.value })}
               />
+              <button className="btn-link" onClick={() => onDuplicateFormat(selected.id)}>
+                duplicate
+              </button>
               <button className="btn-link" onClick={() => onDeleteFormat(selected.id)}>
                 delete
               </button>

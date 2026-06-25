@@ -97,6 +97,23 @@ export function FormatsView(): JSX.Element {
     }))
   }
 
+  function duplicateClock(format: HourFormat): HourFormat {
+    return {
+      ...format,
+      id: crypto.randomUUID(),
+      name: `${format.name} copy`,
+      rows: format.rows.map((r) => ({ ...r }))
+    }
+  }
+
+  function duplicateFormat(id: string): void {
+    const orig = set.formats.find((f) => f.id === id)
+    if (!orig) return
+    const copy = duplicateClock(orig)
+    setSet((s) => ({ ...s, formats: [...s.formats, copy] }))
+    setSelectedId(copy.id)
+  }
+
   function deleteFormat(id: string): void {
     setSet((s) => ({
       ...s,
@@ -132,6 +149,14 @@ export function FormatsView(): JSX.Element {
       ...s,
       defaultClocks: (s.defaultClocks ?? []).map((c) => (c.id === clock.id ? clock : c))
     }))
+  }
+
+  function duplicateDefaultClock(id: string): void {
+    const orig = (set.defaultClocks ?? []).find((c) => c.id === id)
+    if (!orig) return
+    const copy = duplicateClock(orig)
+    setSet((s) => ({ ...s, defaultClocks: [...(s.defaultClocks ?? []), copy] }))
+    setSelectedDefaultId(copy.id)
   }
 
   function deleteDefaultClock(id: string): void {
@@ -226,6 +251,7 @@ export function FormatsView(): JSX.Element {
           onAddFormat={addFormat}
           onChangeFormat={changeFormat}
           onDeleteFormat={deleteFormat}
+          onDuplicateFormat={duplicateFormat}
           onAddCategory={addCategory}
         />
       )}
@@ -245,6 +271,7 @@ export function FormatsView(): JSX.Element {
             onAddFormat={addDefaultClock}
             onChangeFormat={changeDefaultClock}
             onDeleteFormat={deleteDefaultClock}
+            onDuplicateFormat={duplicateDefaultClock}
             onAddCategory={addCategory}
             showHour
           />
