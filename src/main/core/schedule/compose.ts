@@ -2,25 +2,19 @@ import type { CalendarDate, ScheduleDay, Section } from '../types'
 import { dateRange } from '../dates'
 import { serialize } from '../export/simian'
 import { sectionForDate, type ElementTemplate } from '../parsers/elementTemplate'
-import { programsForDate, type StationGrid } from '../parsers/stationGrid'
-import type { ProgramMap } from '../programMap'
 import { hourlyMarkerLines, DEFAULT_HOURLY, type HourlyOptions } from './hourly'
 
 /**
  * Assembles the section-grouped day(s) the station exports to Simian: per-day
  * date header, then the verbatim athan block (from the AZAN file, if loaded),
- * then a program section and one section per element template. Times are sorted
- * within each section, matching the sample files.
+ * then one section per element template. Times are sorted within each section,
+ * matching the sample files.
  *
  * NOTE: hourly-comment rows are not emitted yet — that row format is still
  * pending the user's example. They will slot in here without disturbing this.
  */
 
 export interface ComposeOptions {
-  grid?: StationGrid
-  programMap?: ProgramMap
-  /** Section header for the program block. Defaults to the grid title. */
-  programSection?: { code: string; label: string }
   /** Element templates, emitted as sections in this order. */
   templates?: ElementTemplate[]
   /** Verbatim athan rows for a given date (from the AZAN file), if loaded. */
@@ -41,14 +35,6 @@ function composeOneDay(
   warnings: Set<string>
 ): ScheduleDay {
   const sections: Section[] = []
-
-  if (opts.grid) {
-    const { events, unmapped } = programsForDate(opts.grid, date, opts.programMap ?? {})
-    for (const title of unmapped) warnings.add(`No file name mapped for program: "${title}"`)
-    const code = opts.programSection?.code ?? 'PRG'
-    const label = opts.programSection?.label ?? opts.grid.title ?? 'PROGRAMS'
-    sections.push({ code, group: label, events })
-  }
 
   for (const tpl of opts.templates ?? []) {
     sections.push(sectionForDate(tpl, date))

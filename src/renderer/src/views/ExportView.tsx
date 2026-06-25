@@ -1,23 +1,22 @@
 import { useState } from 'react'
-import type { AppConfig, AzanSummary, GridSummary, TemplateSummary } from '../../../main/session'
+import type { AppConfig, AzanSummary, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 
 interface Props {
-  grid: GridSummary | null
   templates: TemplateSummary[]
   azan: AzanSummary | null
   config: AppConfig | null
   onConfig: (c: AppConfig) => void
 }
 
-export function ExportView({ grid, templates, azan, config, onConfig }: Props): JSX.Element {
+export function ExportView({ templates, azan, config, onConfig }: Props): JSX.Element {
   const [start, setStart] = useState('2026-06-01')
   const [end, setEnd] = useState('2026-06-01')
   const [preview, setPreview] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
   const [status, setStatus] = useState('')
 
-  const ready = Boolean(grid) || templates.length > 0 || Boolean(azan)
+  const ready = templates.length > 0 || Boolean(azan)
   const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
 
   async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
@@ -69,7 +68,7 @@ export function ExportView({ grid, templates, azan, config, onConfig }: Props): 
           </button>
           {status && <span className="muted">{status}</span>}
         </div>
-        {!ready && <p className="empty">Load a grid or templates on the Import tab first.</p>}
+        {!ready && <p className="empty">Load templates on the Import tab first.</p>}
         <div className="row" style={{ marginTop: 10 }}>
           <label className="check">
             <input

@@ -2,30 +2,21 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { composeDay, composeRange, exportRange } from '@core/schedule/compose'
 import { parseElementTemplate } from '@core/parsers/elementTemplate'
-import { parseStationGrid } from '@core/parsers/stationGrid'
 import { dateHeaderLine, sectionHeaderLine } from '@core/export/simian'
 
 const fixture = (name: string): string => resolve(__dirname, 'fixtures', name)
 const SUNDAY = { year: 2026, month: 6, day: 7 }
 
 describe('compose — section-grouped day', () => {
-  it('builds a program section followed by element sections', async () => {
-    const grid = await parseStationGrid(fixture('HitsGrid.xlsx'))
+  it('builds one section per element template', async () => {
     const baheya = await parseElementTemplate(fixture('Baheya.xlsx'))
 
-    const { days, warnings } = composeDay(SUNDAY, {
-      grid,
-      programSection: { code: 'PRG', label: 'HITS' },
-      templates: [baheya]
-    })
+    const { days } = composeDay(SUNDAY, { templates: [baheya] })
 
     const day = days[0]
-    expect(day.sections).toHaveLength(2)
-    expect(day.sections[0].code).toBe('PRG')
+    expect(day.sections).toHaveLength(1)
+    expect(day.sections[0].code).toBe('ADS_1710')
     expect(day.sections[0].events.length).toBeGreaterThan(0)
-    expect(day.sections[1].code).toBe('ADS_1710')
-    // unmapped programs surface as warnings
-    expect(warnings.some((w) => w.includes('No file name mapped'))).toBe(true)
   })
 
   it('exports a date range with one date header per day', async () => {

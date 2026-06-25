@@ -1,35 +1,25 @@
 import { useEffect, useState } from 'react'
-import type { AppConfig, AzanSummary, GridSummary, TemplateSummary } from '../../main/session'
-import type { ProgramMap } from '../../main/core/programMap'
+import type { AppConfig, AzanSummary, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
 import { ImportView } from './views/ImportView'
-import { ProgramsView } from './views/ProgramsView'
 import { ExportView } from './views/ExportView'
 import { FormatsView } from './views/FormatsView'
 
-type View = 'import' | 'programs' | 'formats' | 'export'
+type View = 'import' | 'formats' | 'export'
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
-  const [grid, setGrid] = useState<GridSummary | null>(null)
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [azan, setAzan] = useState<AzanSummary | null>(null)
-  const [programMap, setProgramMap] = useState<ProgramMap>({})
   const [config, setConfig] = useState<AppConfig | null>(null)
 
   useEffect(() => {
-    window.api.loadProgramMap().then(setProgramMap)
     window.api.listTemplates().then(setTemplates)
     window.api.getConfig().then(setConfig)
   }, [])
 
-  const unmappedCount = grid
-    ? grid.programTitles.filter((t) => !programMap[t]).length
-    : 0
-
   const nav: { id: View; label: string; badge?: number }[] = [
     { id: 'import', label: 'Import' },
-    { id: 'programs', label: 'Programs', badge: unmappedCount || undefined },
     { id: 'formats', label: 'Formats' },
     { id: 'export', label: 'Export' }
   ]
@@ -54,8 +44,6 @@ export default function App(): JSX.Element {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <div className={`dot ${grid ? 'on' : ''}`} /> Grid {grid ? 'loaded' : 'none'}
-          <br />
           <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
           <br />
           <div className={`dot ${azan ? 'on' : ''}`} /> Athan {azan ? 'loaded' : 'none'}
@@ -65,28 +53,17 @@ export default function App(): JSX.Element {
       <main className="content">
         {view === 'import' && (
           <ImportView
-            grid={grid}
             templates={templates}
             azan={azan}
             config={config}
-            onGrid={setGrid}
             onTemplates={setTemplates}
             onAzan={setAzan}
             onConfig={setConfig}
           />
         )}
-        {view === 'programs' && (
-          <ProgramsView grid={grid} programMap={programMap} onSaved={setProgramMap} />
-        )}
         {view === 'formats' && <FormatsView />}
         {view === 'export' && (
-          <ExportView
-            grid={grid}
-            templates={templates}
-            azan={azan}
-            config={config}
-            onConfig={setConfig}
-          />
+          <ExportView templates={templates} azan={azan} config={config} onConfig={setConfig} />
         )}
       </main>
     </div>

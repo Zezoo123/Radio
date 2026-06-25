@@ -7,7 +7,6 @@ import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
 import type { FormatSet } from './core/format/types'
 import type { Sequential } from './core/sequential/types'
-import type { ProgramMap } from './core/programMap'
 import type { HourlyOptions } from './core/schedule/hourly'
 import type { CalendarDate } from './core/types'
 
@@ -37,18 +36,6 @@ async function saveText(
 export function registerIpc(): void {
   ipcMain.handle('app:ping', () => 'pong')
 
-  ipcMain.handle('grid:open', async () => {
-    const res = await dialog.showOpenDialog({
-      title: 'Open station grid',
-      properties: ['openFile'],
-      filters: [XLSX_FILTER]
-    })
-    if (res.canceled || !res.filePaths[0]) return null
-    return session.loadGrid(res.filePaths[0])
-  })
-
-  ipcMain.handle('grid:selectSheet', (_e, sheet: string) => session.selectGridSheet(sheet))
-
   ipcMain.handle('templates:add', async () => {
     const res = await dialog.showOpenDialog({
       title: 'Add element templates',
@@ -75,9 +62,6 @@ export function registerIpc(): void {
   ipcMain.handle('config:get', () => session.getConfig())
   ipcMain.handle('config:setAthanMode', (_e, mode: AthanMode) => session.setAthanMode(mode))
   ipcMain.handle('config:setHourly', (_e, hourly: HourlyOptions) => session.setHourly(hourly))
-
-  ipcMain.handle('programMap:load', () => session.loadProgramMap())
-  ipcMain.handle('programMap:save', (_e, map: ProgramMap) => session.saveProgramMap(map))
 
   ipcMain.handle('formats:load', () => formatStore.load())
   ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))

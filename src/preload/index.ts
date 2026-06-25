@@ -1,12 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type {
-  AppConfig,
-  AthanMode,
-  AzanSummary,
-  GridSummary,
-  TemplateSummary
-} from '../main/session'
-import type { ProgramMap } from '../main/core/programMap'
+import type { AppConfig, AthanMode, AzanSummary, TemplateSummary } from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
@@ -25,10 +18,6 @@ export interface PreviewResult {
 
 /** Typed bridge exposed to the renderer as `window.api`. */
 const api = {
-  openGrid: (): Promise<GridSummary | null> => ipcRenderer.invoke('grid:open'),
-  selectGridSheet: (sheet: string): Promise<GridSummary> =>
-    ipcRenderer.invoke('grid:selectSheet', sheet),
-
   addTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:add'),
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
@@ -41,9 +30,6 @@ const api = {
     ipcRenderer.invoke('config:setAthanMode', mode),
   setHourly: (hourly: HourlyOptions): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setHourly', hourly),
-
-  loadProgramMap: (): Promise<ProgramMap> => ipcRenderer.invoke('programMap:load'),
-  saveProgramMap: (map: ProgramMap): Promise<void> => ipcRenderer.invoke('programMap:save', map),
 
   loadFormats: (): Promise<FormatSet> => ipcRenderer.invoke('formats:load'),
   saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),
