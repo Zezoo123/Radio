@@ -22,6 +22,9 @@ interface Props {
 
 // Sentinel select value that switches a Category cell into "type a new one" mode.
 const ADD_CATEGORY = '__add__'
+// Sentinel: a one-click "load next day's log" row (auto-configured + locked).
+const NEXT_DAY_LOG = '__nextdaylog__'
+const LOG_DESCRIPTION = '[Day] [YYMMDD] Log'
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
 export function ClockEditor({
@@ -134,6 +137,22 @@ export function ClockEditor({
     onChangeFormat({ ...selected, rows: selected.rows.filter((_, i) => i !== index) })
   }
 
+  // "NEXT DAY LOG": one-click load-next-day row — 23:59:59 +, empty name,
+  // Category LOG, fixed Description, next-day on. Locked until you change category.
+  function configureLogRow(index: number): void {
+    patchRow(index, {
+      hour: 23,
+      minute: 59,
+      second: 59,
+      cue: '+',
+      name: '',
+      category: 'LOG',
+      description: LOG_DESCRIPTION,
+      nextDay: true,
+      logRow: true
+    })
+  }
+
   return (
     <div className="clock-layout">
       <div className="clock-list">
@@ -191,17 +210,17 @@ export function ClockEditor({
                   <th>Name / cart</th>
                   <th>Category</th>
                   <th>Description</th>
-                  <th style={{ width: 84 }}>Next day</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {selected.rows.map((row, i) => (
-                  <tr key={i} className={row.nextDay ? 'row-next' : ''}>
+                  <tr key={i} className={row.logRow ? 'row-log' : ''}>
                     {showHour && (
                       <td>
                         <select
                           value={row.hour ?? ''}
+                          disabled={row.logRow}
                           {...nonTargetFocus}
                           onChange={(e) =>
                             patchRow(i, {
@@ -224,6 +243,7 @@ export function ClockEditor({
                         min={0}
                         max={59}
                         value={row.minute}
+                        disabled={row.logRow}
                         {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { minute: clamp(+e.target.value) })}
                       />
@@ -234,6 +254,7 @@ export function ClockEditor({
                         min={0}
                         max={59}
                         value={row.second}
+                        disabled={row.logRow}
                         {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { second: clamp(+e.target.value) })}
                       />
@@ -241,6 +262,7 @@ export function ClockEditor({
                     <td>
                       <select
                         value={row.cue}
+                        disabled={row.logRow}
                         {...nonTargetFocus}
                         onChange={(e) => patchRow(i, { cue: e.target.value as Cue })}
                       >
@@ -254,6 +276,8 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.name}
+                        placeholder={row.logRow ? '(empty)' : ''}
+                        disabled={row.logRow}
                         {...fieldHandlers(i, 'name')}
                         onChange={(e) => patchRow(i, { name: e.target.value })}
                       />
@@ -277,15 +301,22 @@ export function ClockEditor({
                         />
                       ) : (
                         <select
-                          value={row.category ?? ''}
+                          value={row.logRow ? NEXT_DAY_LOG : row.category ?? ''}
                           {...nonTargetFocus}
                           onChange={(e) => {
                             const v = e.target.value
                             if (v === ADD_CATEGORY) {
                               setNewCat('')
                               setAddingCatRow(i)
+                            } else if (v === NEXT_DAY_LOG) {
+                              configureLogRow(i)
                             } else {
-                              patchRow(i, { category: v || undefined })
+                              // Switching away from NEXT DAY LOG unlocks the row.
+                              patchRow(i, {
+                                category: v || undefined,
+                                logRow: undefined,
+                                nextDay: undefined
+                              })
                             }
                           }}
                         >
@@ -298,6 +329,7 @@ export function ClockEditor({
                               {c}
                             </option>
                           ))}
+                          <option value={NEXT_DAY_LOG}>📅 NEXT DAY LOG</option>
                           <option value={ADD_CATEGORY}>➕ Add new…</option>
                         </select>
                       )}
@@ -306,21 +338,13 @@ export function ClockEditor({
                       <input
                         dir="auto"
                         value={row.description ?? ''}
+                        disabled={row.logRow}
+                        title={row.logRow ? 'Auto-filled — resolves to the next day' : undefined}
                         {...fieldHandlers(i, 'description')}
                         onChange={(e) =>
                           patchRow(i, { description: e.target.value || undefined })
                         }
                       />
-                    </td>
-                    <td>
-                      <button
-                        className={`day-toggle ${row.nextDay ? 'on' : ''}`}
-                        title="When on, this row's dates resolve to the next calendar day (for the load-next-day LOG row)"
-                        {...nonTargetFocus}
-                        onClick={() => patchRow(i, { nextDay: row.nextDay ? undefined : true })}
-                      >
-                        {row.nextDay ? 'next day' : 'today'}
-                      </button>
                     </td>
                     <td>
                       <button className="btn-link" onClick={() => removeRow(i)}>

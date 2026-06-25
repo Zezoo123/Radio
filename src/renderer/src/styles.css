@@ -222,28 +222,14 @@ label {
   border-left: 3px solid var(--warn);
 }
 
-/* Per-row "Next day" toggle */
-.day-toggle {
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--muted);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+/* Locked "NEXT DAY LOG" row */
+.tbl tr.row-log td {
+  background: rgba(79, 140, 255, 0.08);
 }
-.day-toggle:hover {
-  border-color: var(--accent);
-}
-.day-toggle.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-.tbl tr.row-next td {
-  background: rgba(79, 140, 255, 0.07);
+.tbl tr.row-log input:disabled,
+.tbl tr.row-log select:disabled {
+  color: var(--text);
+  opacity: 0.75;
 }
 
 input,

@@ -23,6 +23,8 @@ export interface FormatRow {
   description?: string
   /** When true, this row's date tokens resolve to the next day (the LOG row). */
   nextDay?: boolean
+  /** UI marker: this row was set up by the "NEXT DAY LOG" category and is locked. */
+  logRow?: boolean
 }
 
 export interface HourFormat {
