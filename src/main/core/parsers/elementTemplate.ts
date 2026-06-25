@@ -14,7 +14,9 @@ import type { CalendarDate, ScheduleEvent, Section } from '../types'
  *
  * Header rows may be preceded by blank rows, so positions are detected, not
  * hard-coded. A filled track cell on day d yields `<CODE>_<TRACK>` (underscores
- * throughout; the code keeps its own underscores).
+ * throughout; the code keeps its own underscores). The special cell value `1`
+ * means "play the code itself once" and yields the bare `<CODE>` with no track
+ * suffix.
  */
 
 interface DayColumn {
@@ -141,7 +143,10 @@ export function eventsForDate(tpl: ElementTemplate, date: CalendarDate): Schedul
   for (const row of tpl.timeRows) {
     const track = row.tracks.get(column.col)
     if (!track) continue
-    events.push({ time: row.time, cue: '+', name: `${tpl.code}_${track}` })
+    // A cell of `1` means "play the code itself once" — emit the bare code with
+    // no track suffix. Any other value is a track letter → `<CODE>_<TRACK>`.
+    const name = track === '1' ? tpl.code : `${tpl.code}_${track}`
+    events.push({ time: row.time, cue: '+', name })
   }
   events.sort((a, b) => a.time.localeCompare(b.time))
   return events

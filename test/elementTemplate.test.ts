@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import {
   eventsForDate,
   parseElementTemplate,
-  sectionForDate
+  sectionForDate,
+  type ElementTemplate
 } from '@core/parsers/elementTemplate'
 import { serialize } from '@core/export/simian'
 import { dateRange } from '@core/dates'
@@ -40,6 +41,30 @@ describe('element template parser', () => {
 
     // Day 5 (Fri): no spots scheduled.
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 5 })).toHaveLength(0)
+  })
+
+  it('treats a cell of "1" as "play the bare code once" (no track suffix)', () => {
+    // Day 1 col -> a track letter; day 2 col -> the "1" sentinel.
+    const tpl: ElementTemplate = {
+      group: 'Promo',
+      code: 'ADS_1710',
+      dayColumns: [
+        { col: 2, day: 1, month: 6, year: 2026 },
+        { col: 3, day: 2, month: 6, year: 2026 }
+      ],
+      timeRows: [
+        {
+          time: '08:00:00',
+          tracks: new Map([
+            [2, 'A'],
+            [3, '1']
+          ])
+        }
+      ]
+    }
+
+    expect(eventsForDate(tpl, { year: 2026, month: 6, day: 1 })[0].name).toBe('ADS_1710_A')
+    expect(eventsForDate(tpl, { year: 2026, month: 6, day: 2 })[0].name).toBe('ADS_1710')
   })
 })
 
