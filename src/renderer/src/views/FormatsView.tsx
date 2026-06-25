@@ -162,6 +162,23 @@ export function FormatsView(): JSX.Element {
     setStatus(res.saved ? `Saved ${res.path}` : 'Export cancelled')
   }
 
+  async function doSaveFormatFile(): Promise<void> {
+    const res = await window.api.saveFormatFile(set)
+    setStatus(res.saved ? `Format saved to ${res.path}` : 'Save cancelled')
+  }
+
+  async function doLoadFormatFile(): Promise<void> {
+    const res = await window.api.loadFormatFile()
+    if (res.status === 'loaded' && res.set) {
+      setSet(res.set)
+      setSelectedId(res.set.formats[0]?.id ?? null)
+      setSelectedDefaultId(res.set.defaultClocks?.[0]?.id ?? null)
+      setStatus('Format file loaded')
+    } else if (res.status === 'invalid') {
+      setStatus('Not a valid format file')
+    }
+  }
+
   return (
     <div className="view wide">
       <div className="card-head">
@@ -187,6 +204,12 @@ export function FormatsView(): JSX.Element {
               Week grid
             </button>
           </div>
+          <button className="btn" title="Save this whole setup to a file" onClick={doSaveFormatFile}>
+            Save format…
+          </button>
+          <button className="btn" title="Load a saved format file" onClick={doLoadFormatFile}>
+            Load format…
+          </button>
         </div>
       </div>
       <p className="muted">

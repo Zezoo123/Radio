@@ -47,6 +47,10 @@ const api = {
 
   loadFormats: (): Promise<FormatSet> => ipcRenderer.invoke('formats:load'),
   saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),
+  saveFormatFile: (set: FormatSet): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('formats:saveToFile', set),
+  loadFormatFile: (): Promise<{ status: 'loaded' | 'cancelled' | 'invalid'; set?: FormatSet }> =>
+    ipcRenderer.invoke('formats:loadFromFile'),
   exportFormatForDate: (
     set: FormatSet,
     date: CalendarDate

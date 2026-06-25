@@ -1,7 +1,7 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { session, type AthanMode } from './session'
-import { formatStore } from './formats'
+import { formatStore, normalizeFormatSet } from './formats'
 import { serializeWeek } from './core/format/expand'
 import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
@@ -81,6 +81,38 @@ export function registerIpc(): void {
 
   ipcMain.handle('formats:load', () => formatStore.load())
   ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))
+
+  // Export/import the whole format set (clocks + grid + defaults) as a portable
+  // file the user can back up, move between PCs, or keep several of.
+  const FORMAT_FILTER = { name: 'Radio grid format', extensions: ['json'] }
+
+  ipcMain.handle('formats:saveToFile', async (_e, set: FormatSet) => {
+    const win = BrowserWindow.getFocusedWindow() ?? undefined
+    const res = await dialog.showSaveDialog(win!, {
+      title: 'Save weekly grid format',
+      defaultPath: 'weekly-grid.json',
+      filters: [FORMAT_FILTER]
+    })
+    if (res.canceled || !res.filePath) return { saved: false }
+    await writeFile(res.filePath, JSON.stringify(set, null, 2), 'utf-8')
+    return { saved: true, path: res.filePath }
+  })
+
+  ipcMain.handle('formats:loadFromFile', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Load weekly grid format',
+      properties: ['openFile'],
+      filters: [FORMAT_FILTER]
+    })
+    if (res.canceled || !res.filePaths[0]) return { status: 'cancelled' as const }
+    try {
+      const raw = JSON.parse(await readFile(res.filePaths[0], 'utf-8'))
+      const set = normalizeFormatSet(raw)
+      return set ? { status: 'loaded' as const, set } : { status: 'invalid' as const }
+    } catch {
+      return { status: 'invalid' as const }
+    }
+  })
 
   ipcMain.handle('sequentials:list', () => sequentialStore.load())
   ipcMain.handle('sequentials:save', (_e, seq: Sequential) => sequentialStore.upsert(seq))
