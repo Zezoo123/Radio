@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { FormatRow, HourFormat } from '../../../main/core/format/types'
 import { InsertDialog } from './InsertDialog'
@@ -58,6 +58,14 @@ export function ClockEditor({
   // Row index whose Category cell is currently entering a brand-new category.
   const [addingCatRow, setAddingCatRow] = useState<number | null>(null)
   const [newCat, setNewCat] = useState('')
+
+  // Clock (in the list) awaiting delete confirmation; auto-cancels after a moment.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!confirmDeleteId) return
+    const t = setTimeout(() => setConfirmDeleteId(null), 3000)
+    return () => clearTimeout(t)
+  }, [confirmDeleteId])
 
   function commitNewCategory(index: number): void {
     const cat = newCat.trim()
@@ -166,15 +174,39 @@ export function ClockEditor({
         </div>
         {formats.length === 0 && <p className="empty">No formats yet.</p>}
         {formats.map((f) => (
-          <button
-            key={f.id}
-            className={`clock-item ${f.id === selectedId ? 'on' : ''}`}
-            onClick={() => onSelect(f.id)}
-          >
-            <span className="swatch" style={{ background: f.color }} />
-            <span className="clock-name">{f.name || '(unnamed)'}</span>
-            <span className="muted">{f.rows.length}</span>
-          </button>
+          <div key={f.id} className={`clock-item ${f.id === selectedId ? 'on' : ''}`}>
+            <button
+              className="clock-select"
+              onClick={() => {
+                onSelect(f.id)
+                setConfirmDeleteId(null)
+              }}
+            >
+              <span className="swatch" style={{ background: f.color }} />
+              <span className="clock-name">{f.name || '(unnamed)'}</span>
+              <span className="muted">{f.rows.length}</span>
+            </button>
+            {confirmDeleteId === f.id ? (
+              <button
+                className="trash confirm"
+                title="Click again to delete"
+                onClick={() => {
+                  onDeleteFormat(f.id)
+                  setConfirmDeleteId(null)
+                }}
+              >
+                Delete?
+              </button>
+            ) : (
+              <button
+                className="trash"
+                title="Delete clock"
+                onClick={() => setConfirmDeleteId(f.id)}
+              >
+                <TrashIcon />
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
@@ -199,9 +231,6 @@ export function ClockEditor({
               />
               <button className="btn-link" onClick={() => onDuplicateFormat(selected.id)}>
                 duplicate
-              </button>
-              <button className="btn-link" onClick={() => onDeleteFormat(selected.id)}>
-                delete
               </button>
             </div>
 
@@ -390,4 +419,23 @@ export function ClockEditor({
 function clamp(n: number): number {
   if (Number.isNaN(n)) return 0
   return Math.max(0, Math.min(59, Math.trunc(n)))
+}
+
+function TrashIcon(): JSX.Element {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  )
 }

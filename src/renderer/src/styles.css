@@ -9,6 +9,7 @@
   --border: #2a3038;
   --ok: #49c281;
   --warn: #e0a23c;
+  --danger: #e0645f;
 }
 
 * {
@@ -323,25 +324,73 @@ select:focus {
 .clock-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  padding: 8px;
+  gap: 2px;
   border-radius: 8px;
-  cursor: pointer;
+  padding-right: 4px;
 }
 .clock-item:hover,
 .clock-item.on {
   background: var(--panel-2);
+}
+.clock-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 8px;
+  cursor: pointer;
 }
 .clock-name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.trash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.clock-item:hover .trash {
+  opacity: 1;
+}
+.trash:hover {
+  color: #fff;
+  background: var(--danger);
+}
+.trash.confirm {
+  opacity: 1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--danger);
+  padding: 4px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  animation: pop 0.13s ease-out;
+}
+@keyframes pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .swatch {
   width: 12px;
