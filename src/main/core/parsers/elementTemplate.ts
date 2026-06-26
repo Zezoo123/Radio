@@ -43,6 +43,8 @@ export interface ElementTemplate {
   code: string
   dayColumns: DayColumn[]
   timeRows: TimeRow[]
+  /** Simian Category emitted for every event of this template (e.g. `AUDIO`). */
+  category?: string
 }
 
 const TIME_RE = /^\d{1,2}:\d{2}:\d{2}$/
@@ -146,7 +148,7 @@ export function eventsForDate(tpl: ElementTemplate, date: CalendarDate): Schedul
     // A cell of `1` means "play the code itself once" — emit the bare code with
     // no track suffix. Any other value is a track letter → `<CODE>_<TRACK>`.
     const name = track === '1' ? tpl.code : `${tpl.code}_${track}`
-    events.push({ time: row.time, cue: '+', name })
+    events.push({ time: row.time, cue: '+', name, category: tpl.category })
   }
   events.sort((a, b) => a.time.localeCompare(b.time))
   return events

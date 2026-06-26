@@ -6,17 +6,43 @@ import { ExportView } from './views/ExportView'
 import { FormatsView } from './views/FormatsView'
 
 type View = 'import' | 'formats' | 'export'
+type Theme = 'dark' | 'light'
+type Contrast = 'normal' | 'high'
+
+/** Read a persisted UI preference, tolerating storage being unavailable. */
+function readPref<T extends string>(key: string, fallback: T): T {
+  try {
+    return (localStorage.getItem(key) as T) || fallback
+  } catch {
+    return fallback
+  }
+}
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [azan, setAzan] = useState<AzanSummary | null>(null)
   const [config, setConfig] = useState<AppConfig | null>(null)
+  const [theme, setTheme] = useState<Theme>(() => readPref('ui.theme', 'dark'))
+  const [contrast, setContrast] = useState<Contrast>(() => readPref('ui.contrast', 'normal'))
 
   useEffect(() => {
     window.api.listTemplates().then(setTemplates)
     window.api.getConfig().then(setConfig)
   }, [])
+
+  // Apply + persist the appearance choice (light/dark, normal/high contrast).
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = theme
+    root.dataset.contrast = contrast
+    try {
+      localStorage.setItem('ui.theme', theme)
+      localStorage.setItem('ui.contrast', contrast)
+    } catch {
+      /* storage unavailable — keep the in-memory choice */
+    }
+  }, [theme, contrast])
 
   const nav: { id: View; label: string; badge?: number }[] = [
     { id: 'import', label: 'Import' },
@@ -43,10 +69,37 @@ export default function App(): JSX.Element {
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
-          <br />
-          <div className={`dot ${azan ? 'on' : ''}`} /> Athan {azan ? 'loaded' : 'none'}
+        <div className="sidebar-bottom">
+          <div className="theme-control">
+            <div className="theme-label">Appearance</div>
+            <div className="row seg">
+              <button
+                className={`seg-btn ${theme === 'light' ? 'on' : ''}`}
+                onClick={() => setTheme('light')}
+              >
+                Light
+              </button>
+              <button
+                className={`seg-btn ${theme === 'dark' ? 'on' : ''}`}
+                onClick={() => setTheme('dark')}
+              >
+                Dark
+              </button>
+            </div>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={contrast === 'high'}
+                onChange={(e) => setContrast(e.target.checked ? 'high' : 'normal')}
+              />
+              High contrast
+            </label>
+          </div>
+          <div className="sidebar-foot">
+            <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
+            <br />
+            <div className={`dot ${azan ? 'on' : ''}`} /> Athan {azan ? 'loaded' : 'none'}
+          </div>
         </div>
       </aside>
 

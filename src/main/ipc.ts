@@ -2,9 +2,10 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { session, type AthanMode } from './session'
 import { formatStore, normalizeFormatSet } from './formats'
-import { serializeWeek } from './core/format/expand'
+import { gridHasAssignments, serializeWeek } from './core/format/expand'
 import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
+import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
 import type { Sequential } from './core/sequential/types'
 import type { HourlyOptions } from './core/schedule/hourly'
@@ -15,6 +16,33 @@ const XLSX_FILTER = { name: 'Excel files', extensions: ['xlsx', 'xlsm'] }
 interface RangeArg {
   start: CalendarDate
   end: CalendarDate
+}
+
+const dateKey = (d: CalendarDate): string => `${d.year}-${d.month}-${d.day}`
+
+/**
+ * Resolve the Formats week-grid clock rows for every day in a range, threading
+ * the sequential queues day by day. `persist: false` (preview) uses a per-date
+ * seeded rng and leaves queues untouched; `persist: true` (export) uses the live
+ * rng and returns the advanced queues for the caller to save.
+ */
+async function resolveFormatLines(
+  start: CalendarDate,
+  end: CalendarDate,
+  persist: boolean
+): Promise<{ byDate: Map<string, string[]>; sequentials: Sequential[] }> {
+  const set = await formatStore.load()
+  let seqs = await sequentialStore.load()
+  const byDate = new Map<string, string[]>()
+  for (const date of dateRange(start, end)) {
+    const { text, sequentials } = persist
+      ? resolveForDate(set, date, seqs)
+      : resolveForDate(set, date, seqs, seededRngForDate(date))
+    seqs = sequentials
+    const lines = text.split('\r\n').filter(Boolean)
+    if (lines.length) byDate.set(dateKey(date), lines)
+  }
+  return { byDate, sequentials: seqs }
 }
 
 /** Show a save dialog and write text to the chosen path. */
@@ -48,6 +76,18 @@ export function registerIpc(): void {
 
   ipcMain.handle('templates:remove', (_e, index: number) => session.removeTemplate(index))
   ipcMain.handle('templates:list', () => session.templateSummaries())
+
+  ipcMain.handle(
+    'templates:setCategory',
+    (_e, { index, category }: { index: number; category: string }) =>
+      session.setTemplateCategory(index, category)
+  )
+
+  ipcMain.handle(
+    'templates:preview',
+    (_e, { index, start, end }: { index: number } & RangeArg) =>
+      session.previewTemplate(index, start, end)
+  )
 
   ipcMain.handle('azan:open', async () => {
     const res = await dialog.showOpenDialog({
@@ -129,10 +169,21 @@ export function registerIpc(): void {
     saveText(serializeWeek(set), 'format_week.txt')
   )
 
-  ipcMain.handle('schedule:preview', (_e, { start, end }: RangeArg) => session.preview(start, end))
+  // True when the Formats set has anything that would emit rows — used to enable
+  // the Export tab even with no audio templates / athan loaded.
+  ipcMain.handle('formats:hasAssignments', async () => {
+    const set = await formatStore.load()
+    return gridHasAssignments(set.grid) || (set.dayDefaults ?? []).some(Boolean)
+  })
+
+  ipcMain.handle('schedule:preview', async (_e, { start, end }: RangeArg) => {
+    const { byDate } = await resolveFormatLines(start, end, false)
+    return session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
+  })
 
   ipcMain.handle('schedule:export', async (_e, { start, end }: RangeArg) => {
-    const { text, warnings } = session.preview(start, end)
+    const { byDate, sequentials } = await resolveFormatLines(start, end, true)
+    const { text, warnings } = session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
     const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
       start.day
     ).padStart(2, '0')}.txt`
@@ -144,6 +195,8 @@ export function registerIpc(): void {
     })
     if (res.canceled || !res.filePath) return { saved: false, warnings }
     await writeFile(res.filePath, text, 'utf-8')
+    // Persist the advanced sequential queues only once the file is written.
+    await sequentialStore.save(sequentials)
     return { saved: true, path: res.filePath, warnings }
   })
 }

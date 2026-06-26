@@ -22,6 +22,13 @@ const api = {
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),
+  setTemplateCategory: (index: number, category: string): Promise<TemplateSummary[]> =>
+    ipcRenderer.invoke('templates:setCategory', { index, category }),
+  previewTemplate: (
+    index: number,
+    start: CalendarDate,
+    end: CalendarDate
+  ): Promise<PreviewResult> => ipcRenderer.invoke('templates:preview', { index, start, end }),
 
   openAzan: (): Promise<AzanSummary | null> => ipcRenderer.invoke('azan:open'),
 
@@ -53,6 +60,7 @@ const api = {
   deleteSequential: (id: string): Promise<Sequential[]> =>
     ipcRenderer.invoke('sequentials:delete', id),
 
+  hasFormats: (): Promise<boolean> => ipcRenderer.invoke('formats:hasAssignments'),
   preview: (start: CalendarDate, end: CalendarDate): Promise<PreviewResult> =>
     ipcRenderer.invoke('schedule:preview', { start, end }),
   exportLog: (start: CalendarDate, end: CalendarDate): Promise<ExportResult> =>

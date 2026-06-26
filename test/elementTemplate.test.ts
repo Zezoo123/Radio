@@ -66,6 +66,15 @@ describe('element template parser', () => {
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 1 })[0].name).toBe('ADS_1710_A')
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 2 })[0].name).toBe('ADS_1710')
   })
+
+  it('emits the template category on every event (Simian Category column)', async () => {
+    const tpl = await parseElementTemplate(fixture('Baheya.xlsx'))
+    tpl.category = 'AUDIO'
+    const line = serialize([
+      { year: 2026, month: 6, day: 1, sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })] }
+    ])
+    expect(line).toContain('08:20:01|+|ADS_1710_A|AUDIO|')
+  })
 })
 
 describe('Simian export — Baheya golden file', () => {

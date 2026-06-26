@@ -35,6 +35,8 @@ export interface ScheduleDay {
   month: number
   /** 1-31. */
   day: number
+  /** Resolved week-grid clock rows (from the Formats set), emitted first. */
+  formatLines?: string[]
   /** Top-of-hour comment marker rows. */
   hourlyLines?: string[]
   /** Verbatim athan rows (from the AZAN file) emitted right after the header. */

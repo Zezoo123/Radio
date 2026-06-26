@@ -2,6 +2,7 @@ import type { CalendarDate, ScheduleDay, Section } from '../types'
 import { dateRange } from '../dates'
 import { serialize } from '../export/simian'
 import { sectionForDate, type ElementTemplate } from '../parsers/elementTemplate'
+import { withRowCategory } from '../export/simian'
 import { hourlyMarkerLines, DEFAULT_HOURLY, type HourlyOptions } from './hourly'
 
 /**
@@ -19,6 +20,10 @@ export interface ComposeOptions {
   templates?: ElementTemplate[]
   /** Verbatim athan rows for a given date (from the AZAN file), if loaded. */
   athanLinesForDate?: (date: CalendarDate) => string[] | null
+  /** When set, the Category column of every athan row is rewritten to this. */
+  athanCategory?: string
+  /** Resolved week-grid clock rows for a given date (from the Formats set). */
+  formatLinesForDate?: (date: CalendarDate) => string[]
   /** Top-of-hour comment markers. */
   hourly?: HourlyOptions
 }
@@ -40,7 +45,11 @@ function composeOneDay(
     sections.push(sectionForDate(tpl, date))
   }
 
-  const athanLines = opts.athanLinesForDate?.(date) ?? undefined
+  const rawAthan = opts.athanLinesForDate?.(date) ?? undefined
+  const athanLines =
+    rawAthan && opts.athanCategory
+      ? rawAthan.map((l) => withRowCategory(l, opts.athanCategory!))
+      : rawAthan
   if (opts.athanLinesForDate && !athanLines) {
     warnings.add(
       `No athan times for ${date.year}-${String(date.month).padStart(2, '0')}-${String(
@@ -52,7 +61,9 @@ function composeOneDay(
   const hourly = opts.hourly ?? DEFAULT_HOURLY
   const hourlyLines = hourlyMarkerLines(hourly)
 
-  return { ...date, hourlyLines, athanLines, sections }
+  const formatLines = opts.formatLinesForDate?.(date)
+
+  return { ...date, formatLines, hourlyLines, athanLines, sections }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {

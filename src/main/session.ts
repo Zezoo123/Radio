@@ -12,6 +12,10 @@ export interface TemplateSummary {
   group: string
   code: string
   timeCount: number
+  category: string
+  /** Earliest/latest date the template covers, `YYYY-MM-DD` (null if empty). */
+  firstDate: string | null
+  lastDate: string | null
 }
 
 export interface AzanSummary {
@@ -40,9 +44,11 @@ class Session {
   private athanMode: AthanMode = 'off'
   private hourly: HourlyOptions = { ...DEFAULT_HOURLY }
 
+  /** Import element templates as "audio": every event gets the AUDIO category. */
   async addTemplates(filePaths: string[]): Promise<TemplateSummary[]> {
     for (const filePath of filePaths) {
       const template = await parseElementTemplate(filePath)
+      template.category = 'AUDIO'
       this.templates.push({ fileName: basename(filePath), template })
     }
     return this.templateSummaries()
@@ -53,13 +59,41 @@ class Session {
     return this.templateSummaries()
   }
 
+  /** Change the Simian Category emitted for one template's events. */
+  setTemplateCategory(index: number, category: string): TemplateSummary[] {
+    const t = this.templates[index]
+    if (t) t.template.category = category
+    return this.templateSummaries()
+  }
+
+  /** Compose ONLY one template over a date range — for a per-template preview. */
+  previewTemplate(
+    index: number,
+    start: CalendarDate,
+    end: CalendarDate
+  ): { text: string; warnings: string[] } {
+    const t = this.templates[index]
+    if (!t) return { text: '', warnings: [] }
+    return exportRange(start, end, { templates: [t.template] })
+  }
+
   templateSummaries(): TemplateSummary[] {
-    return this.templates.map(({ fileName, template }) => ({
-      fileName,
-      group: template.group,
-      code: template.code,
-      timeCount: template.timeRows.length
-    }))
+    return this.templates.map(({ fileName, template }) => {
+      const cols = [...template.dayColumns].sort(
+        (a, b) => a.year - b.year || a.month - b.month || a.day - b.day
+      )
+      const iso = (c: { year: number; month: number; day: number }): string =>
+        `${c.year}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`
+      return {
+        fileName,
+        group: template.group,
+        code: template.code,
+        timeCount: template.timeRows.length,
+        category: template.category ?? '',
+        firstDate: cols.length ? iso(cols[0]) : null,
+        lastDate: cols.length ? iso(cols[cols.length - 1]) : null
+      }
+    })
   }
 
   async loadAzan(filePath: string): Promise<AzanSummary> {
@@ -94,7 +128,9 @@ class Session {
     }
   }
 
-  private composeOptions(): ComposeOptions {
+  private composeOptions(
+    formatLinesForDate?: (date: CalendarDate) => string[]
+  ): ComposeOptions {
     const azan = this.azan
     let athanSource: ComposeOptions['athanLinesForDate']
     if (this.athanMode === 'import' && azan) {
@@ -105,12 +141,23 @@ class Session {
     return {
       templates: this.templates.map((t) => t.template),
       athanLinesForDate: athanSource,
+      athanCategory: 'ATHAN',
+      formatLinesForDate,
       hourly: this.hourly
     }
   }
 
-  preview(start: CalendarDate, end: CalendarDate): { text: string; warnings: string[] } {
-    return exportRange(start, end, this.composeOptions())
+  /**
+   * Compose the schedule for a range. `formatLinesForDate` (the resolved Formats
+   * clock rows per day) is injected by the caller, which owns the Formats set and
+   * the sequential queues.
+   */
+  preview(
+    start: CalendarDate,
+    end: CalendarDate,
+    formatLinesForDate?: (date: CalendarDate) => string[]
+  ): { text: string; warnings: string[] } {
+    return exportRange(start, end, this.composeOptions(formatLinesForDate))
   }
 
   dayCount(start: CalendarDate, end: CalendarDate): number {

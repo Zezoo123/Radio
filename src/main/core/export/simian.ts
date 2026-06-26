@@ -72,14 +72,30 @@ export function eventLine(event: ScheduleEvent): string {
   return base
 }
 
+/**
+ * Rewrite the Category column (the 4th `|`-field, `time|cue|name|CATEGORY|desc`)
+ * of an already-formatted row. Used to relabel verbatim athan rows. Rows with
+ * fewer than 4 fields are returned unchanged.
+ */
+export function withRowCategory(line: string, category: string): string {
+  const fields = line.split('|')
+  if (fields.length < 4) return line
+  fields[3] = category
+  return fields.join('|')
+}
+
 /** Lines for one section: header (always) followed by its events. */
 export function sectionLines(section: Section): string[] {
   return [sectionHeaderLine(section.code, section.group), ...section.events.map(eventLine)]
 }
 
-/** Lines for one day: date header, hourly markers, athan rows, then sections. */
+/**
+ * Lines for one day: date header, then the resolved week-grid clock rows, hourly
+ * markers, the athan block, and finally one section per element template.
+ */
 export function dayLines(day: ScheduleDay): string[] {
   const lines = dateHeaderBlock(day.year, day.month, day.day)
+  if (day.formatLines?.length) lines.push(...day.formatLines)
   if (day.hourlyLines?.length) lines.push(...day.hourlyLines)
   if (day.athanLines?.length) lines.push(...day.athanLines)
   for (const section of day.sections) lines.push(...sectionLines(section))

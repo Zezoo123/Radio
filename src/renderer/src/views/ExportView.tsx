@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AppConfig, AzanSummary, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 
@@ -15,8 +15,14 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
   const [preview, setPreview] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
   const [status, setStatus] = useState('')
+  const [hasFormats, setHasFormats] = useState(false)
 
-  const ready = templates.length > 0 || Boolean(azan)
+  // Re-checked each time the tab mounts, so it reflects the latest saved Formats.
+  useEffect(() => {
+    window.api.hasFormats().then(setHasFormats)
+  }, [])
+
+  const ready = hasFormats || templates.length > 0 || Boolean(azan)
   const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
 
   async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
@@ -48,7 +54,8 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
     <div className="view">
       <h1>Export</h1>
       <p className="muted">
-        Pick a single day or a date range, preview the Simian log, then export. A single day is just
+        Pick a single day or a date range, preview the Simian log, then export. Each day combines the
+        Formats week-grid schedule with the imported audio templates and athan. A single day is just
         the same start and end date.
       </p>
 
@@ -68,7 +75,11 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
           </button>
           {status && <span className="muted">{status}</span>}
         </div>
-        {!ready && <p className="empty">Load templates on the Import tab first.</p>}
+        {!ready && (
+          <p className="empty">
+            Paint a Formats week grid, or import audio templates / athan first.
+          </p>
+        )}
         <div className="row" style={{ marginTop: 10 }}>
           <label className="check">
             <input
