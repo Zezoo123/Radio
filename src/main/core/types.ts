@@ -41,6 +41,8 @@ export interface ScheduleDay {
   hourlyLines?: string[]
   /** Verbatim athan rows (from the AZAN file) emitted right after the header. */
   athanLines?: string[]
+  /** Promo rows (program trailers) distributed across the day. */
+  promoLines?: string[]
   sections: Section[]
 }
 

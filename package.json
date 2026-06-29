@@ -1,6 +1,6 @@
 {
   "name": "radio-simian-scheduler",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Desktop app that builds daily radio playout logs (programs, audio elements, athan, hourly markers) for import into BSI Simian Pro.",
   "main": "./out/main/index.js",
   "author": "Zeyad Abdellatif Awadalla",

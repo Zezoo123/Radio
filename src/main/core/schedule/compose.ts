@@ -24,6 +24,8 @@ export interface ComposeOptions {
   athanCategory?: string
   /** Resolved week-grid clock rows for a given date (from the Formats set). */
   formatLinesForDate?: (date: CalendarDate) => string[]
+  /** Promo rows (program trailers) for a given date. */
+  promoLinesForDate?: (date: CalendarDate) => string[]
   /** Top-of-hour comment markers. */
   hourly?: HourlyOptions
 }
@@ -62,8 +64,9 @@ function composeOneDay(
   const hourlyLines = hourlyMarkerLines(hourly)
 
   const formatLines = opts.formatLinesForDate?.(date)
+  const promoLines = opts.promoLinesForDate?.(date)
 
-  return { ...date, formatLines, hourlyLines, athanLines, sections }
+  return { ...date, formatLines, hourlyLines, athanLines, promoLines, sections }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {

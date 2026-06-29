@@ -98,6 +98,7 @@ export function dayLines(day: ScheduleDay): string[] {
   if (day.formatLines?.length) lines.push(...day.formatLines)
   if (day.hourlyLines?.length) lines.push(...day.hourlyLines)
   if (day.athanLines?.length) lines.push(...day.athanLines)
+  if (day.promoLines?.length) lines.push(...day.promoLines)
   for (const section of day.sections) lines.push(...sectionLines(section))
   return lines
 }

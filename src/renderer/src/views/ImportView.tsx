@@ -44,6 +44,12 @@ export function ImportView({
     onConfig(await window.api.setAthanMode('calculate'))
   }
 
+  async function addPromos(): Promise<void> {
+    setMenuOpen(false)
+    const res = await window.api.openPromos()
+    if (res) onConfig(await window.api.getConfig())
+  }
+
   // --- List actions ---
   async function removeTemplate(index: number): Promise<void> {
     if (previewIndex !== null) setPreviewIndex(null)
@@ -115,6 +121,10 @@ export function ImportView({
                 <button className="menu-item" onClick={addAthanCalculate}>
                   <strong>Athan — calculate</strong>
                   <span className="muted">Computed for Cairo · category ATHAN</span>
+                </button>
+                <button className="menu-item" onClick={addPromos}>
+                  <strong>Promos</strong>
+                  <span className="muted">Promo spreadsheet · edit in the Promos tab</span>
                 </button>
               </div>
             </>

@@ -1,8 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppConfig, AthanMode, AzanSummary, TemplateSummary } from '../main/session'
+import type {
+  AppConfig,
+  AthanMode,
+  AzanSummary,
+  PromoSummary,
+  TemplateSummary
+} from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
+import type { PromoPlacement, PromoWeekRow } from '../main/core/promos/schedule'
+import type { PromoEntry } from '../main/core/parsers/promosFile'
 import type { CalendarDate } from '../main/core/types'
 
 export interface ExportResult {
@@ -37,6 +45,32 @@ const api = {
     ipcRenderer.invoke('config:setAthanMode', mode),
   setHourly: (hourly: HourlyOptions): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setHourly', hourly),
+  setIncludePromos: (include: boolean): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setIncludePromos', include),
+
+  openPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:open'),
+  getPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:get'),
+  listPromoEntries: (): Promise<PromoEntry[]> => ipcRenderer.invoke('promos:entries'),
+  removePromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:remove'),
+  promoWeek: (anchor: CalendarDate): Promise<PromoWeekRow[]> =>
+    ipcRenderer.invoke('promos:week', anchor),
+  promoPreviewForDate: (date: CalendarDate): Promise<string> =>
+    ipcRenderer.invoke('promos:previewForDate', date),
+  setPromoTimes: (
+    fileName: string,
+    date: CalendarDate,
+    times: string[]
+  ): Promise<PromoPlacement[]> =>
+    ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
+  resetPromoTimes: (fileName: string, date: CalendarDate): Promise<PromoPlacement[]> =>
+    ipcRenderer.invoke('promos:resetTimes', { fileName, date }),
+  setPromoExcludedHours: (
+    fileName: string,
+    weekday: number,
+    hours: number[],
+    anchor: CalendarDate
+  ): Promise<PromoWeekRow[]> =>
+    ipcRenderer.invoke('promos:setExcludedHours', { fileName, weekday, hours, anchor }),
 
   loadFormats: (): Promise<FormatSet> => ipcRenderer.invoke('formats:load'),
   saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),

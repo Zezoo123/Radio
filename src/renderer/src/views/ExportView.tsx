@@ -28,6 +28,10 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
   async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
     onConfig(await window.api.setHourly({ ...hourly, ...patch }))
   }
+
+  async function togglePromos(include: boolean): Promise<void> {
+    onConfig(await window.api.setIncludePromos(include))
+  }
   const range = (): [ReturnType<typeof toCalendarDate>, ReturnType<typeof toCalendarDate>] => [
     toCalendarDate(start),
     toCalendarDate(end)
@@ -114,6 +118,16 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
                 />
               </label>
             </>
+          )}
+          {config?.hasPromos && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={config?.includePromos ?? true}
+                onChange={(e) => togglePromos(e.target.checked)}
+              />
+              Include promos
+            </label>
           )}
         </div>
       </section>

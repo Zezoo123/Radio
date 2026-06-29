@@ -102,6 +102,49 @@ export function registerIpc(): void {
   ipcMain.handle('config:get', () => session.getConfig())
   ipcMain.handle('config:setAthanMode', (_e, mode: AthanMode) => session.setAthanMode(mode))
   ipcMain.handle('config:setHourly', (_e, hourly: HourlyOptions) => session.setHourly(hourly))
+  ipcMain.handle('config:setIncludePromos', (_e, include: boolean) =>
+    session.setIncludePromos(include)
+  )
+
+  // --- Promos ---------------------------------------------------------------
+  ipcMain.handle('promos:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open promos spreadsheet',
+      properties: ['openFile'],
+      filters: [XLSX_FILTER]
+    })
+    if (res.canceled || !res.filePaths[0]) return session.getPromos()
+    return session.loadPromos(res.filePaths[0])
+  })
+  ipcMain.handle('promos:get', () => session.getPromos())
+  ipcMain.handle('promos:entries', () => session.promoEntries())
+  ipcMain.handle('promos:remove', () => session.removePromos())
+  ipcMain.handle('promos:week', (_e, anchor: CalendarDate) => session.promoWeek(anchor))
+  ipcMain.handle('promos:previewForDate', (_e, date: CalendarDate) =>
+    session.promoTextForDate(date)
+  )
+  ipcMain.handle(
+    'promos:setTimes',
+    (_e, { fileName, date, times }: { fileName: string; date: CalendarDate; times: string[] }) =>
+      session.setPromoTimes(fileName, date, times)
+  )
+  ipcMain.handle(
+    'promos:resetTimes',
+    (_e, { fileName, date }: { fileName: string; date: CalendarDate }) =>
+      session.resetPromoTimes(fileName, date)
+  )
+  ipcMain.handle(
+    'promos:setExcludedHours',
+    (
+      _e,
+      {
+        fileName,
+        weekday,
+        hours,
+        anchor
+      }: { fileName: string; weekday: number; hours: number[]; anchor: CalendarDate }
+    ) => session.setPromoExcludedHours(fileName, weekday, hours, anchor)
+  )
 
   ipcMain.handle('formats:load', () => formatStore.load())
   ipcMain.handle('formats:save', (_e, set: FormatSet) => formatStore.save(set))
@@ -183,7 +226,7 @@ export function registerIpc(): void {
 
   ipcMain.handle('schedule:export', async (_e, { start, end }: RangeArg) => {
     const { byDate, sequentials } = await resolveFormatLines(start, end, true)
-    const { text, warnings } = session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
+    const { text, warnings } = await session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
     const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
       start.day
     ).padStart(2, '0')}.txt`
