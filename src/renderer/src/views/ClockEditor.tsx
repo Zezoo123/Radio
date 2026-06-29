@@ -27,6 +27,9 @@ const ADD_CATEGORY = '__add__'
 const NEXT_DAY_LOG = '__nextdaylog__'
 const LOG_DESCRIPTION = '[Day] [YYMMDD] Log'
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
+// Categories that carry no audio file/cart — the Name/cart cell is disabled for
+// these (MACRO commands live in Description; COMMENT rows are plain comments).
+const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
 
 export function ClockEditor({
   formats,
@@ -248,7 +251,9 @@ export function ClockEditor({
                 </tr>
               </thead>
               <tbody>
-                {selected.rows.map((row, i) => (
+                {selected.rows.map((row, i) => {
+                  const noName = NO_NAME_CATEGORIES.includes(row.category ?? '')
+                  return (
                   <tr key={i} className={row.logRow ? 'row-log' : ''}>
                     {showHour && (
                       <td>
@@ -310,7 +315,15 @@ export function ClockEditor({
                     <td>
                       <input
                         value={row.name}
-                        placeholder={row.logRow ? 'log file name (optional)' : ''}
+                        disabled={row.logRow || noName}
+                        placeholder={
+                          noName
+                            ? 'N/A'
+                            : row.logRow
+                              ? 'log file name (optional)'
+                              : ''
+                        }
+                        title={noName ? `${row.category} rows have no name/cart` : undefined}
                         {...fieldHandlers(i, 'name')}
                         onChange={(e) => patchRow(i, { name: e.target.value })}
                       />
@@ -345,10 +358,12 @@ export function ClockEditor({
                               configureLogRow(i)
                             } else {
                               // Switching away from NEXT DAY LOG unlocks the row.
+                              // MACRO/COMMENT carry no name/cart, so clear it.
                               patchRow(i, {
                                 category: v || undefined,
                                 logRow: undefined,
-                                nextDay: undefined
+                                nextDay: undefined,
+                                ...(NO_NAME_CATEGORIES.includes(v) ? { name: '' } : {})
                               })
                             }
                           }}
@@ -385,7 +400,8 @@ export function ClockEditor({
                       </button>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
 
