@@ -9,6 +9,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  # Lets the release step attach the .exe files to the tag's Release.
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -17,14 +21,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      # --publish never: on tag builds electron-builder tries to publish a
+      # GitHub release itself (and dies without GH_TOKEN); the release is
+      # attached by the dedicated step below instead.
       - name: Build Windows installer + portable
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

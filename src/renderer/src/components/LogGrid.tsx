@@ -1,17 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { blankRow, cloneRow, rowKind, type LogRow } from '../lib/logRows'
 import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../lib/runtime'
 
 /**
  * Simian-style log grid: one row per log line, every cell directly editable,
- * rows drag-reorderable by the ⠿ grip, with per-row insert-below and delete.
+ * rows drag-reorderable by the ⠿ grip, with per-row duplicate / insert-below /
+ * two-click delete, and Excel-style resizable columns (widths persist).
  *
  * Two derived columns sit beside the raw log fields:
- *  - Expected — the computed real air time given the order and the cue rules
- *    (`@` fires at its stated time, `+` after the previous item finishes,
- *    `#` after the current item but never before its stated time).
- *  - Duration — seconds per file (filled from the Simian audio database,
+ *  - Expected — the playout simulation's real air time (green plays, red was
+ *    cut by an @, yellow never plays).
+ *  - Duration — MM:SS per file (from the Simian audio database or the .bsi,
  *    editable; comments and other non-audio rows stay 0).
+ *
+ * PERFORMANCE: logs run to thousands of rows × ~8 interactive cells. Rows are
+ * memoized so a keystroke or a drag-hover re-renders only the affected row —
+ * not the whole table (which pegs a CPU core on real-world logs).
  */
 
 interface Props {
@@ -76,6 +80,33 @@ function loadWidths(): Record<string, number> {
   }
 }
 
+/** Stable per-row callbacks (identity never changes → memoized rows hold). */
+interface RowHandlers {
+  editCell(id: number, field: number, value: string): void
+  commitDuration(id: number, input: HTMLInputElement): void
+  duplicateRow(index: number): void
+  insertBelow(index: number): void
+  removeRow(index: number, id: number): void
+  armDrag(id: number | null): void
+  dragStart(index: number): void
+  dragOver(index: number, e: React.DragEvent): void
+  drop(index: number): void
+  dragEnd(): void
+}
+
+interface GridRowProps {
+  row: LogRow
+  index: number
+  sim: SimRow | undefined
+  duration: number
+  tint: string | undefined
+  isDragArmed: boolean
+  isDragging: boolean
+  isDropTarget: boolean
+  isConfirmDelete: boolean
+  h: RowHandlers
+}
+
 /** The Expected cell: green = plays, red = cut by an @, yellow = never plays. */
 function expectedCell(s: SimRow | undefined): JSX.Element {
   if (!s) return <td className="expected-col" />
@@ -102,6 +133,105 @@ function expectedCell(s: SimRow | undefined): JSX.Element {
     </td>
   )
 }
+
+const GridRow = memo(
+  function GridRow({
+    row: r,
+    index: i,
+    sim,
+    duration,
+    tint,
+    isDragArmed,
+    isDragging,
+    isDropTarget,
+    isConfirmDelete,
+    h
+  }: GridRowProps): JSX.Element {
+    const fieldCell = (fi: number): JSX.Element => (
+      <td key={fi} className={`lf-${fi}`}>
+        <input
+          value={r.fields[fi]}
+          dir="auto"
+          spellCheck={false}
+          onChange={(e) => h.editCell(r.id, fi, e.target.value)}
+        />
+      </td>
+    )
+
+    return (
+      <tr
+        style={rowTint(tint)}
+        className={[
+          `r-${rowKind(r)}`,
+          sim?.status === 'skipped' ? 'row-skipped' : '',
+          sim?.status === 'interrupted' ? 'row-interrupted' : '',
+          isDragging ? 'dragging' : '',
+          isDropTarget ? 'drop-target' : ''
+        ].join(' ')}
+        draggable={isDragArmed}
+        onDragStart={() => h.dragStart(i)}
+        onDragOver={(e) => h.dragOver(i, e)}
+        onDrop={() => h.drop(i)}
+        onDragEnd={h.dragEnd}
+      >
+        <td
+          className="grip-col"
+          title="Drag to reorder"
+          onMouseDown={() => h.armDrag(r.id)}
+          onMouseUp={() => h.armDrag(null)}
+        >
+          ⠿
+        </td>
+        {fieldCell(0)}
+        {fieldCell(1)}
+        {expectedCell(sim)}
+        {fieldCell(2)}
+        <td className="dur-col">
+          {/* MM:SS, committed on blur/Enter; keyed so DB refreshes re-sync it. */}
+          <input
+            key={`${r.id}:${duration}`}
+            defaultValue={formatDuration(duration)}
+            spellCheck={false}
+            onBlur={(e) => h.commitDuration(r.id, e.currentTarget)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+            }}
+          />
+        </td>
+        {fieldCell(3)}
+        {fieldCell(4)}
+        <td className="act-col">
+          <button className="row-act" title="Duplicate row" onClick={() => h.duplicateRow(i)}>
+            ⧉
+          </button>
+          <button className="row-act" title="Insert row below" onClick={() => h.insertBelow(i)}>
+            +
+          </button>
+          <button
+            className={`row-act danger ${isConfirmDelete ? 'armed' : ''}`}
+            title={isConfirmDelete ? 'Click again to delete' : 'Delete row (click twice)'}
+            onClick={() => h.removeRow(i, r.id)}
+          >
+            ×
+          </button>
+        </td>
+      </tr>
+    )
+  },
+  (a, b) =>
+    a.row === b.row &&
+    a.index === b.index &&
+    a.duration === b.duration &&
+    a.tint === b.tint &&
+    a.isDragArmed === b.isDragArmed &&
+    a.isDragging === b.isDragging &&
+    a.isDropTarget === b.isDropTarget &&
+    a.isConfirmDelete === b.isConfirmDelete &&
+    // sim objects are rebuilt each simulation — compare by value.
+    a.sim?.expected === b.sim?.expected &&
+    a.sim?.status === b.sim?.status &&
+    a.sim?.cutAt === b.sim?.cutAt
+)
 
 export function LogGrid({
   rows,
@@ -167,81 +297,86 @@ export function LogGrid({
     })
   }
 
-  function editCell(id: number, field: number, value: string): void {
-    onRows(
-      rows.map((r) => {
-        if (r.id !== id) return r
-        const fields = [...r.fields] as LogRow['fields']
-        fields[field] = value
-        return { ...r, fields }
-      })
-    )
-  }
+  // Live state behind stable handler identities: the memoized rows keep one
+  // handlers object for the grid's whole life and read current data through it.
+  const live = useRef({ rows, onRows, durationOf, onDuration, dragIndex, confirmDelete })
+  live.current = { rows, onRows, durationOf, onDuration, dragIndex, confirmDelete }
 
-  function insertBelow(index: number): void {
-    const copy = [...rows]
-    copy.splice(index + 1, 0, blankRow())
-    onRows(copy)
-  }
-
-  function duplicateRow(index: number): void {
-    const copy = [...rows]
-    const dupe = cloneRow(rows[index])
-    copy.splice(index + 1, 0, dupe)
-    // Carry the original's duration so the Expected timeline stays truthful.
-    onDuration(dupe.id, durationOf(rows[index]))
-    onRows(copy)
-  }
-
-  function removeRow(index: number, id: number): void {
-    if (confirmTimer.current) clearTimeout(confirmTimer.current)
-    if (confirmDelete !== id) {
-      // First click arms; it disarms by itself shortly after.
-      setConfirmDelete(id)
-      confirmTimer.current = setTimeout(() => setConfirmDelete(null), 1800)
-      return
+  const handlers = useMemo<RowHandlers>(() => {
+    const endDrag = (): void => {
+      setDragArmed(null)
+      setDragIndex(null)
+      setOverIndex(null)
     }
-    setConfirmDelete(null)
-    onRows(rows.filter((_, i) => i !== index))
-  }
-
-  function endDrag(): void {
-    setDragArmed(null)
-    setDragIndex(null)
-    setOverIndex(null)
-  }
-
-  function dropOn(target: number): void {
-    if (dragIndex === null || dragIndex === target) {
-      endDrag()
-      return
+    return {
+      editCell(id, field, value) {
+        live.current.onRows(
+          live.current.rows.map((r) => {
+            if (r.id !== id) return r
+            const fields = [...r.fields] as LogRow['fields']
+            fields[field] = value
+            return { ...r, fields }
+          })
+        )
+      },
+      commitDuration(id, input) {
+        // MM:SS commit; invalid text snaps back to the current value.
+        const row = live.current.rows.find((r) => r.id === id)
+        const current = row ? live.current.durationOf(row) : 0
+        const parsed = parseDuration(input.value)
+        if (parsed == null || parsed === current) input.value = formatDuration(current)
+        else live.current.onDuration(id, parsed)
+      },
+      duplicateRow(index) {
+        const { rows, onRows, onDuration, durationOf } = live.current
+        const copy = [...rows]
+        const dupe = cloneRow(rows[index])
+        copy.splice(index + 1, 0, dupe)
+        // Carry the original's duration so the Expected timeline stays truthful.
+        onDuration(dupe.id, durationOf(rows[index]))
+        onRows(copy)
+      },
+      insertBelow(index) {
+        const copy = [...live.current.rows]
+        copy.splice(index + 1, 0, blankRow())
+        live.current.onRows(copy)
+      },
+      removeRow(index, id) {
+        if (confirmTimer.current) clearTimeout(confirmTimer.current)
+        if (live.current.confirmDelete !== id) {
+          // First click arms; it disarms by itself shortly after.
+          setConfirmDelete(id)
+          confirmTimer.current = setTimeout(() => setConfirmDelete(null), 1800)
+          return
+        }
+        setConfirmDelete(null)
+        live.current.onRows(live.current.rows.filter((_, i) => i !== index))
+      },
+      armDrag(id) {
+        setDragArmed(id)
+      },
+      dragStart(index) {
+        setDragIndex(index)
+      },
+      dragOver(index, e) {
+        e.preventDefault()
+        setOverIndex((prev) => (prev === index ? prev : index))
+      },
+      drop(target) {
+        const { rows, onRows, dragIndex } = live.current
+        if (dragIndex === null || dragIndex === target) {
+          endDrag()
+          return
+        }
+        const copy = [...rows]
+        const [moved] = copy.splice(dragIndex, 1)
+        copy.splice(target, 0, moved)
+        onRows(copy)
+        endDrag()
+      },
+      dragEnd: endDrag
     }
-    const copy = [...rows]
-    const [moved] = copy.splice(dragIndex, 1)
-    copy.splice(target, 0, moved)
-    onRows(copy)
-    endDrag()
-  }
-
-  /** Commit an MM:SS duration edit; invalid text snaps back to the old value. */
-  function commitDuration(id: number, input: HTMLInputElement, current: number): void {
-    const parsed = parseDuration(input.value)
-    if (parsed == null) input.value = formatDuration(current)
-    else if (parsed !== current) onDuration(id, parsed)
-    else input.value = formatDuration(current)
-  }
-
-  /** A log cell (Time, Cue, Name, Category, Description) as an editable input. */
-  const fieldCell = (r: LogRow, fi: number): JSX.Element => (
-    <td key={fi} className={`lf-${fi}`}>
-      <input
-        value={r.fields[fi]}
-        dir="auto"
-        spellCheck={false}
-        onChange={(e) => editCell(r.id, fi, e.target.value)}
-      />
-    </td>
-  )
+  }, [])
 
   return (
     <table className="log-grid">
@@ -271,67 +406,19 @@ export function LogGrid({
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr
+          <GridRow
             key={r.id}
-            style={rowTint(categoryColors?.[r.fields[3].trim().toUpperCase()])}
-            className={[
-              `r-${rowKind(r)}`,
-              sim[i]?.status === 'skipped' ? 'row-skipped' : '',
-              sim[i]?.status === 'interrupted' ? 'row-interrupted' : '',
-              dragIndex === i ? 'dragging' : '',
-              overIndex === i && dragIndex !== null && dragIndex !== i ? 'drop-target' : ''
-            ].join(' ')}
-            draggable={dragArmed === r.id}
-            onDragStart={() => setDragIndex(i)}
-            onDragOver={(e) => {
-              e.preventDefault()
-              if (overIndex !== i) setOverIndex(i)
-            }}
-            onDrop={() => dropOn(i)}
-            onDragEnd={endDrag}
-          >
-            <td
-              className="grip-col"
-              title="Drag to reorder"
-              onMouseDown={() => setDragArmed(r.id)}
-              onMouseUp={() => setDragArmed(null)}
-            >
-              ⠿
-            </td>
-            {fieldCell(r, 0)}
-            {fieldCell(r, 1)}
-            {expectedCell(sim[i])}
-            {fieldCell(r, 2)}
-            <td className="dur-col">
-              {/* MM:SS, committed on blur/Enter; keyed so DB refreshes re-sync it. */}
-              <input
-                key={`${r.id}:${durationOf(r)}`}
-                defaultValue={formatDuration(durationOf(r))}
-                spellCheck={false}
-                onBlur={(e) => commitDuration(r.id, e.currentTarget, durationOf(r))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.currentTarget.blur()
-                }}
-              />
-            </td>
-            {fieldCell(r, 3)}
-            {fieldCell(r, 4)}
-            <td className="act-col">
-              <button className="row-act" title="Duplicate row" onClick={() => duplicateRow(i)}>
-                ⧉
-              </button>
-              <button className="row-act" title="Insert row below" onClick={() => insertBelow(i)}>
-                +
-              </button>
-              <button
-                className={`row-act danger ${confirmDelete === r.id ? 'armed' : ''}`}
-                title={confirmDelete === r.id ? 'Click again to delete' : 'Delete row (click twice)'}
-                onClick={() => removeRow(i, r.id)}
-              >
-                ×
-              </button>
-            </td>
-          </tr>
+            row={r}
+            index={i}
+            sim={sim[i]}
+            duration={durationOf(r)}
+            tint={categoryColors?.[r.fields[3].trim().toUpperCase()]}
+            isDragArmed={dragArmed === r.id}
+            isDragging={dragIndex === i}
+            isDropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
+            isConfirmDelete={confirmDelete === r.id}
+            h={handlers}
+          />
         ))}
       </tbody>
     </table>
