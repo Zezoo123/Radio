@@ -47,7 +47,18 @@ export interface ElementTemplate {
   category?: string
 }
 
-const TIME_RE = /^\d{1,2}:\d{2}:\d{2}$/
+const TIME_RE = /^(\d{1,2}):(\d{2}):(\d{2})$/
+
+/**
+ * `H:MM:SS` → `HH:MM:SS` (Excel time cells often render without a leading
+ * zero); null if the cell isn't a time. Emitted times must be exactly
+ * HH:MM:SS — Simian's import and the chronological sort both rely on it.
+ */
+function normalizeTime(text: string): string | null {
+  const m = TIME_RE.exec(text)
+  if (!m) return null
+  return `${m[1].padStart(2, '0')}:${m[2]}:${m[3]}`
+}
 
 function asInt(value: ExcelJS.CellValue): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return Math.trunc(value)
@@ -115,8 +126,8 @@ export function parseElementWorkbook(wb: ExcelJS.Workbook): ElementTemplate {
 
   const timeRows: TimeRow[] = []
   for (const row of rest) {
-    const time = cellText(row, 1)
-    if (!TIME_RE.test(time)) continue
+    const time = normalizeTime(cellText(row, 1))
+    if (!time) continue
     const tracks = new Map<number, string>()
     for (const dc of dayColumns) {
       const track = cellText(row, dc.col)

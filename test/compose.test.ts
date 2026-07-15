@@ -34,25 +34,13 @@ describe('compose — section-grouped day', () => {
     expect(text.endsWith('\r\n')).toBe(true)
   })
 
-  it('rewrites every athan row Category to athanCategory', () => {
-    const athan = [
-      '04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN',
-      '04:10:02|+|AZ22-01RB|FEA|AZAN فجر'
+  it('passes the computed azan rows through unchanged', () => {
+    const azan = [
+      '04:09:50|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN',
+      '04:10:00|+|AZ22-01RB|FEATURE|AZAN فجر'
     ]
-    const { days } = composeDay(SUNDAY, {
-      athanLinesForDate: () => athan,
-      athanCategory: 'ATHAN'
-    })
-    expect(days[0].athanLines).toEqual([
-      '04:10:00|@||ATHAN|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN',
-      '04:10:02|+|AZ22-01RB|ATHAN|AZAN فجر'
-    ])
-  })
-
-  it('leaves athan rows verbatim when athanCategory is unset', () => {
-    const athan = ['04:10:02|+|AZ22-01RB|FEA|AZAN فجر']
-    const { days } = composeDay(SUNDAY, { athanLinesForDate: () => athan })
-    expect(days[0].athanLines).toEqual(athan)
+    const { days } = composeDay(SUNDAY, { azanLinesForDate: () => azan })
+    expect(days[0].azanLines).toEqual(azan)
   })
 
   it('emits formatLinesForDate clock rows right after the date header', async () => {

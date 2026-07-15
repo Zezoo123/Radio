@@ -1,12 +1,18 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { session, type AthanMode } from './session'
+import { session } from './session'
+import { azanFormatStore } from './azanFormat'
+import { uiSettingsStore, type UiSettings } from './uiSettings'
 import { formatStore, normalizeFormatSet } from './formats'
 import { gridHasAssignments, serializeWeek } from './core/format/expand'
 import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
+import { loadSimianDb, lookupDuration, type SimianDb } from './core/simianDb'
+import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
+import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
+import type { AzanFormat } from './core/prayer/azanRows'
 import type { Sequential } from './core/sequential/types'
 import type { HourlyOptions } from './core/schedule/hourly'
 import type { CalendarDate } from './core/types'
@@ -64,6 +70,14 @@ async function saveText(
 export function registerIpc(): void {
   ipcMain.handle('app:ping', () => 'pong')
 
+  // --- Station selection ----------------------------------------------------
+  ipcMain.handle('station:list', () => STATIONS)
+  ipcMain.handle('station:get', () => getActiveStation())
+  ipcMain.handle('station:set', (_e, station: Station) => {
+    setActiveStation(station)
+    return getActiveStation()
+  })
+
   ipcMain.handle('templates:add', async () => {
     const res = await dialog.showOpenDialog({
       title: 'Add element templates',
@@ -89,22 +103,26 @@ export function registerIpc(): void {
       session.previewTemplate(index, start, end)
   )
 
-  ipcMain.handle('azan:open', async () => {
-    const res = await dialog.showOpenDialog({
-      title: 'Open AZAN (athan) month file',
-      properties: ['openFile'],
-      filters: [{ name: 'Text', extensions: ['txt'] }]
-    })
-    if (res.canceled || !res.filePaths[0]) return null
-    return session.loadAzan(res.filePaths[0])
-  })
-
   ipcMain.handle('config:get', () => session.getConfig())
-  ipcMain.handle('config:setAthanMode', (_e, mode: AthanMode) => session.setAthanMode(mode))
   ipcMain.handle('config:setHourly', (_e, hourly: HourlyOptions) => session.setHourly(hourly))
+  ipcMain.handle('config:setIncludeAzan', (_e, include: boolean) => session.setIncludeAzan(include))
   ipcMain.handle('config:setIncludePromos', (_e, include: boolean) =>
     session.setIncludePromos(include)
   )
+
+  // --- AZAN format (global setting) -----------------------------------------
+  ipcMain.handle('azanFormat:get', () => azanFormatStore.load())
+  ipcMain.handle('azanFormat:save', async (_e, format: AzanFormat) => {
+    await azanFormatStore.save(format)
+    return azanFormatStore.load()
+  })
+
+  // --- Front-end preferences (global setting) --------------------------------
+  ipcMain.handle('uiSettings:get', () => uiSettingsStore.load())
+  ipcMain.handle('uiSettings:save', async (_e, settings: UiSettings) => {
+    await uiSettingsStore.save(settings)
+    return uiSettingsStore.load()
+  })
 
   // --- Promos ---------------------------------------------------------------
   ipcMain.handle('promos:open', async () => {
@@ -213,7 +231,7 @@ export function registerIpc(): void {
   )
 
   // True when the Formats set has anything that would emit rows — used to enable
-  // the Export tab even with no audio templates / athan loaded.
+  // the Export tab even with no audio templates / azan loaded.
   ipcMain.handle('formats:hasAssignments', async () => {
     const set = await formatStore.load()
     return gridHasAssignments(set.grid) || (set.dayDefaults ?? []).some(Boolean)
@@ -224,9 +242,19 @@ export function registerIpc(): void {
     return session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
   })
 
-  ipcMain.handle('schedule:export', async (_e, { start, end }: RangeArg) => {
+  // `text`, when provided, is the (possibly edited) preview grid from the
+  // renderer — it is written verbatim so what you see is exactly what exports.
+  // The sequential queues still advance either way, keeping {sequential}
+  // rotation continuity across exports.
+  ipcMain.handle('schedule:export', async (_e, { start, end, text: edited }: RangeArg & { text?: string }) => {
     const { byDate, sequentials } = await resolveFormatLines(start, end, true)
-    const { text, warnings } = await session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
+    let text = edited
+    let warnings: string[] = []
+    if (text == null) {
+      const res = await session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
+      text = res.text
+      warnings = res.warnings
+    }
     const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
       start.day
     ).padStart(2, '0')}.txt`
@@ -241,5 +269,88 @@ export function registerIpc(): void {
     // Persist the advanced sequential queues only once the file is written.
     await sequentialStore.save(sequentials)
     return { saved: true, path: res.filePath, warnings }
+  })
+
+  // --- Log editor: open any exported Simian log, edit in-app, save back ------
+  const LOG_FILTERS = [
+    { name: 'Simian log', extensions: ['txt', 'bsi'] },
+    { name: 'Text', extensions: ['txt'] },
+    { name: 'BSI log', extensions: ['bsi'] }
+  ]
+
+  ipcMain.handle('log:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open Simian log',
+      properties: ['openFile'],
+      filters: LOG_FILTERS
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    const path = res.filePaths[0]
+    const buffer = await readFile(path)
+    // Native Simian logs (.bsi) are Access databases, not text — detect by
+    // content, not extension, and convert to the standard pipe lines.
+    if (isBsiBuffer(buffer)) {
+      const { lines, durations } = parseBsiLog(buffer)
+      return {
+        path,
+        text: lines.length ? lines.join('\r\n') + '\r\n' : '',
+        rowDurations: durations,
+        bsi: true
+      }
+    }
+    return { path, text: buffer.toString('utf-8') }
+  })
+
+  ipcMain.handle(
+    'log:save',
+    async (_e, { text, path }: { text: string; path?: string }) => {
+      if (path) {
+        await writeFile(path, text, 'utf-8')
+        return { saved: true, path }
+      }
+      const win = BrowserWindow.getFocusedWindow() ?? undefined
+      const res = await dialog.showSaveDialog(win!, {
+        title: 'Save Simian log',
+        defaultPath: 'log.txt',
+        filters: LOG_FILTERS
+      })
+      if (res.canceled || !res.filePath) return { saved: false }
+      await writeFile(res.filePath, text, 'utf-8')
+      return { saved: true, path: res.filePath }
+    }
+  )
+
+  // --- Simian audio database (Access .mdb): file-name → duration lookups -----
+  let simianDb: { path: string; db: SimianDb } | null = null
+  const simianSummary = (): { path: string; table: string; trackCount: number } | null =>
+    simianDb && {
+      path: simianDb.path,
+      table: simianDb.db.table,
+      trackCount: simianDb.db.tracks.size
+    }
+
+  ipcMain.handle('simian:openDb', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open Simian audio database',
+      properties: ['openFile'],
+      filters: [{ name: 'Access database', extensions: ['mdb', 'accdb'] }]
+    })
+    if (res.canceled || !res.filePaths[0]) return simianSummary()
+    const path = res.filePaths[0]
+    simianDb = { path, db: loadSimianDb(await readFile(path)) }
+    return simianSummary()
+  })
+
+  ipcMain.handle('simian:getDb', () => simianSummary())
+
+  // Batch lookup: names → seconds (missing/comment names simply come back 0).
+  ipcMain.handle('simian:durations', (_e, names: string[]) => {
+    const out: Record<string, number> = {}
+    if (!simianDb) return out
+    for (const name of names) {
+      const hit = lookupDuration(simianDb.db.tracks, name)
+      if (hit != null) out[name] = hit
+    }
+    return out
   })
 }

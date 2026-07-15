@@ -1,12 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type {
-  AppConfig,
-  AthanMode,
-  AzanSummary,
-  PromoSummary,
-  TemplateSummary
-} from '../main/session'
+import type { AppConfig, PromoSummary, TemplateSummary } from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
+import type { AzanFormat } from '../main/core/prayer/azanRows'
+import type { UiSettings } from '../main/uiSettings'
 import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
 import type { PromoPlacement, PromoWeekRow } from '../main/core/promos/schedule'
@@ -24,8 +20,28 @@ export interface PreviewResult {
   warnings: string[]
 }
 
+export interface SimianDbSummary {
+  path: string
+  table: string
+  trackCount: number
+}
+
+export interface OpenLogResult {
+  path: string
+  text: string
+  /** Per-line durations in seconds (native .bsi logs carry their own lengths). */
+  rowDurations?: number[]
+  /** True when the file was a native Access-format .bsi log. */
+  bsi?: boolean
+}
+
 /** Typed bridge exposed to the renderer as `window.api`. */
 const api = {
+  listStations: (): Promise<string[]> => ipcRenderer.invoke('station:list'),
+  getStation: (): Promise<string | null> => ipcRenderer.invoke('station:get'),
+  setStation: (station: string): Promise<string | null> =>
+    ipcRenderer.invoke('station:set', station),
+
   addTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:add'),
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
@@ -38,15 +54,21 @@ const api = {
     end: CalendarDate
   ): Promise<PreviewResult> => ipcRenderer.invoke('templates:preview', { index, start, end }),
 
-  openAzan: (): Promise<AzanSummary | null> => ipcRenderer.invoke('azan:open'),
-
   getConfig: (): Promise<AppConfig> => ipcRenderer.invoke('config:get'),
-  setAthanMode: (mode: AthanMode): Promise<AppConfig> =>
-    ipcRenderer.invoke('config:setAthanMode', mode),
   setHourly: (hourly: HourlyOptions): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setHourly', hourly),
+  setIncludeAzan: (include: boolean): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setIncludeAzan', include),
   setIncludePromos: (include: boolean): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setIncludePromos', include),
+
+  getUiSettings: (): Promise<UiSettings> => ipcRenderer.invoke('uiSettings:get'),
+  saveUiSettings: (settings: UiSettings): Promise<UiSettings> =>
+    ipcRenderer.invoke('uiSettings:save', settings),
+
+  getAzanFormat: (): Promise<AzanFormat> => ipcRenderer.invoke('azanFormat:get'),
+  saveAzanFormat: (format: AzanFormat): Promise<AzanFormat> =>
+    ipcRenderer.invoke('azanFormat:save', format),
 
   openPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:open'),
   getPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:get'),
@@ -97,8 +119,17 @@ const api = {
   hasFormats: (): Promise<boolean> => ipcRenderer.invoke('formats:hasAssignments'),
   preview: (start: CalendarDate, end: CalendarDate): Promise<PreviewResult> =>
     ipcRenderer.invoke('schedule:preview', { start, end }),
-  exportLog: (start: CalendarDate, end: CalendarDate): Promise<ExportResult> =>
-    ipcRenderer.invoke('schedule:export', { start, end })
+  exportLog: (start: CalendarDate, end: CalendarDate, text?: string): Promise<ExportResult> =>
+    ipcRenderer.invoke('schedule:export', { start, end, text }),
+
+  openLog: (): Promise<OpenLogResult | null> => ipcRenderer.invoke('log:open'),
+  saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('log:save', { text, path }),
+
+  openSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:openDb'),
+  getSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:getDb'),
+  simianDurations: (names: string[]): Promise<Record<string, number>> =>
+    ipcRenderer.invoke('simian:durations', names)
 }
 
 contextBridge.exposeInMainWorld('api', api)

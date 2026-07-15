@@ -1,8 +1,8 @@
 import { basename } from 'node:path'
 import { parseElementTemplate, type ElementTemplate } from './core/parsers/elementTemplate'
-import { athanLinesForDate, parseAzanFile, type AzanFile } from './core/parsers/azanFile'
 import { parsePromosFile, type PromoEntry } from './core/parsers/promosFile'
-import { computeAthanLines } from './core/prayer/athanRows'
+import { computeAzanLines, type AzanFormat } from './core/prayer/azanRows'
+import { azanFormatStore } from './azanFormat'
 import { DEFAULT_HOURLY, type HourlyOptions } from './core/schedule/hourly'
 import { composeRange, exportRange, type ComposeOptions } from './core/schedule/compose'
 import { dateRange } from './core/dates'
@@ -17,6 +17,7 @@ import {
   type PromoWeekRow
 } from './core/promos/schedule'
 import { promosStore, type PromosFile } from './promos'
+import { getActiveStation, type Station } from './station'
 import type { CalendarDate } from './core/types'
 
 /** Lightweight summaries that cross IPC (the heavy parsed objects stay here). */
@@ -31,23 +32,15 @@ export interface TemplateSummary {
   lastDate: string | null
 }
 
-export interface AzanSummary {
-  fileName: string
-  months: string[]
-  dayCount: number
-}
-
-export type AthanMode = 'off' | 'import' | 'calculate'
-
 export interface PromoSummary {
   fileName: string
   programCount: number
 }
 
 export interface AppConfig {
-  athanMode: AthanMode
   hourly: HourlyOptions
-  hasAzan: boolean
+  /** Include the computed azan (per the global AZAN format) in the export. */
+  includeAzan: boolean
   hasPromos: boolean
   includePromos: boolean
 }
@@ -57,33 +50,63 @@ interface LoadedTemplate {
   template: ElementTemplate
 }
 
-/** In-memory session state for the main process. */
+/** All in-memory session state for one station (imports live only in memory). */
+interface StationState {
+  templates: LoadedTemplate[]
+  hourly: HourlyOptions
+  includeAzan: boolean
+  promos: PromosFile | null
+  includePromos: boolean
+}
+
+function freshState(): StationState {
+  return {
+    templates: [],
+    hourly: { ...DEFAULT_HOURLY },
+    includeAzan: false,
+    promos: null,
+    includePromos: true
+  }
+}
+
+/**
+ * In-memory session state, kept separately per station so each station keeps its
+ * own imports/azan/promos while the app runs. The persisted stores (formats,
+ * sequentials, promos) are already scoped to the active station's directory.
+ */
 class Session {
-  private templates: LoadedTemplate[] = []
-  private azan: { fileName: string; file: AzanFile } | null = null
-  private athanMode: AthanMode = 'off'
-  private hourly: HourlyOptions = { ...DEFAULT_HOURLY }
-  private promos: PromosFile | null = null
-  private includePromos = true
+  private states = new Map<Station, StationState>()
+
+  /** State for the active station, created on first access. */
+  private st(): StationState {
+    const station = getActiveStation()
+    if (!station) throw new Error('No station selected')
+    let s = this.states.get(station)
+    if (!s) {
+      s = freshState()
+      this.states.set(station, s)
+    }
+    return s
+  }
 
   /** Import element templates as "audio": every event gets the AUDIO category. */
   async addTemplates(filePaths: string[]): Promise<TemplateSummary[]> {
     for (const filePath of filePaths) {
       const template = await parseElementTemplate(filePath)
       template.category = 'AUDIO'
-      this.templates.push({ fileName: basename(filePath), template })
+      this.st().templates.push({ fileName: basename(filePath), template })
     }
     return this.templateSummaries()
   }
 
   removeTemplate(index: number): TemplateSummary[] {
-    this.templates.splice(index, 1)
+    this.st().templates.splice(index, 1)
     return this.templateSummaries()
   }
 
   /** Change the Simian Category emitted for one template's events. */
   setTemplateCategory(index: number, category: string): TemplateSummary[] {
-    const t = this.templates[index]
+    const t = this.st().templates[index]
     if (t) t.template.category = category
     return this.templateSummaries()
   }
@@ -94,13 +117,13 @@ class Session {
     start: CalendarDate,
     end: CalendarDate
   ): { text: string; warnings: string[] } {
-    const t = this.templates[index]
+    const t = this.st().templates[index]
     if (!t) return { text: '', warnings: [] }
     return exportRange(start, end, { templates: [t.template] })
   }
 
   templateSummaries(): TemplateSummary[] {
-    return this.templates.map(({ fileName, template }) => {
+    return this.st().templates.map(({ fileName, template }) => {
       const cols = [...template.dayColumns].sort(
         (a, b) => a.year - b.year || a.month - b.month || a.day - b.day
       )
@@ -118,66 +141,50 @@ class Session {
     })
   }
 
-  async loadAzan(filePath: string): Promise<AzanSummary> {
-    const file = await parseAzanFile(filePath)
-    this.azan = { fileName: basename(filePath), file }
-    if (this.athanMode === 'off') this.athanMode = 'import'
-    return this.azanSummary()
-  }
-
   getConfig(): AppConfig {
+    const st = this.st()
     return {
-      athanMode: this.athanMode,
-      hourly: this.hourly,
-      hasAzan: Boolean(this.azan),
-      hasPromos: (this.promos?.set.entries.length ?? 0) > 0,
-      includePromos: this.includePromos
+      hourly: st.hourly,
+      includeAzan: st.includeAzan,
+      hasPromos: (st.promos?.set.entries.length ?? 0) > 0,
+      includePromos: st.includePromos
     }
   }
 
   setIncludePromos(include: boolean): AppConfig {
-    this.includePromos = include
+    this.st().includePromos = include
     return this.getConfig()
   }
 
-  setAthanMode(mode: AthanMode): AppConfig {
-    this.athanMode = mode
+  setIncludeAzan(include: boolean): AppConfig {
+    this.st().includeAzan = include
     return this.getConfig()
   }
 
   setHourly(hourly: HourlyOptions): AppConfig {
-    this.hourly = hourly
+    this.st().hourly = hourly
     return this.getConfig()
-  }
-
-  private azanSummary(): AzanSummary {
-    if (!this.azan) throw new Error('No AZAN file loaded')
-    return {
-      fileName: this.azan.fileName,
-      months: this.azan.file.months.map(
-        (m) => `${m.year}-${String(m.month).padStart(2, '0')}`
-      ),
-      dayCount: this.azan.file.byDay.size
-    }
   }
 
   // --- Promos ---------------------------------------------------------------
 
   /** Lazy-load the persisted promo set + overrides on first use. */
   private async ensurePromos(): Promise<PromosFile> {
-    if (!this.promos) this.promos = await promosStore.load()
-    return this.promos
+    const st = this.st()
+    if (!st.promos) st.promos = await promosStore.load()
+    return st.promos
   }
 
   private promoSummary(): PromoSummary | null {
-    if (!this.promos || this.promos.set.entries.length === 0) return null
-    return { fileName: this.promos.fileName ?? '', programCount: this.promos.set.entries.length }
+    const { promos } = this.st()
+    if (!promos || promos.set.entries.length === 0) return null
+    return { fileName: promos.fileName ?? '', programCount: promos.set.entries.length }
   }
 
   async loadPromos(filePath: string): Promise<PromoSummary | null> {
     const set = await parsePromosFile(filePath)
-    this.promos = { fileName: basename(filePath), set, overrides: {}, exclusions: {} }
-    await promosStore.save(this.promos)
+    this.st().promos = { fileName: basename(filePath), set, overrides: {}, exclusions: {} }
+    await promosStore.save(this.st().promos!)
     return this.promoSummary()
   }
 
@@ -192,8 +199,8 @@ class Session {
   }
 
   async removePromos(): Promise<PromoSummary | null> {
-    this.promos = { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {} }
-    await promosStore.save(this.promos)
+    this.st().promos = { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {} }
+    await promosStore.save(this.st().promos!)
     return this.promoSummary()
   }
 
@@ -272,8 +279,8 @@ class Session {
   ): { byDate: Map<string, string[]>; warnings: string[] } {
     const byDate = new Map<string, string[]>()
     const warnings: string[] = []
-    const file = this.promos
-    if (!this.includePromos || !file || file.set.entries.length === 0) return { byDate, warnings }
+    const { promos: file, includePromos } = this.st()
+    if (!includePromos || !file || file.set.entries.length === 0) return { byDate, warnings }
     for (const date of dateRange(start, end)) {
       const { events, warnings: w } = promoEventsForDate(file.set, date, {
         overrides: file.overrides,
@@ -287,29 +294,26 @@ class Session {
 
   private composeOptions(
     formatLinesForDate?: (date: CalendarDate) => string[],
-    promoLinesForDate?: (date: CalendarDate) => string[]
+    promoLinesForDate?: (date: CalendarDate) => string[],
+    azanFormat?: AzanFormat
   ): ComposeOptions {
-    const azan = this.azan
-    let athanSource: ComposeOptions['athanLinesForDate']
-    if (this.athanMode === 'import' && azan) {
-      athanSource = (date) => athanLinesForDate(azan.file, date)
-    } else if (this.athanMode === 'calculate') {
-      athanSource = (date) => computeAthanLines(date)
-    }
+    const st = this.st()
+    const azanLinesForDate =
+      st.includeAzan && azanFormat ? (date: CalendarDate) => computeAzanLines(date, azanFormat) : undefined
     return {
-      templates: this.templates.map((t) => t.template),
-      athanLinesForDate: athanSource,
-      athanCategory: 'ATHAN',
+      templates: st.templates.map((t) => t.template),
+      azanLinesForDate,
       formatLinesForDate,
       promoLinesForDate,
-      hourly: this.hourly
+      hourly: st.hourly
     }
   }
 
   /**
    * Compose the schedule for a range. `formatLinesForDate` (the resolved Formats
    * clock rows per day) is injected by the caller, which owns the Formats set and
-   * the sequential queues.
+   * the sequential queues. The computed azan (per the global AZAN format) is
+   * included when this station has "include azan" on.
    */
   async preview(
     start: CalendarDate,
@@ -317,8 +321,13 @@ class Session {
     formatLinesForDate?: (date: CalendarDate) => string[]
   ): Promise<{ text: string; warnings: string[] }> {
     await this.ensurePromos()
+    const azanFormat = this.st().includeAzan ? await azanFormatStore.load() : undefined
     const promo = this.promoLines(start, end)
-    const opts = this.composeOptions(formatLinesForDate, (d) => promo.byDate.get(dateKey(d)) ?? [])
+    const opts = this.composeOptions(
+      formatLinesForDate,
+      (d) => promo.byDate.get(dateKey(d)) ?? [],
+      azanFormat
+    )
     const { text, warnings } = exportRange(start, end, opts)
     return { text, warnings: [...warnings, ...promo.warnings] }
   }

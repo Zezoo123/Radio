@@ -1,47 +1,24 @@
 import { useState } from 'react'
-import type { AppConfig, AzanSummary, TemplateSummary } from '../../../main/session'
+import type { AppConfig, TemplateSummary } from '../../../main/session'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
 
 interface Props {
   templates: TemplateSummary[]
-  azan: AzanSummary | null
-  config: AppConfig | null
   onTemplates: (t: TemplateSummary[]) => void
-  onAzan: (a: AzanSummary | null) => void
   onConfig: (c: AppConfig) => void
 }
 
-export function ImportView({
-  templates,
-  azan,
-  config,
-  onTemplates,
-  onAzan,
-  onConfig
-}: Props): JSX.Element {
+export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewDate, setPreviewDate] = useState('')
   const [previewText, setPreviewText] = useState('')
-  const athanMode = config?.athanMode ?? 'off'
 
   // --- Add menu actions ---
   async function addAudio(): Promise<void> {
     setMenuOpen(false)
     onTemplates(await window.api.addTemplates())
-  }
-
-  async function addAthanImport(): Promise<void> {
-    setMenuOpen(false)
-    onConfig(await window.api.setAthanMode('import'))
-    const summary = await window.api.openAzan()
-    if (summary) onAzan(summary)
-  }
-
-  async function addAthanCalculate(): Promise<void> {
-    setMenuOpen(false)
-    onConfig(await window.api.setAthanMode('calculate'))
   }
 
   async function addPromos(): Promise<void> {
@@ -87,16 +64,7 @@ export function ImportView({
     if (previewIndex === index) await runPreview(index, previewDate)
   }
 
-  async function removeAthan(): Promise<void> {
-    onConfig(await window.api.setAthanMode('off'))
-  }
-
-  async function replaceAzan(): Promise<void> {
-    const summary = await window.api.openAzan()
-    if (summary) onAzan(summary)
-  }
-
-  const hasItems = templates.length > 0 || athanMode !== 'off'
+  const hasItems = templates.length > 0
 
   return (
     <div className="view">
@@ -114,14 +82,6 @@ export function ImportView({
                   <strong>Audio</strong>
                   <span className="muted">Element template · category AUDIO</span>
                 </button>
-                <button className="menu-item" onClick={addAthanImport}>
-                  <strong>Athan — import file</strong>
-                  <span className="muted">From an AZAN month · category ATHAN</span>
-                </button>
-                <button className="menu-item" onClick={addAthanCalculate}>
-                  <strong>Athan — calculate</strong>
-                  <span className="muted">Computed for Cairo · category ATHAN</span>
-                </button>
                 <button className="menu-item" onClick={addPromos}>
                   <strong>Promos</strong>
                   <span className="muted">Promo spreadsheet · edit in the Promos tab</span>
@@ -131,10 +91,10 @@ export function ImportView({
           )}
         </div>
       </div>
-      <p className="muted">Add audio element templates and the athan to build this schedule.</p>
+      <p className="muted">Add audio element templates and promos to build this schedule.</p>
 
       {!hasItems && (
-        <p className="empty">Nothing added yet. Use “Add” to import audio or the athan.</p>
+        <p className="empty">Nothing added yet. Use “Add” to import audio or promos.</p>
       )}
 
       {templates.length > 0 && (
@@ -214,50 +174,6 @@ export function ImportView({
                 dir="auto"
               />
             </div>
-          )}
-        </section>
-      )}
-
-      {athanMode !== 'off' && (
-        <section className="card">
-          <div className="card-head">
-            <h2>
-              Athan <span className="pill">ATHAN</span>
-            </h2>
-            <button className="btn-link" onClick={removeAthan}>
-              remove
-            </button>
-          </div>
-
-          {athanMode === 'calculate' ? (
-            <p className="muted">
-              Computed for Cairo (Egyptian General Authority of Survey). Approximate — about a minute
-              off the official timetable. Add “Athan — import file” for exact times.
-            </p>
-          ) : (
-            <>
-              <div className="row">
-                <span className="muted">Imported from an AZAN month file.</span>
-                <button className="btn" onClick={replaceAzan}>
-                  {azan ? 'Replace AZAN file…' : 'Open AZAN month…'}
-                </button>
-              </div>
-              {azan ? (
-                <div className="grid-info" style={{ marginTop: 10 }}>
-                  <div>
-                    <span className="k">File</span> {azan.fileName}
-                  </div>
-                  <div>
-                    <span className="k">Months</span> {azan.months.join(', ')}
-                  </div>
-                  <div>
-                    <span className="k">Days</span> {azan.dayCount}
-                  </div>
-                </div>
-              ) : (
-                <p className="empty">No athan file loaded yet.</p>
-              )}
-            </>
           )}
         </section>
       )}

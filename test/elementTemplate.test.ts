@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import ExcelJS from 'exceljs'
 import {
   eventsForDate,
   parseElementTemplate,
+  parseElementWorkbook,
   sectionForDate,
   type ElementTemplate
 } from '@core/parsers/elementTemplate'
@@ -65,6 +67,20 @@ describe('element template parser', () => {
 
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 1 })[0].name).toBe('ADS_1710_A')
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 2 })[0].name).toBe('ADS_1710')
+  })
+
+  it('pads 1-digit hours to HH:MM:SS so times sort and export correctly', () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Sheet1')
+    ws.addRow(['Test', 6, 2026])
+    ws.addRow(['ADS_9', 1])
+    ws.addRow(['', 'M']) // weekday letters row
+    ws.addRow(['17:20:01', 'A'])
+    ws.addRow(['8:20:01', 'A']) // Excel time cell without a leading zero
+
+    const tpl = parseElementWorkbook(wb)
+    const events = eventsForDate(tpl, { year: 2026, month: 6, day: 1 })
+    expect(events.map((e) => e.time)).toEqual(['08:20:01', '17:20:01'])
   })
 
   it('emits the template category on every event (Simian Category column)', async () => {

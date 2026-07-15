@@ -13,7 +13,7 @@ Given two kinds of Excel inputs:
 
 it composes a daily playout that also includes:
 
-- **Athan** — the 5 daily prayer calls, computed for Cairo (Egyptian General Authority of Survey).
+- **AZAN** — the 5 daily prayer calls, computed for Cairo (Egyptian General Authority of Survey).
 - **Hourly comment markers** and a **per-day date header**.
 
 …and exports a `|`-delimited text log for a single day or any date range, ready for Simian's

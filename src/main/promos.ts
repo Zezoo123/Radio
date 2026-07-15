@@ -1,8 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { app } from 'electron'
 import type { PromoSet } from './core/parsers/promosFile'
 import type { PromoExclusions, PromoOverrides } from './core/promos/schedule'
+import { stationFile, stationFileEnsured } from './station'
 
 /** What's persisted to promos.json: the imported set + the user's edits. */
 export interface PromosFile {
@@ -39,28 +38,27 @@ function normalizeExclusions(raw: unknown): PromoExclusions {
   return out
 }
 
-/** Persists the imported promo set and per-date time overrides as JSON in userData. */
+/** Persists the imported promo set and per-date time overrides as JSON, per station. */
 class PromosStore {
-  private filePath(): string {
-    return join(app.getPath('userData'), 'promos.json')
-  }
-
   async load(): Promise<PromosFile> {
     try {
-      const raw = JSON.parse(await readFile(this.filePath(), 'utf-8')) as Partial<PromosFile>
+      const raw = JSON.parse(await readFile(stationFile('promos.json'), 'utf-8')) as Partial<PromosFile>
       return {
         fileName: raw.fileName ?? null,
         set: raw.set?.entries ? raw.set : { entries: [] },
         overrides: raw.overrides ?? {},
         exclusions: normalizeExclusions(raw.exclusions)
       }
-    } catch {
-      return emptyPromosFile()
+    } catch (err) {
+      // Only a missing file means "first run"; other errors must surface so
+      // a failed read can't be persisted back as an empty set on the next save.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyPromosFile()
+      throw err
     }
   }
 
   async save(file: PromosFile): Promise<void> {
-    await writeFile(this.filePath(), JSON.stringify(file, null, 2), 'utf-8')
+    await writeFile(await stationFileEnsured('promos.json'), JSON.stringify(file, null, 2), 'utf-8')
   }
 }
 

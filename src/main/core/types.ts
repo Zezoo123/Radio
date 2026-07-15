@@ -39,8 +39,8 @@ export interface ScheduleDay {
   formatLines?: string[]
   /** Top-of-hour comment marker rows. */
   hourlyLines?: string[]
-  /** Verbatim athan rows (from the AZAN file) emitted right after the header. */
-  athanLines?: string[]
+  /** Verbatim azan rows (from the AZAN file) emitted right after the header. */
+  azanLines?: string[]
   /** Promo rows (program trailers) distributed across the day. */
   promoLines?: string[]
   sections: Section[]

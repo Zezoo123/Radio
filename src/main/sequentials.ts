@@ -1,25 +1,27 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { app } from 'electron'
 import type { Sequential } from './core/sequential/types'
+import { stationFile, stationFileEnsured } from './station'
 
-/** Persists sequentials (definitions + their rotation queues) as JSON. */
+/** Persists sequentials (definitions + their rotation queues) as JSON, per station. */
 class SequentialStore {
-  private filePath(): string {
-    return join(app.getPath('userData'), 'sequentials.json')
-  }
-
   async load(): Promise<Sequential[]> {
     try {
-      const list = JSON.parse(await readFile(this.filePath(), 'utf-8')) as Sequential[]
+      const list = JSON.parse(await readFile(stationFile('sequentials.json'), 'utf-8')) as Sequential[]
       return Array.isArray(list) ? list.map(normalize) : []
-    } catch {
-      return []
+    } catch (err) {
+      // Only a missing file means "first run"; other errors must surface so
+      // a failed read can't be persisted back as an empty list by upsert/remove.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+      throw err
     }
   }
 
   async save(list: Sequential[]): Promise<void> {
-    await writeFile(this.filePath(), JSON.stringify(list, null, 2), 'utf-8')
+    await writeFile(
+      await stationFileEnsured('sequentials.json'),
+      JSON.stringify(list, null, 2),
+      'utf-8'
+    )
   }
 
   /** Create or update a sequential by id. Editing resets its queue + history. */

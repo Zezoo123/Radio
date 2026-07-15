@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
-import type { AppConfig, AzanSummary, TemplateSummary } from '../../main/session'
+import type { AppConfig, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
 import { ImportView } from './views/ImportView'
 import { ExportView } from './views/ExportView'
 import { FormatsView } from './views/FormatsView'
 import { PromosView } from './views/PromosView'
+import { EditorView } from './views/EditorView'
+import { StationPicker, STATION_COLOR } from './views/StationPicker'
+import { SettingsModal } from './views/SettingsModal'
 
-type View = 'import' | 'formats' | 'promos' | 'export'
+type View = 'import' | 'formats' | 'promos' | 'export' | 'editor'
 type Theme = 'dark' | 'light'
 type Contrast = 'normal' | 'high'
 
@@ -35,6 +38,11 @@ const NAV_ICONS: Record<View, JSX.Element> = {
     <svg viewBox="0 0 24 24">
       <path d="M12 21V11m0 0-4 4m4-4 4 4M4 8V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" />
     </svg>
+  ),
+  editor: (
+    <svg viewBox="0 0 24 24">
+      <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
   )
 }
 
@@ -42,6 +50,13 @@ const BRAND_MARK = (
   <svg viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="2" />
     <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M6 6a9 9 0 0 0 0 12M18 6a9 9 0 0 1 0 12" />
+  </svg>
+)
+
+const GEAR_ICON = (
+  <svg viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 )
 
@@ -54,17 +69,74 @@ function readPref<T extends string>(key: string, fallback: T): T {
   }
 }
 
+/** Strip Electron's "Error invoking remote method 'x': Error: " IPC wrapping. */
+function errorMessage(reason: unknown): string {
+  const raw = reason instanceof Error ? reason.message : String(reason)
+  const m = raw.match(/Error invoking remote method '([^']+)':\s*(?:Error:\s*)?(.*)/s)
+  return m ? `${m[2]} (${m[1]})` : raw
+}
+
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
-  const [azan, setAzan] = useState<AzanSummary | null>(null)
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [theme, setTheme] = useState<Theme>(() => readPref('ui.theme', 'dark'))
   const [contrast, setContrast] = useState<Contrast>(() => readPref('ui.contrast', 'normal'))
+  const [error, setError] = useState<string | null>(null)
+  const [stations, setStations] = useState<string[]>([])
+  const [station, setStation] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  // A log handed from Export to the Editor ({} wrapper so re-sends always fire).
+  const [editorLog, setEditorLog] = useState<{ text: string } | null>(null)
+  // App-wide per-category row colors (persisted in Settings, used by the Editor).
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    window.api.getUiSettings().then((s) => setCategoryColors(s.categoryColors))
+  }, [])
+
+  async function updateCategoryColors(next: Record<string, string>): Promise<void> {
+    setCategoryColors(next)
+    const saved = await window.api.saveUiSettings({ categoryColors: next })
+    setCategoryColors(saved.categoryColors)
+  }
+
+  function editLog(text: string): void {
+    setEditorLog({ text })
+    setView('editor')
+  }
+
+  useEffect(() => {
+    window.api.listStations().then(setStations)
+    window.api.getStation().then(setStation)
+  }, [])
+
+  // (Re)load the active station's imports + config whenever the station changes.
+  useEffect(() => {
+    if (!station) return
     window.api.listTemplates().then(setTemplates)
     window.api.getConfig().then(setConfig)
+  }, [station])
+
+  async function switchStation(next: string): Promise<void> {
+    if (next === station) return
+    await window.api.setStation(next)
+    // Clear the previous station's view data; the effect above reloads for `next`.
+    setTemplates([])
+    setConfig(null)
+    setView('import')
+    setStation(next)
+  }
+
+  // No view catches its own IPC errors, so surface any unhandled rejection
+  // (failed parse, export, save…) here instead of losing it in devtools.
+  useEffect(() => {
+    const onRejection = (e: PromiseRejectionEvent): void => {
+      e.preventDefault()
+      setError(errorMessage(e.reason))
+    }
+    window.addEventListener('unhandledrejection', onRejection)
+    return () => window.removeEventListener('unhandledrejection', onRejection)
   }, [])
 
   // Apply + persist the appearance choice (light/dark, normal/high contrast).
@@ -84,8 +156,14 @@ export default function App(): JSX.Element {
     { id: 'import', label: 'Import' },
     { id: 'formats', label: 'Formats' },
     { id: 'promos', label: 'Promos' },
-    { id: 'export', label: 'Export' }
+    { id: 'export', label: 'Export' },
+    { id: 'editor', label: 'Editor' }
   ]
+
+  // Nothing loads until a station is chosen.
+  if (!station) {
+    return <StationPicker stations={stations} onPick={switchStation} />
+  }
 
   return (
     <div className="app-shell">
@@ -96,6 +174,20 @@ export default function App(): JSX.Element {
             Radio Scheduler
             <span className="brand-sub">BSI Simian export</span>
           </span>
+        </div>
+        <div className="station-switch" title={`Station: ${station}`}>
+          <span className="station-dot" style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }} />
+          <select
+            className="station-select"
+            value={station}
+            onChange={(e) => switchStation(e.target.value)}
+          >
+            {stations.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </div>
         <nav>
           {nav.map((n) => (
@@ -137,31 +229,50 @@ export default function App(): JSX.Element {
               High contrast
             </label>
           </div>
+          <button className="settings-link" onClick={() => setSettingsOpen(true)}>
+            <span className="nav-ico">{GEAR_ICON}</span>
+            <span className="nav-label">Settings</span>
+          </button>
           <div className="sidebar-foot">
             <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
-            <br />
-            <div className={`dot ${azan ? 'on' : ''}`} /> Athan {azan ? 'loaded' : 'none'}
           </div>
         </div>
       </aside>
 
-      <main className="content">
+      <main className="content" key={station}>
+        {error && (
+          <div className="error-banner" role="alert">
+            <span className="error-banner-text">{error}</span>
+            <button className="error-banner-close" onClick={() => setError(null)} title="Dismiss">
+              ✕
+            </button>
+          </div>
+        )}
         {view === 'import' && (
-          <ImportView
-            templates={templates}
-            azan={azan}
-            config={config}
-            onTemplates={setTemplates}
-            onAzan={setAzan}
-            onConfig={setConfig}
-          />
+          <ImportView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
         )}
         {view === 'formats' && <FormatsView />}
         {view === 'promos' && <PromosView />}
         {view === 'export' && (
-          <ExportView templates={templates} azan={azan} config={config} onConfig={setConfig} />
+          <ExportView templates={templates} config={config} onConfig={setConfig} onEdit={editLog} />
         )}
+        {/* The Editor stays mounted so its unsaved document survives tab switches. */}
+        <div style={{ display: view === 'editor' ? undefined : 'none' }}>
+          <EditorView
+            incoming={editorLog}
+            onConsumed={() => setEditorLog(null)}
+            categoryColors={categoryColors}
+          />
+        </div>
       </main>
+
+      {settingsOpen && (
+        <SettingsModal
+          onClose={() => setSettingsOpen(false)}
+          categoryColors={categoryColors}
+          onCategoryColors={updateCategoryColors}
+        />
+      )}
     </div>
   )
 }

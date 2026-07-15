@@ -147,6 +147,13 @@ export function ClockEditor({
 
   function removeRow(index: number): void {
     if (!selected) return
+    // Removing a row shifts indices (or deletes the focused row outright), so
+    // the tracked insert target is stale — clear it or Insert patches the
+    // wrong row / reads out of bounds.
+    focusedEl.current = null
+    focusedRow.current = null
+    focusedField.current = null
+    setActiveField(null)
     onChangeFormat({ ...selected, rows: selected.rows.filter((_, i) => i !== index) })
   }
 

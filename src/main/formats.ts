@@ -1,28 +1,27 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { app } from 'electron'
 import { emptyFormatSet, type FormatSet } from './core/format/types'
 import { normalizeFormatSet } from './core/format/normalize'
+import { stationFile, stationFileEnsured } from './station'
 
 export { normalizeFormatSet }
 
-/** Persists the hour-format set (clocks + week grid) as JSON in userData. */
+/** Persists the hour-format set (clocks + week grid) as JSON, per station. */
 class FormatStore {
-  private filePath(): string {
-    return join(app.getPath('userData'), 'formats.json')
-  }
-
   async load(): Promise<FormatSet> {
     try {
-      const raw = JSON.parse(await readFile(this.filePath(), 'utf-8'))
+      const raw = JSON.parse(await readFile(stationFile('formats.json'), 'utf-8'))
       return normalizeFormatSet(raw) ?? emptyFormatSet()
-    } catch {
-      return emptyFormatSet()
+    } catch (err) {
+      // Only a missing file means "first run". Anything else (permissions,
+      // disk error, corrupt JSON) must surface — defaulting to empty here
+      // lets the next save() overwrite the user's data.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return emptyFormatSet()
+      throw err
     }
   }
 
   async save(set: FormatSet): Promise<void> {
-    await writeFile(this.filePath(), JSON.stringify(set, null, 2), 'utf-8')
+    await writeFile(await stationFileEnsured('formats.json'), JSON.stringify(set, null, 2), 'utf-8')
   }
 }
 

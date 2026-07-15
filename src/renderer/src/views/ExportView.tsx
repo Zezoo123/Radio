@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
-import type { AppConfig, AzanSummary, TemplateSummary } from '../../../main/session'
+import type { AppConfig, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 
 interface Props {
   templates: TemplateSummary[]
-  azan: AzanSummary | null
   config: AppConfig | null
   onConfig: (c: AppConfig) => void
+  /** Hand the current grid to the Editor tab (no file round-trip needed). */
+  onEdit: (text: string) => void
 }
 
-export function ExportView({ templates, azan, config, onConfig }: Props): JSX.Element {
+export function ExportView({ templates, config, onConfig, onEdit }: Props): JSX.Element {
   const [start, setStart] = useState('2026-06-01')
   const [end, setEnd] = useState('2026-06-01')
   const [preview, setPreview] = useState('')
@@ -22,11 +23,19 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
     window.api.hasFormats().then(setHasFormats)
   }, [])
 
-  const ready = hasFormats || templates.length > 0 || Boolean(azan)
+  const ready =
+    hasFormats ||
+    templates.length > 0 ||
+    Boolean(config?.includeAzan) ||
+    Boolean(config?.hasPromos)
   const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
 
   async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
     onConfig(await window.api.setHourly({ ...hourly, ...patch }))
+  }
+
+  async function toggleAzan(include: boolean): Promise<void> {
+    onConfig(await window.api.setIncludeAzan(include))
   }
 
   async function togglePromos(include: boolean): Promise<void> {
@@ -54,12 +63,13 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
     setStatus(res.saved ? `Saved to ${res.path}` : 'Export cancelled')
   }
 
+
   return (
     <div className="view">
       <h1>Export</h1>
       <p className="muted">
         Pick a single day or a date range, preview the Simian log, then export. Each day combines the
-        Formats week-grid schedule with the imported audio templates and athan. A single day is just
+        Formats week-grid schedule with the imported audio templates and AZAN. A single day is just
         the same start and end date.
       </p>
 
@@ -77,14 +87,30 @@ export function ExportView({ templates, azan, config, onConfig }: Props): JSX.El
           <button className="btn primary" disabled={!ready} onClick={doExport}>
             Export…
           </button>
+          <button
+            className="btn"
+            disabled={!preview}
+            title="Send the previewed log to the Editor tab without exporting first"
+            onClick={() => onEdit(preview)}
+          >
+            Edit in Editor
+          </button>
           {status && <span className="muted">{status}</span>}
         </div>
         {!ready && (
           <p className="empty">
-            Paint a Formats week grid, or import audio templates / athan first.
+            Paint a Formats week grid, or import audio templates first (or tick “Include AZAN”).
           </p>
         )}
         <div className="row" style={{ marginTop: 10 }}>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={config?.includeAzan ?? false}
+              onChange={(e) => toggleAzan(e.target.checked)}
+            />
+            Include AZAN
+          </label>
           <label className="check">
             <input
               type="checkbox"
