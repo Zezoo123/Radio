@@ -276,7 +276,9 @@ class Session {
 
   /**
    * Promo rows per date for export composition. Drops unrecorded promos (and
-   * warns); empty when promos are disabled or none are loaded.
+   * warns); empty when promos are disabled or none are loaded. Each day's block
+   * is grouped per promo (like the day preview) — every row carries its own
+   * time cue, so Simian does not need the block chronological.
    */
   private promoLines(
     start: CalendarDate,
@@ -289,7 +291,8 @@ class Session {
     for (const date of dateRange(start, end)) {
       const { events, warnings: w } = promoEventsForDate(file.set, date, {
         overrides: file.overrides,
-        exclusions: file.exclusions
+        exclusions: file.exclusions,
+        sort: 'promo'
       })
       warnings.push(...w)
       if (events.length) byDate.set(dateKey(date), events.map(eventLine))
