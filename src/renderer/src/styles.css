@@ -383,8 +383,14 @@ nav {
 .content {
   grid-column: 2;
   min-width: 0;
-  padding: 28px 34px;
+  /* Top spacing lives on the first child, not as padding here: sticky table
+     headers pin at the scroller's padding edge, so top padding would leave a
+     strip above pinned headers where scrolled rows stay visible. */
+  padding: 0 34px 28px;
   overflow: auto;
+}
+.content > :first-child {
+  margin-top: 28px;
 }
 .error-banner {
   display: flex;
@@ -534,6 +540,13 @@ label {
   background: var(--panel);
   box-shadow: 0 1px 0 var(--border);
   z-index: 2;
+}
+/* Not in modals: the backdrop scroller's 48px padding would pin the header
+   mid-air below the viewport top, with rows showing above it. */
+.modal-backdrop .tbl thead th {
+  position: static;
+  background: none;
+  box-shadow: none;
 }
 .tbl tr.unmapped td:first-child {
   border-left: 3px solid var(--warn);
