@@ -9,6 +9,7 @@ import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
 import { loadSimianDb, lookupDuration, type SimianDb } from './core/simianDb'
 import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
+import { decodeLogText, encodeAnsi } from './core/export/encoding'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
@@ -63,7 +64,7 @@ async function saveText(
     filters: [{ name: 'Text', extensions: ['txt'] }]
   })
   if (res.canceled || !res.filePath) return { saved: false }
-  await writeFile(res.filePath, text, 'utf-8')
+  await writeFile(res.filePath, encodeAnsi(text))
   return { saved: true, path: res.filePath }
 }
 
@@ -265,7 +266,7 @@ export function registerIpc(): void {
       filters: [{ name: 'Text', extensions: ['txt'] }]
     })
     if (res.canceled || !res.filePath) return { saved: false, warnings }
-    await writeFile(res.filePath, text, 'utf-8')
+    await writeFile(res.filePath, encodeAnsi(text))
     // Persist the advanced sequential queues only once the file is written.
     await sequentialStore.save(sequentials)
     return { saved: true, path: res.filePath, warnings }
@@ -298,14 +299,14 @@ export function registerIpc(): void {
         bsi: true
       }
     }
-    return { path, text: buffer.toString('utf-8') }
+    return { path, text: decodeLogText(buffer) }
   })
 
   ipcMain.handle(
     'log:save',
     async (_e, { text, path }: { text: string; path?: string }) => {
       if (path) {
-        await writeFile(path, text, 'utf-8')
+        await writeFile(path, encodeAnsi(text))
         return { saved: true, path }
       }
       const win = BrowserWindow.getFocusedWindow() ?? undefined
@@ -315,7 +316,7 @@ export function registerIpc(): void {
         filters: LOG_FILTERS
       })
       if (res.canceled || !res.filePath) return { saved: false }
-      await writeFile(res.filePath, text, 'utf-8')
+      await writeFile(res.filePath, encodeAnsi(text))
       return { saved: true, path: res.filePath }
     }
   )
