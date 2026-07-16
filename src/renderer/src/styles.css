@@ -1246,6 +1246,9 @@ code {
   color: inherit;
   font: inherit;
   padding: 4px 8px;
+  /* dir="auto" flips RTL text (Arabic) to the right edge; pin it left so it
+     lines up with the rest of the column. RTL word order is unaffected. */
+  text-align: left;
 }
 .log-grid td input:focus {
   outline: none;
