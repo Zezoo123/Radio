@@ -15,6 +15,9 @@ export interface UiSettings {
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 
+/** Category renames applied to older persisted data (old name → new name). */
+const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV' }
+
 export function normalizeUiSettings(raw: unknown): UiSettings {
   const out: UiSettings = { categoryColors: {} }
   if (!raw || typeof raw !== 'object') return out
@@ -22,7 +25,11 @@ export function normalizeUiSettings(raw: unknown): UiSettings {
   if (colors && typeof colors === 'object') {
     for (const [category, color] of Object.entries(colors)) {
       if (typeof color === 'string' && HEX_COLOR.test(color) && category.trim()) {
-        out.categoryColors[category.trim().toUpperCase()] = color.toLowerCase()
+        const key = category.trim().toUpperCase()
+        const renamed = RENAMED_CATEGORIES[key]
+        // A color already stored under the new name wins over the legacy one.
+        if (renamed && renamed in out.categoryColors) continue
+        out.categoryColors[renamed ?? key] = color.toLowerCase()
       }
     }
   }

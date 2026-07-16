@@ -14,6 +14,13 @@ function filePath(): string {
   return join(app.getPath('userData'), 'azan-format.json')
 }
 
+/** Category renames applied to older persisted data (old name → new name). */
+const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV' }
+
+function migrateCategory(category: string): string {
+  return RENAMED_CATEGORIES[category] ?? category
+}
+
 function normalizeLine(raw: unknown): AzanLine | null {
   if (!raw || typeof raw !== 'object') return null
   const o = raw as Partial<AzanLine>
@@ -22,7 +29,7 @@ function normalizeLine(raw: unknown): AzanLine | null {
     offset: Number.isFinite(o.offset) ? Math.trunc(o.offset as number) : 0,
     cue,
     name: typeof o.name === 'string' ? o.name : '',
-    category: typeof o.category === 'string' ? o.category : '',
+    category: typeof o.category === 'string' ? migrateCategory(o.category) : '',
     description: typeof o.description === 'string' ? o.description : ''
   }
 }
@@ -34,7 +41,10 @@ export function normalizeAzanFormat(raw: unknown): AzanFormat {
   }
   const o = raw as Partial<AzanFormat>
   return {
-    azanCategory: typeof o.azanCategory === 'string' && o.azanCategory ? o.azanCategory : 'FEATURE',
+    azanCategory:
+      typeof o.azanCategory === 'string' && o.azanCategory
+        ? migrateCategory(o.azanCategory)
+        : 'FEATURE',
     lines: Array.isArray(o.lines)
       ? (o.lines.map(normalizeLine).filter(Boolean) as AzanLine[])
       : []
