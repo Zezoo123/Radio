@@ -6,7 +6,7 @@ export interface ScheduleEvent {
   /** Broadcast time, `HH:MM:SS` (seconds carry the per-group collision offset). */
   time: string
   cue: Cue
-  /** Audio file name Simian resolves against its database, e.g. `ADS_1710_A`. */
+  /** Audio file name Simian resolves against its database, e.g. `ADS_1710-A`. */
   name: string
   /** Optional Simian Category column (e.g. `FEA`, `AUDIO`). */
   category?: string

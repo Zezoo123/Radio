@@ -35,10 +35,10 @@ describe('element template parser', () => {
     // Day 1 (Mon): all four times play track A.
     const d1 = eventsForDate(tpl, { year: 2026, month: 6, day: 1 })
     expect(d1.map((e) => `${e.time}|${e.cue}|${e.name}`)).toEqual([
-      '08:20:01|+|ADS_1710_A',
-      '09:20:01|+|ADS_1710_A',
-      '17:20:01|+|ADS_1710_A',
-      '18:20:01|+|ADS_1710_A'
+      '08:20:01|+|ADS_1710-A',
+      '09:20:01|+|ADS_1710-A',
+      '17:20:01|+|ADS_1710-A',
+      '18:20:01|+|ADS_1710-A'
     ])
 
     // Day 5 (Fri): no spots scheduled.
@@ -65,7 +65,7 @@ describe('element template parser', () => {
       ]
     }
 
-    expect(eventsForDate(tpl, { year: 2026, month: 6, day: 1 })[0].name).toBe('ADS_1710_A')
+    expect(eventsForDate(tpl, { year: 2026, month: 6, day: 1 })[0].name).toBe('ADS_1710-A')
     expect(eventsForDate(tpl, { year: 2026, month: 6, day: 2 })[0].name).toBe('ADS_1710')
   })
 
@@ -89,7 +89,7 @@ describe('element template parser', () => {
     const line = serialize([
       { year: 2026, month: 6, day: 1, sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })] }
     ])
-    expect(line).toContain('08:20:01|+|ADS_1710_A|AUDIO|')
+    expect(line).toContain('08:20:01|+|ADS_1710-A|AUDIO|')
   })
 })
 

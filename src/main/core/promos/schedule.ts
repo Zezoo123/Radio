@@ -271,11 +271,15 @@ export interface PromoEventsResult {
  * Promo events for one date. Every program with a promo file and a count for
  * this weekday is included — the spreadsheet's "Recorded" flag refers to the
  * program, not the promo, so it does not gate the log.
+ *
+ * `sort: 'time'` (default) interleaves all promos chronologically, as the
+ * exported log needs; `sort: 'promo'` keeps each promo's lines together
+ * (spreadsheet order, times ascending within a promo) for the day preview.
  */
 export function promoEventsForDate(
   set: PromoSet,
   date: CalendarDate,
-  opts: { overrides?: PromoOverrides; exclusions?: PromoExclusions } = {}
+  opts: { overrides?: PromoOverrides; exclusions?: PromoExclusions; sort?: 'time' | 'promo' } = {}
 ): PromoEventsResult {
   const wd = weekday(date)
   const events: ScheduleEvent[] = []
@@ -304,7 +308,7 @@ export function promoEventsForDate(
     }
   }
 
-  events.sort((a, b) => a.time.localeCompare(b.time))
+  if (opts.sort !== 'promo') events.sort((a, b) => a.time.localeCompare(b.time))
   return { events, warnings }
 }
 
