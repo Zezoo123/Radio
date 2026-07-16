@@ -525,6 +525,16 @@ label {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* Headers stay pinned while the table scrolls (until the table's end passes).
+   Background + box-shadow because rows slide underneath and collapsed borders
+   don't travel with a sticky cell. */
+.tbl thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  box-shadow: 0 1px 0 var(--border);
+  z-index: 2;
+}
 .tbl tr.unmapped td:first-child {
   border-left: 3px solid var(--warn);
 }
@@ -805,7 +815,9 @@ input[type='color'] {
 
 /* Week grid */
 .week-grid {
-  overflow: auto;
+  /* clip (not auto): keeps the rounded-corner clipping without creating a
+     scroll container, so the sticky header pins to the scrolling .content pane */
+  overflow: clip;
   border: 1px solid var(--border);
   border-radius: 10px;
 }
@@ -828,8 +840,14 @@ input[type='color'] {
   background: var(--panel);
   color: var(--muted);
   padding: 6px 4px;
+}
+/* Only the weekday-label row pins; the default-clock row scrolls away under it
+   (two sticky rows at top: 0 would overlap). */
+.grid-tbl thead tr:first-child th {
   position: sticky;
   top: 0;
+  z-index: 2;
+  box-shadow: 0 1px 0 var(--border); /* collapsed borders don't stick */
 }
 .grid-tbl .corner {
   width: 44px;
@@ -1084,6 +1102,12 @@ code {
   border-collapse: collapse;
   width: 100%;
 }
+.week-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2); /* matches .promo-item so rows vanish under it */
+  z-index: 2;
+}
 .week-table th.wd-col {
   width: 1%;
   white-space: nowrap;
@@ -1188,9 +1212,11 @@ code {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text);
-  border-bottom: 2px solid var(--accent);
+  /* box-shadow, not border-bottom: collapsed table borders don't travel with a
+     sticky cell, so the accent underline would stay behind while the header pins */
+  box-shadow: 0 2px 0 var(--accent);
   position: sticky;
-  top: -8px; /* offsets .log-card padding so the header pins cleanly */
+  top: 0; /* pins to the top of the scrolling .content pane */
   /* Accent-tinted bar so the header stands out from the data rows. */
   background: color-mix(in srgb, var(--accent) 22%, var(--panel));
   z-index: 1;
@@ -1365,10 +1391,10 @@ code {
   letter-spacing: 0.03em;
 }
 
-/* Excel-style column resizing in the Editor grid */
-.log-grid th {
-  position: relative;
-}
+/* Excel-style column resizing in the Editor grid.
+   Note: .log-grid th is position: sticky (see the log-grid block), which also
+   anchors the absolutely-positioned .col-resize handles — don't reset it to
+   relative here or the header stops pinning while the grid scrolls. */
 .log-grid td {
   overflow: hidden;
 }
