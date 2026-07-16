@@ -45,7 +45,7 @@ export interface AzanFormat {
 }
 
 export const DEFAULT_AZAN_FORMAT: AzanFormat = {
-  azanCategory: 'FEATURE',
+  azanCategory: 'FEA',
   lines: [{ offset: -10, cue: '@', name: '', category: 'MACRO', description: DEFAULT_MACRO }]
 }
 

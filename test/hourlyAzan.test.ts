@@ -18,7 +18,7 @@ describe('hourly markers', () => {
   })
 })
 
-describe('azan rows (default format: deckfade 10s before, azan = FEATURE)', () => {
+describe('azan rows (default format: deckfade 10s before, azan = FEA)', () => {
   it('emits the deckfade 10s before the azan, per prayer', () => {
     const rows = buildAzanRows({
       fajr: '04:10:00',
@@ -28,14 +28,14 @@ describe('azan rows (default format: deckfade 10s before, azan = FEATURE)', () =
       isha: '21:23:00'
     })
     expect(rows[0]).toBe('04:09:50|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN')
-    expect(rows[1]).toBe('04:10:00|+|AZ22-01RB|FEATURE|AZAN فجر')
+    expect(rows[1]).toBe('04:10:00|+|AZ22-01RB|FEA|AZAN فجر')
     expect(rows).toHaveLength(10)
   })
 
   it('computes Cairo/Egyptian rows for a date', () => {
     const rows = computeAzanLines({ year: 2026, month: 6, day: 18 })
     expect(rows[0]).toBe('04:07:50|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN')
-    expect(rows[1]).toBe('04:08:00|+|AZ22-01RB|FEATURE|AZAN فجر')
+    expect(rows[1]).toBe('04:08:00|+|AZ22-01RB|FEA|AZAN فجر')
   })
 
   it('honors a custom format: extra line after, custom azan category', () => {

@@ -6,9 +6,7 @@ import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
 // Categories offered for azan lines (the built-in set already includes MACRO).
-const CATEGORY_OPTIONS = DEFAULT_CATEGORIES.includes('FEATURE')
-  ? DEFAULT_CATEGORIES
-  : ['FEATURE', ...DEFAULT_CATEGORIES]
+const CATEGORY_OPTIONS = DEFAULT_CATEGORIES
 
 interface Props {
   onClose: () => void
