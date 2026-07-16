@@ -210,12 +210,17 @@ class Session {
     return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions)
   }
 
-  /** The promo Simian rows for one date (all promo files), as preview text. */
+  /**
+   * The promo Simian rows for one date (all promo files), as preview text.
+   * Grouped per promo (not chronological) so each program's spots read together;
+   * the export itself stays time-sorted.
+   */
   async promoTextForDate(date: CalendarDate): Promise<string> {
     const file = await this.ensurePromos()
     const { events } = promoEventsForDate(file.set, date, {
       overrides: file.overrides,
-      exclusions: file.exclusions
+      exclusions: file.exclusions,
+      sort: 'promo'
     })
     return events.map(eventLine).join('\r\n')
   }

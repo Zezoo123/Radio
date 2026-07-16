@@ -145,6 +145,34 @@ describe('promos distribution rules', () => {
   })
 })
 
+describe('promoEventsForDate sort option', () => {
+  it('sorts chronologically by default', async () => {
+    const set = { entries: await load() }
+    const { events } = promoEventsForDate(set, SUN)
+    const times = events.map((e) => e.time)
+    expect(times).toEqual([...times].sort((a, b) => a.localeCompare(b)))
+  })
+
+  it("keeps each promo's lines together with sort: 'promo'", async () => {
+    const set = { entries: await load() }
+    const { events } = promoEventsForDate(set, SUN, { sort: 'promo' })
+    // Same rows as the default, just ordered differently.
+    expect(events.length).toBe(promoEventsForDate(set, SUN).events.length)
+    // Each file name appears in one contiguous run, in spreadsheet order.
+    const names = events.map((e) => e.name)
+    const runs = names.filter((n, i) => i === 0 || n !== names[i - 1])
+    expect(new Set(runs).size).toBe(runs.length)
+    const fileOrder = set.entries.map((e) => e.fileName).filter((n) => runs.includes(n))
+    expect(runs).toEqual(fileOrder)
+    // Times ascend within each promo's run.
+    for (let i = 1; i < events.length; i++) {
+      if (events[i].name === events[i - 1].name) {
+        expect(events[i].time.localeCompare(events[i - 1].time)).toBeGreaterThan(0)
+      }
+    }
+  })
+})
+
 describe('recorded flag is ignored for promos', () => {
   it('includes a promo in the export even when its program is not recorded', async () => {
     const set = { entries: await load() }
