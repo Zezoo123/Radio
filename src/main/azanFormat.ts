@@ -15,7 +15,7 @@ function filePath(): string {
 }
 
 /** Category renames applied to older persisted data (old name → new name). */
-const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV' }
+const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV', FEATURE: 'FEA' }
 
 function migrateCategory(category: string): string {
   return RENAMED_CATEGORIES[category] ?? category
@@ -37,14 +37,14 @@ function normalizeLine(raw: unknown): AzanLine | null {
 /** Coerce persisted/incoming data to a well-formed AzanFormat. */
 export function normalizeAzanFormat(raw: unknown): AzanFormat {
   if (!raw || typeof raw !== 'object') {
-    return { azanCategory: 'FEATURE', lines: DEFAULT_AZAN_FORMAT.lines.map((l) => ({ ...l })) }
+    return { azanCategory: 'FEA', lines: DEFAULT_AZAN_FORMAT.lines.map((l) => ({ ...l })) }
   }
   const o = raw as Partial<AzanFormat>
   return {
     azanCategory:
       typeof o.azanCategory === 'string' && o.azanCategory
         ? migrateCategory(o.azanCategory)
-        : 'FEATURE',
+        : 'FEA',
     lines: Array.isArray(o.lines)
       ? (o.lines.map(normalizeLine).filter(Boolean) as AzanLine[])
       : []
@@ -58,7 +58,7 @@ class AzanFormatStore {
     } catch (err) {
       // Only a missing file means "first run" → seed with the default format.
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { azanCategory: 'FEATURE', lines: DEFAULT_AZAN_FORMAT.lines.map((l) => ({ ...l })) }
+        return { azanCategory: 'FEA', lines: DEFAULT_AZAN_FORMAT.lines.map((l) => ({ ...l })) }
       }
       throw err
     }
