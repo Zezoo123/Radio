@@ -2,8 +2,28 @@ import {
   DEFAULT_CATEGORIES,
   emptyDayDefaults,
   type FormatSet,
+  type HourFormat,
   type WeekGrid
 } from './types'
+
+/** Category renames applied to older persisted data (old name → new name). */
+const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV' }
+
+function migrateCategories(set: FormatSet): void {
+  if (Array.isArray(set.categories)) {
+    set.categories = set.categories.map((c) => RENAMED_CATEGORIES[c] ?? c)
+    // Dedupe in case the new name was already added alongside the old one.
+    set.categories = [...new Set(set.categories)]
+  }
+  const clocks: HourFormat[] = [...(set.formats ?? []), ...(set.defaultClocks ?? [])]
+  for (const clock of clocks) {
+    for (const row of clock.rows ?? []) {
+      if (row.category && RENAMED_CATEGORIES[row.category]) {
+        row.category = RENAMED_CATEGORIES[row.category]
+      }
+    }
+  }
+}
 
 /** Coerce a parsed grid into a well-formed 7×24 grid. */
 function normalizeGrid(grid: WeekGrid | undefined): WeekGrid {
@@ -29,6 +49,7 @@ export function normalizeFormatSet(raw: unknown): FormatSet | null {
     set.categories = [...DEFAULT_CATEGORIES]
   }
   if (!Array.isArray(set.defaultClocks)) set.defaultClocks = []
+  migrateCategories(set)
   if (!Array.isArray(set.dayDefaults) || set.dayDefaults.length !== 7) {
     set.dayDefaults = emptyDayDefaults()
   }

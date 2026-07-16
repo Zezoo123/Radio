@@ -31,4 +31,33 @@ describe('normalizeFormatSet (format file import)', () => {
     expect(set.defaultClocks![0].id).toBe('d')
     expect(set.dayDefaults![1]).toBe('d')
   })
+
+  it('renames the legacy ADS category to ADV everywhere', () => {
+    const legacy = {
+      formats: [
+        {
+          id: 'a',
+          name: 'A',
+          color: '#fff',
+          rows: [{ minute: 0, second: 0, cue: '+', name: 'ADS_1710_A', category: 'ADS' }]
+        }
+      ],
+      grid: { cells: [] },
+      categories: ['AUDIO', 'ADS', 'ADV'],
+      defaultClocks: [
+        {
+          id: 'd',
+          name: 'D',
+          color: '#fff',
+          rows: [{ minute: 5, second: 0, cue: '+', name: '', category: 'ADS' }]
+        }
+      ]
+    }
+    const set = normalizeFormatSet(legacy)!
+    expect(set.categories).toEqual(['AUDIO', 'ADV'])
+    expect(set.formats[0].rows[0].category).toBe('ADV')
+    // Audio file names are Simian element codes, never renamed.
+    expect(set.formats[0].rows[0].name).toBe('ADS_1710_A')
+    expect(set.defaultClocks![0].rows[0].category).toBe('ADV')
+  })
 })

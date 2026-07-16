@@ -67,7 +67,7 @@ export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export const DEFAULT_CATEGORIES = [
   'AUDIO',
   'COMMENT',
-  'ADS',
+  'ADV',
   'FEA',
   'LI',
   'LI_C',
