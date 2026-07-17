@@ -8,8 +8,10 @@ interface Props {
   /** A log handed over from the Export tab (not yet written to any file). */
   incoming?: { text: string } | null
   onConsumed?: () => void
-  /** App-wide Category → row color map (from Settings). */
+  /** App-wide Category → row highlight color map (from Settings). */
   categoryColors?: Record<string, string>
+  /** App-wide Category → row text color map (from Settings). */
+  categoryTextColors?: Record<string, string>
 }
 
 /**
@@ -23,7 +25,12 @@ interface Props {
  * current item finishes; `#` waits for the current item but not before its
  * stated time).
  */
-export function EditorView({ incoming, onConsumed, categoryColors }: Props): JSX.Element {
+export function EditorView({
+  incoming,
+  onConsumed,
+  categoryColors,
+  categoryTextColors
+}: Props): JSX.Element {
   const [rows, setRows] = useState<LogRow[]>([])
   const [path, setPath] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -222,6 +229,7 @@ export function EditorView({ incoming, onConsumed, categoryColors }: Props): JSX
             durationOf={durationOf}
             onDuration={setDuration}
             categoryColors={categoryColors}
+            categoryTextColors={categoryTextColors}
           />
         </section>
       )}

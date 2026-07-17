@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
+import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 
 const CUES: Cue[] = ['+', '@', '#']
@@ -10,13 +11,13 @@ const CATEGORY_OPTIONS = DEFAULT_CATEGORIES
 
 interface Props {
   onClose: () => void
-  /** App-wide Category → row color map (Editor rows tint by category). */
-  categoryColors: Record<string, string>
-  onCategoryColors: (colors: Record<string, string>) => void
+  /** App-wide category color maps (Editor rows tint / recolor by category). */
+  settings: UiSettings
+  onSettings: (settings: UiSettings) => void
 }
 
 /** Global Settings: the AZAN format and app-wide category row colors. */
-export function SettingsModal({ onClose, categoryColors, onCategoryColors }: Props): JSX.Element {
+export function SettingsModal({ onClose, settings, onSettings }: Props): JSX.Element {
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
 
@@ -24,23 +25,31 @@ export function SettingsModal({ onClose, categoryColors, onCategoryColors }: Pro
     window.api.getAzanFormat().then(setFormat)
   }, [])
 
+  const { categoryColors, categoryTextColors } = settings
+
   // Built-in categories plus any custom ones that already have a color.
   const colorRows = [
     ...DEFAULT_CATEGORIES,
-    ...Object.keys(categoryColors).filter((c) => !DEFAULT_CATEGORIES.includes(c))
+    ...Object.keys({ ...categoryColors, ...categoryTextColors }).filter(
+      (c) => !DEFAULT_CATEGORIES.includes(c)
+    )
   ]
 
-  function setColor(category: string, color: string | null): void {
-    const next = { ...categoryColors }
+  function setColor(
+    map: 'categoryColors' | 'categoryTextColors',
+    category: string,
+    color: string | null
+  ): void {
+    const next = { ...settings[map] }
     if (color) next[category.toUpperCase()] = color
     else delete next[category.toUpperCase()]
-    onCategoryColors(next)
+    onSettings({ ...settings, [map]: next })
   }
 
   function addCustomCategory(): void {
     const name = newCategory.trim().toUpperCase()
-    if (!name || name in categoryColors) return
-    setColor(name, '#4f8cff')
+    if (!name || name in categoryColors || name in categoryTextColors) return
+    setColor('categoryColors', name, '#4f8cff')
     setNewCategory('')
   }
 
@@ -81,28 +90,67 @@ export function SettingsModal({ onClose, categoryColors, onCategoryColors }: Pro
         <section className="card">
           <h2>Category colors</h2>
           <p className="muted">
-            Give a Simian category a color and every row of that category is tinted across the app
-            (the log Editor). Applies everywhere, on every station.
+            Give a Simian category a highlight and/or a text color and every row of that category
+            is recolored across the app (the log Editor). Applies everywhere, on every station.
+            Interrupted (red) and skipped (yellow) rows keep their warning text color.
           </p>
           <div className="color-grid">
             {colorRows.map((cat) => {
               const color = categoryColors[cat]
+              const textColor = categoryTextColors[cat]
               return (
-                <div key={cat} className={`color-item ${color ? 'on' : ''}`}>
-                  <input
-                    type="color"
-                    value={color ?? '#666666'}
-                    title={color ? `${cat}: ${color}` : `Set a color for ${cat}`}
-                    onChange={(e) => setColor(cat, e.target.value)}
-                  />
-                  <span className="color-name">{cat}</span>
-                  {color ? (
-                    <button className="btn-link" title="Remove color" onClick={() => setColor(cat, null)}>
-                      ✕
-                    </button>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
+                <div key={cat} className={`color-item ${color || textColor ? 'on' : ''}`}>
+                  <span className="color-ctl">
+                    <input
+                      type="color"
+                      value={color ?? '#666666'}
+                      title={
+                        color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`
+                      }
+                      onChange={(e) => setColor('categoryColors', cat, e.target.value)}
+                    />
+                    {color && (
+                      <button
+                        className="btn-link"
+                        title="Remove highlight color"
+                        onClick={() => setColor('categoryColors', cat, null)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                  <span className="color-ctl">
+                    <label
+                      className="text-color-pick"
+                      style={{ color: textColor }}
+                      title={textColor ? `Text: ${textColor}` : `Set a text color for ${cat}`}
+                    >
+                      A
+                      <input
+                        type="color"
+                        value={textColor ?? '#e6e6e6'}
+                        onChange={(e) => setColor('categoryTextColors', cat, e.target.value)}
+                      />
+                    </label>
+                    {textColor && (
+                      <button
+                        className="btn-link"
+                        title="Remove text color"
+                        onClick={() => setColor('categoryTextColors', cat, null)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                  <span
+                    className="color-name"
+                    style={{
+                      background: color ? `${color}24` : undefined,
+                      color: textColor
+                    }}
+                  >
+                    {cat}
+                  </span>
                 </div>
               )
             })}

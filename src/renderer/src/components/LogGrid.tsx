@@ -28,12 +28,25 @@ interface Props {
   onDuration: (id: number, seconds: number) => void
   /** App-wide Category → `#rrggbb` map; rows tint by their Category column. */
   categoryColors?: Record<string, string>
+  /** App-wide Category → `#rrggbb` map; row text recolors by Category. */
+  categoryTextColors?: Record<string, string>
 }
 
-/** Row tint for a category color: translucent fill + a solid edge marker. */
-function rowTint(color: string | undefined): React.CSSProperties | undefined {
-  if (!color) return undefined
-  return { background: `${color}24`, boxShadow: `inset 3px 0 0 0 ${color}` }
+/**
+ * Row style for the category colors: translucent fill + a solid edge marker
+ * for the highlight, plus the text color (cell inputs `color: inherit` it —
+ * the interrupted/skipped red/yellow rules target the inputs directly, so
+ * they still override a category text color).
+ */
+function rowStyle(
+  tint: string | undefined,
+  textColor: string | undefined
+): React.CSSProperties | undefined {
+  if (!tint && !textColor) return undefined
+  return {
+    ...(tint ? { background: `${tint}24`, boxShadow: `inset 3px 0 0 0 ${tint}` } : {}),
+    color: textColor
+  }
 }
 
 /** Column layout: defaults with a roomy Description; user resizes persist. */
@@ -100,6 +113,7 @@ interface GridRowProps {
   sim: SimRow | undefined
   duration: number
   tint: string | undefined
+  textColor: string | undefined
   isDragArmed: boolean
   isDragging: boolean
   isDropTarget: boolean
@@ -141,6 +155,7 @@ const GridRow = memo(
     sim,
     duration,
     tint,
+    textColor,
     isDragArmed,
     isDragging,
     isDropTarget,
@@ -160,7 +175,7 @@ const GridRow = memo(
 
     return (
       <tr
-        style={rowTint(tint)}
+        style={rowStyle(tint, textColor)}
         className={[
           `r-${rowKind(r)}`,
           sim?.status === 'skipped' ? 'row-skipped' : '',
@@ -223,6 +238,7 @@ const GridRow = memo(
     a.index === b.index &&
     a.duration === b.duration &&
     a.tint === b.tint &&
+    a.textColor === b.textColor &&
     a.isDragArmed === b.isDragArmed &&
     a.isDragging === b.isDragging &&
     a.isDropTarget === b.isDropTarget &&
@@ -239,7 +255,8 @@ export function LogGrid({
   sim,
   durationOf,
   onDuration,
-  categoryColors
+  categoryColors,
+  categoryTextColors
 }: Props): JSX.Element {
   // Drag state: which row id may start a drag (grip pressed), the row being
   // dragged and the row currently hovered as the drop target.
@@ -413,6 +430,7 @@ export function LogGrid({
             sim={sim[i]}
             duration={durationOf(r)}
             tint={categoryColors?.[r.fields[3].trim().toUpperCase()]}
+            textColor={categoryTextColors?.[r.fields[3].trim().toUpperCase()]}
             isDragArmed={dragArmed === r.id}
             isDragging={dragIndex === i}
             isDropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
+import type { UiSettings } from '../../main/uiSettings'
 import { ImportView } from './views/ImportView'
 import { ExportView } from './views/ExportView'
 import { FormatsView } from './views/FormatsView'
@@ -89,16 +90,18 @@ export default function App(): JSX.Element {
   // A log handed from Export to the Editor ({} wrapper so re-sends always fire).
   const [editorLog, setEditorLog] = useState<{ text: string } | null>(null)
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
-  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({})
+  const [uiSettings, setUiSettings] = useState<UiSettings>({
+    categoryColors: {},
+    categoryTextColors: {}
+  })
 
   useEffect(() => {
-    window.api.getUiSettings().then((s) => setCategoryColors(s.categoryColors))
+    window.api.getUiSettings().then(setUiSettings)
   }, [])
 
-  async function updateCategoryColors(next: Record<string, string>): Promise<void> {
-    setCategoryColors(next)
-    const saved = await window.api.saveUiSettings({ categoryColors: next })
-    setCategoryColors(saved.categoryColors)
+  async function updateUiSettings(next: UiSettings): Promise<void> {
+    setUiSettings(next)
+    setUiSettings(await window.api.saveUiSettings(next))
   }
 
   function editLog(text: string): void {
@@ -261,7 +264,8 @@ export default function App(): JSX.Element {
           <EditorView
             incoming={editorLog}
             onConsumed={() => setEditorLog(null)}
-            categoryColors={categoryColors}
+            categoryColors={uiSettings.categoryColors}
+            categoryTextColors={uiSettings.categoryTextColors}
           />
         </div>
       </main>
@@ -269,8 +273,8 @@ export default function App(): JSX.Element {
       {settingsOpen && (
         <SettingsModal
           onClose={() => setSettingsOpen(false)}
-          categoryColors={categoryColors}
-          onCategoryColors={updateCategoryColors}
+          settings={uiSettings}
+          onSettings={updateUiSettings}
         />
       )}
     </div>
