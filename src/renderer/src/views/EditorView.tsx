@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
-import { simulateLog } from '../lib/runtime'
+import { simulateLog, type SimRow } from '../lib/runtime'
 
 interface Props {
   /** A log handed over from the Export tab (not yet written to any file). */
@@ -45,11 +45,24 @@ export function EditorView({
 
   const durationOf = (row: LogRow): number => durations.get(row.id) ?? 0
 
-  const sim = useMemo(
-    () => simulateLog(rows, durationOf),
+  // The Expected column recomputes ON DEMAND (the ↻ button), not on every
+  // keystroke — a time edit early in a big log would otherwise repaint every
+  // row after it, per character. `simTick` bumps trigger a recompute; any
+  // other rows/durations change just flags the column as outdated.
+  const [sim, setSim] = useState<SimRow[]>([])
+  const [simStale, setSimStale] = useState(false)
+  const [simTick, setSimTick] = useState(0)
+  const refreshSim = (): void => setSimTick((t) => t + 1)
+
+  useEffect(() => {
+    setSimStale(true)
+  }, [rows, durations])
+
+  useEffect(() => {
+    setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0))
+    setSimStale(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows, durations]
-  )
+  }, [simTick])
 
   /** Look up every audio row's file name in the Simian DB (comments stay 0). */
   async function fillDurations(rs: LogRow[]): Promise<void> {
@@ -68,6 +81,7 @@ export function EditorView({
       }
       return next
     })
+    refreshSim() // new durations → recompute the Expected column right away
   }
 
   function loadText(
@@ -90,6 +104,7 @@ export function EditorView({
       })
     }
     setDurations(seeded)
+    refreshSim() // compute the freshly loaded log immediately
     void fillDurations(parsed)
   }
 
@@ -221,6 +236,18 @@ export function EditorView({
         <section className="card log-card">
           <div className="row" style={{ padding: '2px 8px 8px' }}>
             <span className="muted">{rows.length} rows</span>
+            <button
+              className="btn"
+              title="Recompute the Expected column from the current order, cues and durations"
+              onClick={refreshSim}
+            >
+              ↻ Refresh expected
+            </button>
+            {simStale && (
+              <span className="pill warn-pill" title="Rows changed since the last refresh">
+                expected outdated
+              </span>
+            )}
           </div>
           <LogGrid
             rows={rows}
