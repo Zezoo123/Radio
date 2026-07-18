@@ -9,9 +9,9 @@ import { PromosView } from './views/PromosView'
 import { EditorView } from './views/EditorView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
 import { SettingsModal } from './views/SettingsModal'
+import { THEME_IDS, type ThemeId } from './theme'
 
 type View = 'import' | 'formats' | 'promos' | 'export' | 'editor'
-type Theme = 'dark' | 'light'
 type Contrast = 'normal' | 'high'
 
 /** Outline icons (stroke = currentColor) shown in the collapsed sidebar. */
@@ -81,7 +81,10 @@ export default function App(): JSX.Element {
   const [view, setView] = useState<View>('import')
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [config, setConfig] = useState<AppConfig | null>(null)
-  const [theme, setTheme] = useState<Theme>(() => readPref('ui.theme', 'dark'))
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    const saved = readPref<ThemeId>('ui.theme', 'dark')
+    return THEME_IDS.includes(saved) ? saved : 'dark'
+  })
   const [contrast, setContrast] = useState<Contrast>(() => readPref('ui.contrast', 'normal'))
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
@@ -207,31 +210,6 @@ export default function App(): JSX.Element {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="theme-control">
-            <div className="theme-label">Appearance</div>
-            <div className="row seg">
-              <button
-                className={`seg-btn ${theme === 'light' ? 'on' : ''}`}
-                onClick={() => setTheme('light')}
-              >
-                Light
-              </button>
-              <button
-                className={`seg-btn ${theme === 'dark' ? 'on' : ''}`}
-                onClick={() => setTheme('dark')}
-              >
-                Dark
-              </button>
-            </div>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={contrast === 'high'}
-                onChange={(e) => setContrast(e.target.checked ? 'high' : 'normal')}
-              />
-              High contrast
-            </label>
-          </div>
           <button className="settings-link" onClick={() => setSettingsOpen(true)}>
             <span className="nav-ico">{GEAR_ICON}</span>
             <span className="nav-label">Settings</span>
@@ -275,6 +253,10 @@ export default function App(): JSX.Element {
           onClose={() => setSettingsOpen(false)}
           settings={uiSettings}
           onSettings={updateUiSettings}
+          theme={theme}
+          onTheme={setTheme}
+          highContrast={contrast === 'high'}
+          onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
         />
       )}
     </div>

@@ -3,6 +3,7 @@ import type { Cue } from '../../../main/core/types'
 import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
+import { THEMES, type ThemeId } from '../theme'
 
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -14,10 +15,23 @@ interface Props {
   /** App-wide category color maps (Editor rows tint / recolor by category). */
   settings: UiSettings
   onSettings: (settings: UiSettings) => void
+  /** Active theme + high-contrast toggle (applied live, persisted by App). */
+  theme: ThemeId
+  onTheme: (theme: ThemeId) => void
+  highContrast: boolean
+  onHighContrast: (on: boolean) => void
 }
 
-/** Global Settings: the AZAN format and app-wide category row colors. */
-export function SettingsModal({ onClose, settings, onSettings }: Props): JSX.Element {
+/** Global Settings: appearance, the AZAN format, and category color maps. */
+export function SettingsModal({
+  onClose,
+  settings,
+  onSettings,
+  theme,
+  onTheme,
+  highContrast,
+  onHighContrast
+}: Props): JSX.Element {
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
 
@@ -86,6 +100,40 @@ export function SettingsModal({ onClose, settings, onSettings }: Props): JSX.Ele
             Done
           </button>
         </div>
+
+        <section className="card">
+          <h2>Appearance</h2>
+          <p className="muted">
+            Pick a theme for the whole app. Changes apply immediately and persist.
+          </p>
+          <div className="theme-grid">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                className={`theme-card ${theme === t.id ? 'on' : ''}`}
+                onClick={() => onTheme(t.id)}
+              >
+                <span className="theme-thumb" style={{ background: t.preview.bg }}>
+                  <span className="th-dot" style={{ background: t.preview.accent }} />
+                  <span className="th-lines">
+                    <span className="th-line" style={{ background: t.preview.text, opacity: 0.8 }} />
+                    <span className="th-line short" style={{ background: t.preview.accent }} />
+                  </span>
+                </span>
+                <span className="theme-name">{t.name}</span>
+                <span className="theme-desc">{t.desc}</span>
+              </button>
+            ))}
+          </div>
+          <label className="check" style={{ marginTop: 12 }}>
+            <input
+              type="checkbox"
+              checked={highContrast}
+              onChange={(e) => onHighContrast(e.target.checked)}
+            />
+            High contrast
+          </label>
+        </section>
 
         <section className="card">
           <h2>Category colors</h2>

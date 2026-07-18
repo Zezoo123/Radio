@@ -1,7 +1,26 @@
-/* Default theme = dark. Light + high-contrast variants override below, keyed by
-   data-theme / data-contrast on <html> (set by the renderer, persisted). */
+/* Themes are token sets keyed by data-theme on <html> (set by the renderer,
+   persisted; picked in Settings → Appearance). Default = dark. A theme is more
+   than a palette: it can set typography (family, size scale, heading weight),
+   shape (radius scale), and feel (transition speed, focus ring, hover glow,
+   press depth), so switching themes changes how the app reads and reacts. */
 :root,
 :root[data-theme='dark'] {
+  /* Typography */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fs-base: 14px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
+  --fs-h1: 22px;
+  --fs-h2: 15px;
+  --heading: var(--text);
+  --heading-weight: 700;
+  --heading-tracking: 0;
+  /* Feel */
+  --speed: 0.14s;
+  --ease: ease;
+  --focus-ring: none;
+  --accent-glow: none;
+  --press: 0px;
   --bg: #0f1115;
   --panel: #171a21;
   --panel-2: #1f242d;
@@ -9,12 +28,16 @@
   --muted: #8b93a3;
   --accent: #4f8cff;
   --accent-2: #3a6fd6;
+  --accent-fg: #ffffff;
   --border: #2a3038;
   --ok: #49c281;
   --warn: #e0a23c;
   --danger: #e0645f;
   --code-bg: #0b0d11;
   --code-fg: #cdd3df;
+  --radius-lg: 12px;
+  --radius: 8px;
+  --radius-sm: 6px;
 }
 
 :root[data-theme='light'] {
@@ -25,12 +48,107 @@
   --muted: #5d6675;
   --accent: #2f6fe0;
   --accent-2: #2557b5;
+  --accent-fg: #ffffff;
   --border: #d4dae2;
   --ok: #1f9d57;
   --warn: #b9791f;
   --danger: #c8453f;
   --code-bg: #f0f2f6;
   --code-fg: #20242c;
+}
+
+/* Minimal: monochrome ink-on-white. The accent is near-black, so emphasis
+   comes from weight and contrast rather than hue. Compact type, tight radii,
+   near-instant transitions, crisp 1px focus ring — quiet and immediate. */
+:root[data-theme='minimal'] {
+  --bg: #fafafa;
+  --panel: #ffffff;
+  --panel-2: #f4f4f5;
+  --text: #1a1a1e;
+  --muted: #6d6d76;
+  --accent: #18181b;
+  --accent-2: #3f3f46;
+  --accent-fg: #ffffff;
+  --border: #e4e4e7;
+  --ok: #1a7f4e;
+  --warn: #9a6700;
+  --danger: #b3261e;
+  --code-bg: #f6f6f7;
+  --code-fg: #26262b;
+  --radius-lg: 8px;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --font-ui: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fs-base: 13.5px;
+  --fs-sm: 12.5px;
+  --fs-xs: 11.5px;
+  --fs-h1: 20px;
+  --fs-h2: 14px;
+  --heading: #000000;
+  --heading-weight: 650;
+  --heading-tracking: -0.01em;
+  --speed: 0.05s;
+  --focus-ring: 0 0 0 1px var(--accent);
+}
+
+/* Graphite: desaturated charcoal (no blue cast) with a soft indigo accent.
+   Lighter heading weight, smooth mid-speed motion, soft indigo focus halo. */
+:root[data-theme='graphite'] {
+  --bg: #121214;
+  --panel: #18181b;
+  --panel-2: #212124;
+  --text: #ececee;
+  --muted: #8e8e96;
+  --accent: #6e79d6;
+  --accent-2: #5560c0;
+  --accent-fg: #ffffff;
+  --border: #29292e;
+  --ok: #4cb782;
+  --warn: #d9a23c;
+  --danger: #e5645c;
+  --code-bg: #0e0e10;
+  --code-fg: #d0d0d6;
+  --radius-lg: 10px;
+  --radius: 7px;
+  --radius-sm: 5px;
+  --heading: #ffffff;
+  --heading-weight: 600;
+  --speed: 0.18s;
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  --press: 0.5px;
+}
+
+/* Studio: warm console browns with on-air amber. Amber is light, so accent
+   surfaces flip to dark text via --accent-fg. Roomier type, slow eased motion,
+   and an amber glow on focus/primary actions — like studio lamps. */
+:root[data-theme='studio'] {
+  --bg: #17130e;
+  --panel: #1e1913;
+  --panel-2: #292219;
+  --text: #ece3d4;
+  --muted: #a1937c;
+  --accent: #e0912e;
+  --accent-2: #c97f1d;
+  --accent-fg: #221604;
+  --border: #362d20;
+  --ok: #79b45e;
+  --warn: #e0a23c;
+  --danger: #dd6155;
+  --code-bg: #110d09;
+  --code-fg: #d9cfbd;
+  --font-ui: 'Avenir Next', 'Avenir', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-base: 14.5px;
+  --fs-sm: 13.5px;
+  --fs-xs: 12.5px;
+  --fs-h1: 23px;
+  --fs-h2: 15.5px;
+  --heading: #f6edde;
+  --heading-tracking: 0.01em;
+  --speed: 0.22s;
+  --ease: ease-out;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  --accent-glow: 0 2px 14px color-mix(in srgb, var(--accent) 45%, transparent);
+  --press: 1px;
 }
 
 /* High contrast: stronger borders + text, pure backgrounds, brighter accent. */
@@ -60,16 +178,50 @@
   --code-fg: #000000;
 }
 
+/* The new themes keep their accent under high contrast; only grounds, text,
+   and borders harden. */
+:root[data-theme='minimal'][data-contrast='high'] {
+  --bg: #ffffff;
+  --panel-2: #ececee;
+  --text: #000000;
+  --muted: #3f3f46;
+  --accent: #000000;
+  --border: #8f8f98;
+  --code-fg: #000000;
+}
+
+:root[data-theme='graphite'][data-contrast='high'] {
+  --bg: #000000;
+  --panel: #101012;
+  --text: #ffffff;
+  --muted: #c6c6ce;
+  --accent: #8d97e8;
+  --border: #62626e;
+  --code-bg: #000000;
+  --code-fg: #ffffff;
+}
+
+:root[data-theme='studio'][data-contrast='high'] {
+  --bg: #000000;
+  --panel: #14100b;
+  --text: #ffffff;
+  --muted: #d3c8b4;
+  --accent: #f0a744;
+  --border: #76684e;
+  --code-bg: #000000;
+  --code-fg: #ffffff;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-ui);
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 /* Collapsed rail by default; the sidebar pops out over the content on hover, so
@@ -169,9 +321,12 @@ nav {
   border: none;
   color: var(--muted);
   padding: 9px 8px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--radius);
+  font-size: var(--fs-base);
   cursor: pointer;
+  transition:
+    background var(--speed) var(--ease),
+    color var(--speed) var(--ease);
 }
 .nav-item:hover,
 .nav-item.active {
@@ -199,7 +354,7 @@ nav {
 .badge {
   background: var(--warn);
   color: #1a1205;
-  border-radius: 10px;
+  border-radius: var(--radius);
   font-size: 11px;
   font-weight: 700;
   padding: 1px 7px;
@@ -211,29 +366,6 @@ nav {
   flex-direction: column;
   gap: 8px;
 }
-.theme-control {
-  padding: 8px 10px 0;
-}
-.theme-control .seg {
-  width: 100%;
-}
-.theme-control .seg-btn {
-  flex: 1;
-  text-align: center;
-}
-.theme-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.theme-control .check {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .sidebar-foot {
   font-size: 12px;
   color: var(--muted);
@@ -263,7 +395,7 @@ nav {
   flex: 0 0 24px;
   width: 24px;
   height: 24px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
 }
 .station-select {
   flex: 1;
@@ -271,7 +403,7 @@ nav {
   background: var(--panel-2);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 8px;
   font-size: 13px;
   font-weight: 600;
@@ -289,9 +421,12 @@ nav {
   border: none;
   color: var(--muted);
   padding: 9px 8px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: var(--radius);
+  font-size: var(--fs-base);
   cursor: pointer;
+  transition:
+    background var(--speed) var(--ease),
+    color var(--speed) var(--ease);
 }
 .settings-link:hover {
   background: var(--panel-2);
@@ -315,7 +450,7 @@ nav {
   max-width: 860px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 20px 24px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
@@ -349,13 +484,13 @@ nav {
   gap: 14px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 18px;
   cursor: pointer;
   color: var(--text);
   text-align: left;
   font-size: 16px;
-  transition: border-color 0.12s ease, transform 0.06s ease;
+  transition: border-color var(--speed) var(--ease), transform 0.06s ease;
 }
 .station-card:hover,
 .station-card.on {
@@ -368,7 +503,7 @@ nav {
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,7 +534,7 @@ nav {
   margin-bottom: 18px;
   padding: 10px 14px;
   border: 1px solid var(--danger);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--danger) 12%, var(--panel));
   color: var(--text);
   font-size: 13px;
@@ -426,12 +561,18 @@ nav {
 }
 
 h1 {
-  font-size: 22px;
+  font-size: var(--fs-h1);
   margin: 0 0 8px;
 }
 h2 {
-  font-size: 15px;
+  font-size: var(--fs-h2);
   margin: 0;
+}
+h1,
+h2 {
+  color: var(--heading);
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-tracking);
 }
 .muted {
   color: var(--muted);
@@ -448,7 +589,7 @@ h2 {
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px 18px;
   margin: 16px 0;
 }
@@ -477,20 +618,28 @@ label {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 7px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-sm);
+  transition:
+    border-color var(--speed) var(--ease),
+    background var(--speed) var(--ease),
+    box-shadow var(--speed) var(--ease);
 }
 .btn:hover {
   border-color: var(--accent);
 }
+.btn:active:not(:disabled) {
+  transform: translateY(var(--press));
+}
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 .btn.primary:hover {
   background: var(--accent-2);
+  box-shadow: var(--accent-glow);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -527,7 +676,7 @@ label {
 }
 .tbl th {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -554,7 +703,7 @@ label {
 
 /* Locked "NEXT DAY LOG" row */
 .tbl tr.row-log td {
-  background: rgba(79, 140, 255, 0.08);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
 }
 .tbl tr.row-log input:disabled,
 .tbl tr.row-log select:disabled {
@@ -567,14 +716,18 @@ select {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
+  transition:
+    border-color var(--speed) var(--ease),
+    box-shadow var(--speed) var(--ease);
 }
 input:focus,
 select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 .tbl input {
   width: 100%;
@@ -587,7 +740,7 @@ select:focus {
   background: var(--code-bg);
   color: var(--code-fg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 12px;
   font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
   font-size: 12px;
@@ -604,7 +757,7 @@ select:focus {
 .seg {
   gap: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 .seg-btn {
@@ -614,14 +767,17 @@ select:focus {
   color: var(--muted);
   padding: 6px 12px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-sm);
+  transition:
+    background var(--speed) var(--ease),
+    color var(--speed) var(--ease);
 }
 .seg-btn:last-child {
   border-right: none;
 }
 .seg-btn.on {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 /* Dropdown menu (Import → Add) */
 .menu-wrap {
@@ -640,7 +796,7 @@ select:focus {
   min-width: 240px;
   background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 6px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
@@ -654,16 +810,19 @@ select:focus {
   border: none;
   color: var(--text);
   padding: 8px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-sm);
+  transition:
+    background var(--speed) var(--ease),
+    color var(--speed) var(--ease);
 }
 .menu-item:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 .menu-item:hover .muted {
-  color: rgba(255, 255, 255, 0.8);
+  color: color-mix(in srgb, var(--accent-fg) 80%, transparent);
 }
 .menu-item .muted {
   font-size: 11px;
@@ -704,7 +863,7 @@ select:focus {
 .clock-list {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 12px;
   height: fit-content;
 }
@@ -712,7 +871,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 2px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding-right: 4px;
 }
 .clock-item:hover,
@@ -747,7 +906,7 @@ select:focus {
   color: var(--muted);
   cursor: pointer;
   padding: 5px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   opacity: 0;
   transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease;
 }
@@ -765,7 +924,7 @@ select:focus {
   color: #fff;
   background: var(--danger);
   padding: 4px 9px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   animation: pop 0.13s ease-out;
 }
@@ -788,7 +947,7 @@ select:focus {
 .clock-edit {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px;
   min-width: 0;
 }
@@ -817,7 +976,7 @@ input[type='color'] {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 13px;
 }
@@ -832,7 +991,7 @@ input[type='color'] {
      scroll container, so the sticky header pins to the scrolling .content pane */
   overflow: clip;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
 }
 .week-grid.painting {
   cursor: crosshair;
@@ -911,7 +1070,7 @@ input[type='color'] {
 .modal {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 18px 20px;
   width: 460px;
   max-width: 90vw;
@@ -947,7 +1106,7 @@ input[type='color'] {
   border: 1px solid var(--border);
   color: var(--text);
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .insert-item:hover:not(:disabled) {
@@ -985,7 +1144,7 @@ input[type='color'] {
   border: none;
   color: var(--muted);
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .cat-item:hover,
@@ -1037,7 +1196,7 @@ code {
 /* --- Promos view --------------------------------------------------------- */
 .tbl th.col-today,
 .tbl td.col-today {
-  background: rgba(79, 140, 255, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .warn-text {
   color: var(--warn);
@@ -1055,7 +1214,7 @@ code {
 }
 .promo-item {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   background: var(--panel-2);
 }
@@ -1375,6 +1534,74 @@ code {
   opacity: 0.75;
 }
 
+/* Settings: theme picker. Each card is a live miniature of its theme — the
+   swatches are hardcoded per theme in the THEMES metadata, not tokens, so
+   every card previews its own look regardless of the active theme. */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color var(--speed) var(--ease);
+}
+.theme-card:hover {
+  border-color: var(--muted);
+}
+.theme-card.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+.theme-thumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  padding: 8px;
+  height: 44px;
+}
+.th-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+}
+.th-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.th-line {
+  height: 5px;
+  border-radius: 3px;
+  width: 100%;
+}
+.th-line.short {
+  width: 45%;
+}
+.theme-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.theme-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 /* Settings: category color pickers (a highlight swatch + an "A" text color) */
 .color-grid {
   display: grid;
@@ -1386,7 +1613,7 @@ code {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 6px 10px;
   background: var(--panel-2);
 }
@@ -1452,4 +1679,11 @@ code {
 .col-resize:hover {
   background: var(--accent);
   opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
