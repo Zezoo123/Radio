@@ -1602,10 +1602,10 @@ code {
   line-height: 1.4;
 }
 
-/* Settings: category color pickers */
+/* Settings: category color pickers (a highlight swatch + an "A" text color) */
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 8px;
 }
 .color-item {
@@ -1628,10 +1628,36 @@ code {
   background: none;
   cursor: pointer;
 }
+/* One picker + its clear button, kept tight so the ✕ reads as belonging to it. */
+.color-item .color-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+/* Text color picker: an "A" in the chosen color; the input opens the dialog. */
+.color-item .text-color-pick {
+  position: relative;
+  width: 22px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.color-item .text-color-pick input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
 .color-item .color-name {
   flex: 1;
   font-size: 12px;
   letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 /* Excel-style column resizing in the Editor grid.
