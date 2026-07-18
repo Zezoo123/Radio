@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
+import PageHelp from '../components/PageHelp'
 
 interface Props {
   templates: TemplateSummary[]
@@ -66,12 +67,14 @@ export function ExportView({ templates, config, onConfig, onEdit }: Props): JSX.
 
   return (
     <div className="view">
-      <h1>Export</h1>
-      <p className="muted">
-        Pick a single day or a date range, preview the Simian log, then export. Each day combines the
-        Formats week-grid schedule with the imported audio templates and AZAN. A single day is just
-        the same start and end date.
-      </p>
+      <h1>
+        Export
+        <PageHelp>
+          Pick a single day or a date range, preview the Simian log, then export. Each day combines
+          the Formats week-grid schedule with the imported audio templates and AZAN. A single day is
+          just the same start and end date.
+        </PageHelp>
+      </h1>
 
       <section className="card">
         <div className="row">

@@ -3,6 +3,7 @@ import type { PromoSummary } from '../../../main/session'
 import type { PromoEntry } from '../../../main/core/parsers/promosFile'
 import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/schedule'
 import { toCalendarDate } from '../App'
+import PageHelp from '../components/PageHelp'
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -93,7 +94,15 @@ export function PromosView(): JSX.Element {
   return (
     <div className="view">
       <div className="card-head">
-        <h1>Promos</h1>
+        <h1>
+          Promos
+          <PageHelp>
+            Promos are distributed across the day: never during a program or for two hours after
+            it ends, at most one per hour, and a different spread each day. For each program, set
+            the hours you don’t want a promo per day of the week — the export applies each date’s
+            weekday rules.
+          </PageHelp>
+        </h1>
         <div className="row">
           {loaded && <span className="muted">{summary?.fileName}</span>}
           <button className="btn" onClick={loadFile}>
@@ -106,11 +115,6 @@ export function PromosView(): JSX.Element {
           )}
         </div>
       </div>
-      <p className="muted">
-        Promos are distributed across the day: never during a program or for two hours after it ends,
-        at most one per hour, and a different spread each day. For each program, set the hours you
-        don’t want a promo per day of the week — the export applies each date’s weekday rules.
-      </p>
 
       {!loaded && (
         <p className="empty">

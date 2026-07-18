@@ -578,6 +578,69 @@ h2 {
   color: var(--muted);
   line-height: 1.5;
 }
+
+.page-help {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+.page-help-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: help;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  transition:
+    border-color var(--speed) var(--ease),
+    color var(--speed) var(--ease);
+}
+.page-help-btn:hover,
+.page-help-btn:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.page-help-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-9px);
+  width: 360px;
+  max-width: 70vw;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  padding: 10px 12px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--speed) var(--ease),
+    visibility var(--speed) var(--ease);
+  z-index: 60;
+}
+.page-help:hover .page-help-tip,
+.page-help-btn:focus-visible + .page-help-tip {
+  opacity: 1;
+  visibility: visible;
+}
 .empty {
   color: var(--muted);
   font-style: italic;

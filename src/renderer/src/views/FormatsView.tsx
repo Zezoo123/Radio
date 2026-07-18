@@ -11,6 +11,7 @@ import { weekday } from '../../../main/core/dates'
 import { ClockEditor } from './ClockEditor'
 import { WeekGrid } from './WeekGrid'
 import { toCalendarDate } from '../App'
+import PageHelp from '../components/PageHelp'
 
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -207,7 +208,13 @@ export function FormatsView(): JSX.Element {
   return (
     <div className="view wide">
       <div className="card-head">
-        <h1>Formats</h1>
+        <h1>
+          Formats
+          <PageHelp>
+            Build reusable hour formats (clocks), then paint them onto the week grid. Each cell is
+            one hour; export a Simian skeleton for a day or the whole week.
+          </PageHelp>
+        </h1>
         <div className="row">
           <div className="row seg">
             <button
@@ -237,10 +244,6 @@ export function FormatsView(): JSX.Element {
           </button>
         </div>
       </div>
-      <p className="muted">
-        Build reusable hour formats (clocks), then paint them onto the week grid. Each cell is one
-        hour; export a Simian skeleton for a day or the whole week.
-      </p>
 
       {tab === 'clocks' && (
         <ClockEditor
