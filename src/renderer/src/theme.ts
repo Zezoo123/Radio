@@ -26,19 +26,19 @@ export const THEMES: ThemeMeta[] = [
   {
     id: 'minimal',
     name: 'Minimal',
-    desc: 'Monochrome ink on white. Quiet and sharp.',
+    desc: 'Monochrome ink on white. Compact, crisp, instant.',
     preview: { bg: '#fafafa', panel: '#f4f4f5', accent: '#18181b', text: '#1a1a1e' }
   },
   {
     id: 'graphite',
     name: 'Graphite',
-    desc: 'Desaturated charcoal with soft indigo.',
+    desc: 'Desaturated charcoal with soft indigo. Smooth and calm.',
     preview: { bg: '#121214', panel: '#212124', accent: '#6e79d6', text: '#ececee' }
   },
   {
     id: 'studio',
     name: 'Studio',
-    desc: 'Warm console tones with on-air amber.',
+    desc: 'Warm console tones, roomy type, on-air amber glow.',
     preview: { bg: '#17130e', panel: '#292219', accent: '#e0912e', text: '#ece3d4' }
   }
 ]
