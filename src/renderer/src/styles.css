@@ -1229,13 +1229,7 @@ code {
   opacity: 0.55;
 }
 .swatch.excluded {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--muted),
-    var(--muted) 2px,
-    transparent 2px,
-    transparent 4px
-  );
+  background: #3d424a;
 }
 .swatch.placed {
   background: var(--accent);
@@ -1298,13 +1292,7 @@ code {
   box-shadow: none;
 }
 .week-table td.hour.excluded {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--muted),
-    var(--muted) 3px,
-    transparent 3px,
-    transparent 6px
-  );
+  background: #3d424a;
 }
 .week-table td.hour.placed {
   background: var(--accent);
