@@ -8,14 +8,14 @@ import { FormatsView } from './views/FormatsView'
 import { PromosView } from './views/PromosView'
 import { EditorView } from './views/EditorView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
-import { SettingsModal } from './views/SettingsModal'
+import { SettingsView } from './views/SettingsView'
 import { THEME_IDS, type ThemeId } from './theme'
 
-type View = 'import' | 'formats' | 'promos' | 'export' | 'editor'
+type View = 'import' | 'formats' | 'promos' | 'export' | 'editor' | 'settings'
 type Contrast = 'normal' | 'high'
 
 /** Outline icons (stroke = currentColor) shown in the collapsed sidebar. */
-const NAV_ICONS: Record<View, JSX.Element> = {
+const NAV_ICONS: Partial<Record<View, JSX.Element>> = {
   import: (
     <svg viewBox="0 0 24 24">
       <path d="M12 3v10m0 0-4-4m4 4 4-4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
@@ -89,7 +89,6 @@ export default function App(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
   const [station, setStation] = useState<string | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   // A log handed from Export to the Editor ({} wrapper so re-sends always fire).
   const [editorLog, setEditorLog] = useState<{ text: string } | null>(null)
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
@@ -210,7 +209,11 @@ export default function App(): JSX.Element {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button className="settings-link" onClick={() => setSettingsOpen(true)}>
+          <button
+            className={`settings-link ${view === 'settings' ? 'active' : ''}`}
+            onClick={() => setView('settings')}
+            title="Settings"
+          >
             <span className="nav-ico">{GEAR_ICON}</span>
             <span className="nav-label">Settings</span>
           </button>
@@ -246,19 +249,17 @@ export default function App(): JSX.Element {
             categoryTextColors={uiSettings.categoryTextColors}
           />
         </div>
+        {view === 'settings' && (
+          <SettingsView
+            settings={uiSettings}
+            onSettings={updateUiSettings}
+            theme={theme}
+            onTheme={setTheme}
+            highContrast={contrast === 'high'}
+            onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
+          />
+        )}
       </main>
-
-      {settingsOpen && (
-        <SettingsModal
-          onClose={() => setSettingsOpen(false)}
-          settings={uiSettings}
-          onSettings={updateUiSettings}
-          theme={theme}
-          onTheme={setTheme}
-          highContrast={contrast === 'high'}
-          onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
-        />
-      )}
     </div>
   )
 }

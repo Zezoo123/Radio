@@ -428,31 +428,10 @@ nav {
     background var(--speed) var(--ease),
     color var(--speed) var(--ease);
 }
-.settings-link:hover {
+.settings-link:hover,
+.settings-link.active {
   background: var(--panel-2);
   color: var(--text);
-}
-
-/* Centered modal (Settings) */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 48px 24px;
-  overflow: auto;
-}
-.modal {
-  width: 100%;
-  max-width: 860px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* Full-screen station chooser on load */
@@ -689,13 +668,6 @@ label {
   background: var(--panel);
   box-shadow: 0 1px 0 var(--border);
   z-index: 2;
-}
-/* Not in modals: the backdrop scroller's 48px padding would pin the header
-   mid-air below the viewport top, with rows showing above it. */
-.modal-backdrop .tbl thead th {
-  position: static;
-  background: none;
-  box-shadow: none;
 }
 .tbl tr.unmapped td:first-child {
   border-left: 3px solid var(--warn);
