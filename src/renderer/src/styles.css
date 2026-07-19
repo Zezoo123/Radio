@@ -1647,3 +1647,10 @@ code {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Editor virtualization: the grid scrolls inside this fixed-height container
+   (the sticky header pins to it); only the visible rows are mounted. */
+.log-scroll {
+  overflow: auto;
+  max-height: calc(100vh - 240px);
+}

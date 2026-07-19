@@ -175,6 +175,7 @@ const GridRow = memo(
 
     return (
       <tr
+        data-log-row
         style={rowStyle(tint, textColor)}
         className={[
           `r-${rowKind(r)}`,
@@ -319,6 +320,39 @@ export function LogGrid({
   const live = useRef({ rows, onRows, durationOf, onDuration, dragIndex, confirmDelete })
   live.current = { rows, onRows, durationOf, onDuration, dragIndex, confirmDelete }
 
+  // VIRTUALIZATION — only the rows in (and around) the viewport exist in the
+  // DOM. A full day is thousands of rows × ~8 interactive cells; mounting them
+  // all costs hundreds of MB of renderer memory and makes every paint touch a
+  // ~20,000px-tall surface (brutal on the stations' old integrated-GPU PCs).
+  // Spacer rows above and below the window keep the scrollbar honest.
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const rowHeight = useRef(25)
+  const [win, setWin] = useState({ start: 0, end: 80 })
+  const OVERSCAN = 15
+
+  function updateWindow(): void {
+    const el = scrollRef.current
+    const total = live.current.rows.length
+    if (!el) return
+    const rh = rowHeight.current
+    const start = Math.max(0, Math.floor(el.scrollTop / rh) - OVERSCAN)
+    const count = Math.ceil(el.clientHeight / rh) + OVERSCAN * 2
+    const end = Math.min(total, start + count)
+    setWin((prev) => (prev.start === start && prev.end === end ? prev : { start, end }))
+  }
+
+  // Measure the real row height once rows exist (fonts/themes vary it), keep
+  // the window clamped when the log grows/shrinks, and track viewport resizes.
+  useEffect(() => {
+    const tr = scrollRef.current?.querySelector('tbody tr[data-log-row]')
+    const h = (tr as HTMLTableRowElement | null)?.offsetHeight
+    if (h && h > 10) rowHeight.current = h
+    updateWindow()
+    window.addEventListener('resize', updateWindow)
+    return () => window.removeEventListener('resize', updateWindow)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows.length])
+
   const handlers = useMemo<RowHandlers>(() => {
     const endDrag = (): void => {
       setDragArmed(null)
@@ -395,50 +429,69 @@ export function LogGrid({
     }
   }, [])
 
+  const topPad = win.start * rowHeight.current
+  const bottomPad = Math.max(0, rows.length - win.end) * rowHeight.current
+  const spacerStyle = { padding: 0, border: 'none' } as const
+
   return (
-    <table className="log-grid">
-      <colgroup>
-        {COLUMNS.map((c) => (
-          <col key={c.key} style={{ width: widths[c.key] }} />
-        ))}
-      </colgroup>
-      <thead>
-        <tr>
-          {COLUMNS.map((c) =>
-            c.fixed ? (
-              <th key={c.key} className={`${c.key}-col`} />
-            ) : (
-              <th key={c.key} className={c.key === 'expected' || c.key === 'dur' ? `${c.key}-col` : ''}>
-                {c.label}
-                <span
-                  className="col-resize"
-                  title="Drag to resize · double-click to reset"
-                  onMouseDown={(e) => startResize(c.key, e)}
-                  onDoubleClick={() => resetWidth(c.key)}
-                />
-              </th>
-            )
+    <div className="log-scroll" ref={scrollRef} onScroll={updateWindow}>
+      <table className="log-grid">
+        <colgroup>
+          {COLUMNS.map((c) => (
+            <col key={c.key} style={{ width: widths[c.key] }} />
+          ))}
+        </colgroup>
+        <thead>
+          <tr>
+            {COLUMNS.map((c) =>
+              c.fixed ? (
+                <th key={c.key} className={`${c.key}-col`} />
+              ) : (
+                <th key={c.key} className={c.key === 'expected' || c.key === 'dur' ? `${c.key}-col` : ''}>
+                  {c.label}
+                  <span
+                    className="col-resize"
+                    title="Drag to resize · double-click to reset"
+                    onMouseDown={(e) => startResize(c.key, e)}
+                    onDoubleClick={() => resetWidth(c.key)}
+                  />
+                </th>
+              )
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {topPad > 0 && (
+            <tr aria-hidden="true" style={{ height: topPad }}>
+              <td colSpan={COLUMNS.length} style={spacerStyle} />
+            </tr>
           )}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, i) => (
-          <GridRow
-            key={r.id}
-            row={r}
-            index={i}
-            sim={sim[i]}
-            duration={durationOf(r)}
-            tint={categoryColors?.[r.fields[3].trim().toUpperCase()]}
-            textColor={categoryTextColors?.[r.fields[3].trim().toUpperCase()]}
-            isDragArmed={dragArmed === r.id}
-            isDragging={dragIndex === i}
-            isDropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
-            isConfirmDelete={confirmDelete === r.id}
-            h={handlers}
-          />
-        ))}
-      </tbody>
-    </table>
+          {rows.slice(win.start, win.end).map((r, k) => {
+            const i = win.start + k
+            return (
+              <GridRow
+                key={r.id}
+                row={r}
+                index={i}
+                sim={sim[i]}
+                duration={durationOf(r)}
+                tint={categoryColors?.[r.fields[3].trim().toUpperCase()]}
+                textColor={categoryTextColors?.[r.fields[3].trim().toUpperCase()]}
+                isDragArmed={dragArmed === r.id}
+                isDragging={dragIndex === i}
+                isDropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
+                isConfirmDelete={confirmDelete === r.id}
+                h={handlers}
+              />
+            )
+          })}
+          {bottomPad > 0 && (
+            <tr aria-hidden="true" style={{ height: bottomPad }}>
+              <td colSpan={COLUMNS.length} style={spacerStyle} />
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
