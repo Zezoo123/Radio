@@ -11,18 +11,10 @@ import { weekday } from '../../../main/core/dates'
 import { ClockEditor } from './ClockEditor'
 import { WeekGrid } from './WeekGrid'
 import { toCalendarDate } from '../App'
+import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
 
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-/** Tomorrow (system date + 1) as YYYY-MM-DD — the default export date. */
-function tomorrowISO(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
-}
 
 type Tab = 'clocks' | 'default' | 'grid'
 

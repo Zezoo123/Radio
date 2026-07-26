@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
+import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
 
 interface Props {
@@ -12,8 +13,19 @@ interface Props {
 }
 
 export function ExportView({ templates, config, onConfig, onEdit }: Props): JSX.Element {
-  const [start, setStart] = useState('2026-06-01')
-  const [end, setEnd] = useState('2026-06-01')
+  const [start, setStart] = useState(tomorrowISO)
+  const [end, setEnd] = useState(tomorrowISO)
+
+  /** Keep the range valid without making the user fix both boxes: moving From
+   *  past To drags To along, and moving To before From drags From back. */
+  function changeStart(v: string): void {
+    setStart(v)
+    if (v && end && v > end) setEnd(v)
+  }
+  function changeEnd(v: string): void {
+    setEnd(v)
+    if (v && start && v < start) setStart(v)
+  }
   const [preview, setPreview] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
   const [status, setStatus] = useState('')
@@ -79,10 +91,10 @@ export function ExportView({ templates, config, onConfig, onEdit }: Props): JSX.
       <section className="card">
         <div className="row">
           <label>
-            From <input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+            From <input type="date" value={start} onChange={(e) => changeStart(e.target.value)} />
           </label>
           <label>
-            To <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+            To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
           </label>
           <button className="btn" disabled={!ready} onClick={doPreview}>
             Preview
