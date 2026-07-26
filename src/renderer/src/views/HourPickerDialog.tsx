@@ -4,6 +4,10 @@ interface Props {
   targetLabel: string
   /** Currently selected hours (empty = every hour). */
   hours: number[]
+  /** Explains what a selection means; defaults to the clock-row wording. */
+  hint?: string
+  /** Summary label for the empty selection (defaults to "every"). */
+  emptyLabel?: string
   onChange: (hours: number[]) => void
   onClose: () => void
 }
@@ -42,6 +46,8 @@ export function HourPickerDialog({
   open,
   targetLabel,
   hours,
+  hint,
+  emptyLabel,
   onChange,
   onClose
 }: Props): JSX.Element | null {
@@ -66,7 +72,7 @@ export function HourPickerDialog({
           </button>
         </div>
         <p className="muted">
-          Pick the hours this row fires at. Nothing selected = every hour.
+          {hint ?? 'Pick the hours this row fires at. Nothing selected = every hour.'}
         </p>
 
         <div className="hour-pick-grid">
@@ -89,7 +95,9 @@ export function HourPickerDialog({
             <button className="btn" onClick={() => onChange([])}>
               None
             </button>
-            <span className="muted">{hoursSummary(hours)}</span>
+            <span className="muted">
+              {hours.length === 0 && emptyLabel ? emptyLabel : hoursSummary(hours)}
+            </span>
           </span>
           <button className="btn primary" onClick={onClose}>
             Done

@@ -1831,20 +1831,6 @@ code {
   flex: 0 0 110px;
   padding-top: 4px;
 }
-.hour-block-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.hour-block-row .hour-pick {
-  min-width: 34px;
-  padding: 4px 0;
-}
-.hour-pick.gblock.on {
-  background: #000;
-  border-color: #000;
-  color: #fff;
-}
 .break-pill {
   display: inline-flex;
   align-items: center;

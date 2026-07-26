@@ -6,6 +6,7 @@ import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/
 import { toCalendarDate } from '../App'
 import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
+import { HourPickerDialog, hoursSummary } from './HourPickerDialog'
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -26,6 +27,7 @@ export function PromosView(): JSX.Element {
   const [previewText, setPreviewText] = useState('')
   const [rules, setRules] = useState<PromoRules>({ blockedHours: [], breaks: [] })
   const [newBreak, setNewBreak] = useState('')
+  const [blockedOpen, setBlockedOpen] = useState(false)
 
   const refreshInfo = useCallback(async () => {
     setSummary(await window.api.getPromos())
@@ -74,16 +76,11 @@ export function PromosView(): JSX.Element {
 
   /** Save station rules and refresh everything derived from them. */
   async function saveRules(next: PromoRules): Promise<void> {
+    setRules(next) // optimistic — picker toggles respond instantly
     setRules(await window.api.setPromoRules(next))
     await refreshWeek(anchor)
   }
 
-  function toggleBlockedHour(h: number): void {
-    const set = new Set(rules.blockedHours)
-    if (set.has(h)) set.delete(h)
-    else set.add(h)
-    void saveRules({ ...rules, blockedHours: [...set].sort((a, b) => a - b) })
-  }
 
   function addBreak(): void {
     const m = parseInt(newBreak, 10)
@@ -211,19 +208,14 @@ export function PromosView(): JSX.Element {
             </p>
             <div className="rule-row">
               <strong className="rule-label">Blocked hours</strong>
-              <div className="hour-block-row">
-                {Array.from({ length: 24 }, (_, h) => (
-                  <button
-                    key={h}
-                    className={`hour-pick gblock ${rules.blockedHours.includes(h) ? 'on' : ''}`}
-                    title={`${String(h).padStart(2, '0')}:00 – ${String((h + 1) % 24).padStart(2, '0')}:00 — click to ${
-                      rules.blockedHours.includes(h) ? 'allow' : 'block'
-                    } promos`}
-                    onClick={() => toggleBlockedHour(h)}
-                  >
-                    {String(h).padStart(2, '0')}
-                  </button>
-                ))}
+              <div className="row">
+                <button
+                  className="btn"
+                  title="Pick the hours no promo may ever use"
+                  onClick={() => setBlockedOpen(true)}
+                >
+                  {rules.blockedHours.length === 0 ? 'none' : hoursSummary(rules.blockedHours)}
+                </button>
               </div>
             </div>
             <div className="rule-row">
@@ -328,6 +320,16 @@ export function PromosView(): JSX.Element {
               value={previewText || '(no promos for this date)'}
             />
           </section>
+
+          <HourPickerDialog
+            open={blockedOpen}
+            targetLabel="Blocked for all promos"
+            hours={rules.blockedHours}
+            hint="Pick the hours no promo may ever use — e.g. the Fagr window. They show black in every weekly grid. Nothing selected = no blocked hours."
+            emptyLabel="none"
+            onChange={(hours) => void saveRules({ ...rules, blockedHours: hours })}
+            onClose={() => setBlockedOpen(false)}
+          />
         </>
       )}
     </div>
