@@ -1800,12 +1800,22 @@ code {
   font-weight: 600;
 }
 .tgrid .t-count {
+  position: sticky;
+  right: 0;
   font-weight: 600;
   background: var(--panel-2);
+  border-left: 1px solid var(--border);
+  z-index: 1;
+}
+.tgrid thead th.t-count {
+  z-index: 3;
 }
 .tgrid tfoot td {
   background: var(--panel-2);
   font-weight: 600;
   position: sticky;
   bottom: 0;
+}
+.tgrid tfoot td.t-count {
+  z-index: 2;
 }
