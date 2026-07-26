@@ -134,6 +134,12 @@ describe('element template parser', () => {
     expect(grid.totals).toEqual([4, 1])
   })
 
+  it('keeps single plays as a bare letter: 3×A, 1×B, 2×C → `3A B 2C`', async () => {
+    const { formatHourCell } = await import('@core/parsers/elementTemplate')
+    expect(formatHourCell(['A', 'C', 'B', 'A', 'C', 'A'])).toBe('3A B 2C')
+    expect(formatHourCell(['A'])).toBe('A')
+  })
+
   it('shows `1`-sentinel plays as a count, and mixes cleanly with letters', () => {
     const tpl: ElementTemplate = {
       group: 'Promo',
