@@ -26,6 +26,11 @@ export interface SimianDbSummary {
   trackCount: number
 }
 
+export interface SimianTrack {
+  duration?: number
+  description?: string
+}
+
 export interface OpenLogResult {
   path: string
   text: string
@@ -129,7 +134,9 @@ const api = {
   openSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:openDb'),
   getSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:getDb'),
   simianDurations: (names: string[]): Promise<Record<string, number>> =>
-    ipcRenderer.invoke('simian:durations', names)
+    ipcRenderer.invoke('simian:durations', names),
+  simianTracks: (names: string[]): Promise<Record<string, SimianTrack>> =>
+    ipcRenderer.invoke('simian:tracks', names)
 }
 
 contextBridge.exposeInMainWorld('api', api)
