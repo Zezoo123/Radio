@@ -114,6 +114,12 @@ export function registerIpc(): void {
       session.setTemplateCategory(index, category)
   )
 
+  ipcMain.handle('templates:setCode', (_e, { index, code }: { index: number; code: string }) =>
+    session.setTemplateCode(index, code)
+  )
+
+  ipcMain.handle('templates:grid', (_e, index: number) => session.templateGrid(index))
+
   ipcMain.handle(
     'templates:preview',
     (_e, { index, start, end }: { index: number } & RangeArg) =>

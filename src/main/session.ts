@@ -1,5 +1,12 @@
 import { basename } from 'node:path'
-import { parseElementTemplate, type ElementTemplate } from './core/parsers/elementTemplate'
+import {
+  parseElementTemplate,
+  templateGrid,
+  type ElementTemplate,
+  type TemplateGrid
+} from './core/parsers/elementTemplate'
+
+export type { TemplateGrid }
 import { parsePromosFile, type PromoEntry } from './core/parsers/promosFile'
 import { computeAzanLines, type AzanFormat } from './core/prayer/azanRows'
 import { azanFormatStore } from './azanFormat'
@@ -36,6 +43,7 @@ export interface PromoSummary {
   fileName: string
   programCount: number
 }
+
 
 export interface AppConfig {
   hourly: HourlyOptions
@@ -109,6 +117,24 @@ class Session {
     const t = this.st().templates[index]
     if (t) t.template.category = category
     return this.templateSummaries()
+  }
+
+  /**
+   * Rename a template's element code. Every emitted file name derives from it
+   * at compose time (`CODE`, `CODE-A`, …), so previews and exports pick the new
+   * name up immediately. Empty input is ignored.
+   */
+  setTemplateCode(index: number, code: string): TemplateSummary[] {
+    const t = this.st().templates[index]
+    const clean = code.trim()
+    if (t && clean) t.template.code = clean
+    return this.templateSummaries()
+  }
+
+  /** The dates × times matrix for one template (the Import grid preview). */
+  templateGrid(index: number): TemplateGrid | null {
+    const t = this.st().templates[index]
+    return t ? templateGrid(t.template) : null
   }
 
   /** Compose ONLY one template over a date range — for a per-template preview. */

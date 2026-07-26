@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppConfig, PromoSummary, TemplateSummary } from '../main/session'
+import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { AzanFormat } from '../main/core/prayer/azanRows'
 import type { UiSettings } from '../main/uiSettings'
@@ -53,6 +53,10 @@ const api = {
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),
   setTemplateCategory: (index: number, category: string): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:setCategory', { index, category }),
+  setTemplateCode: (index: number, code: string): Promise<TemplateSummary[]> =>
+    ipcRenderer.invoke('templates:setCode', { index, code }),
+  templateGrid: (index: number): Promise<TemplateGrid | null> =>
+    ipcRenderer.invoke('templates:grid', index),
   previewTemplate: (
     index: number,
     start: CalendarDate,
