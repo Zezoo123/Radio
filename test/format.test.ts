@@ -28,6 +28,25 @@ describe('format expansion', () => {
     const e = expandFormatAtHour(topOfHour, 0)[1]
     expect(eventLine(e)).toBe('00:00:30|+|SWEEP_1')
   })
+
+  it('fires hour-restricted rows only at their listed hours', () => {
+    const clock: HourFormat = {
+      id: 'd1',
+      name: 'Default',
+      color: '#4f8cff',
+      rows: [
+        { minute: 0, second: 0, cue: '+', name: 'EVERY_HOUR' },
+        { hours: [7, 8, 9, 17], minute: 30, second: 0, cue: '+', name: 'DRIVE_TIME' },
+        { hour: 12, minute: 15, second: 0, cue: '+', name: 'LEGACY_NOON' } // pre-migration shape
+      ]
+    }
+    const names = (h: number): string[] => expandFormatAtHour(clock, h).map((e) => e.name)
+    expect(names(7)).toEqual(['EVERY_HOUR', 'DRIVE_TIME'])
+    expect(names(9)).toEqual(['EVERY_HOUR', 'DRIVE_TIME'])
+    expect(names(10)).toEqual(['EVERY_HOUR'])
+    expect(names(12)).toEqual(['EVERY_HOUR', 'LEGACY_NOON'])
+    expect(names(17)).toEqual(['EVERY_HOUR', 'DRIVE_TIME'])
+  })
 })
 
 describe('week grid → day rows', () => {

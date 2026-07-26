@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { loadSimianDb, lookupDuration } from '../src/main/core/simianDb'
+import { loadSimianDb, lookupDuration, lookupTrack } from '../src/main/core/simianDb'
 import { isBsiBuffer, parseBsiLog } from '../src/main/core/parsers/bsiLog'
 import { parseLogText, serializeRows } from '../src/renderer/src/lib/logRows'
 
@@ -22,6 +22,15 @@ describe.skipIf(!existsSync(DB_PATH))('Simian audio.mdb (local integration)', ()
     // Azan audio row from the daily log.
     expect(lookupDuration(db.tracks, 'AZ22-01RB')).toBeGreaterThan(200)
     expect(lookupDuration(db.tracks, 'NOT-A-REAL-CART')).toBeNull()
+  })
+
+  it('captures library descriptions for the Editor "update Dur & Desc" action', () => {
+    const db = loadSimianDb(readFileSync(DB_PATH))
+    expect(db.descriptions.size).toBeGreaterThan(0)
+    // Same dash/underscore tolerance as durations.
+    const desc = lookupTrack(db.descriptions, 'ADS_1705_B')
+    expect(typeof desc).toBe('string')
+    expect((desc as string).length).toBeGreaterThan(0)
   })
 })
 

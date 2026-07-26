@@ -199,7 +199,13 @@ export function FormatsView(): JSX.Element {
       setSet(res.set)
       setSelectedId(res.set.formats[0]?.id ?? null)
       setSelectedDefaultId(res.set.defaultClocks?.[0]?.id ?? null)
-      setStatus('Format file loaded')
+      setStatus(
+        res.sequentials
+          ? `Format file loaded — ${res.sequentials} sequential${
+              res.sequentials === 1 ? '' : 's'
+            } imported with their counters`
+          : 'Format file loaded'
+      )
     } else if (res.status === 'invalid') {
       setStatus('Not a valid format file')
     }
@@ -244,6 +250,10 @@ export function FormatsView(): JSX.Element {
           </button>
         </div>
       </div>
+      <p className="muted">
+        Build reusable hour formats (clocks), then paint them onto the week grid. Each cell is one
+        hour; export a text skeleton for a day or the whole week.
+      </p>
 
       {tab === 'clocks' && (
         <ClockEditor

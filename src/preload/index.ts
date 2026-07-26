@@ -26,6 +26,11 @@ export interface SimianDbSummary {
   trackCount: number
 }
 
+export interface SimianTrack {
+  duration?: number
+  description?: string
+}
+
 export interface OpenLogResult {
   path: string
   text: string
@@ -98,8 +103,12 @@ const api = {
   saveFormats: (set: FormatSet): Promise<void> => ipcRenderer.invoke('formats:save', set),
   saveFormatFile: (set: FormatSet): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('formats:saveToFile', set),
-  loadFormatFile: (): Promise<{ status: 'loaded' | 'cancelled' | 'invalid'; set?: FormatSet }> =>
-    ipcRenderer.invoke('formats:loadFromFile'),
+  loadFormatFile: (): Promise<{
+    status: 'loaded' | 'cancelled' | 'invalid'
+    set?: FormatSet
+    /** How many bundled sequentials were imported alongside the format set. */
+    sequentials?: number
+  }> => ipcRenderer.invoke('formats:loadFromFile'),
   exportFormatForDate: (
     set: FormatSet,
     date: CalendarDate
@@ -129,7 +138,9 @@ const api = {
   openSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:openDb'),
   getSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:getDb'),
   simianDurations: (names: string[]): Promise<Record<string, number>> =>
-    ipcRenderer.invoke('simian:durations', names)
+    ipcRenderer.invoke('simian:durations', names),
+  simianTracks: (names: string[]): Promise<Record<string, SimianTrack>> =>
+    ipcRenderer.invoke('simian:tracks', names)
 }
 
 contextBridge.exposeInMainWorld('api', api)

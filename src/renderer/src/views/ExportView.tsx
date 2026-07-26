@@ -67,14 +67,12 @@ export function ExportView({ templates, config, onConfig, onEdit }: Props): JSX.
 
   return (
     <div className="view">
-      <h1>
-        Export
-        <PageHelp>
-          Pick a single day or a date range, preview the Simian log, then export. Each day combines
-          the Formats week-grid schedule with the imported audio templates and AZAN. A single day is
-          just the same start and end date.
-        </PageHelp>
-      </h1>
+      <h1>Export</h1>
+      <p className="muted">
+        Pick a single day or a date range, preview the log, then export it as a text file. Each day combines the
+        Formats week-grid schedule with the imported audio templates and AZAN. A single day is just
+        the same start and end date.
+      </p>
 
       <section className="card">
         <div className="row">

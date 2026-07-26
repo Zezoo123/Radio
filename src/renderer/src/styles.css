@@ -428,31 +428,10 @@ nav {
     background var(--speed) var(--ease),
     color var(--speed) var(--ease);
 }
-.settings-link:hover {
+.settings-link:hover,
+.settings-link.active {
   background: var(--panel-2);
   color: var(--text);
-}
-
-/* Centered modal (Settings) */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 48px 24px;
-  overflow: auto;
-}
-.modal {
-  width: 100%;
-  max-width: 860px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 /* Full-screen station chooser on load */
@@ -752,13 +731,6 @@ label {
   background: var(--panel);
   box-shadow: 0 1px 0 var(--border);
   z-index: 2;
-}
-/* Not in modals: the backdrop scroller's 48px padding would pin the header
-   mid-air below the viewport top, with rows showing above it. */
-.modal-backdrop .tbl thead th {
-  position: static;
-  background: none;
-  box-shadow: none;
 }
 .tbl tr.unmapped td:first-child {
   border-left: 3px solid var(--warn);
@@ -1320,13 +1292,7 @@ code {
   opacity: 0.55;
 }
 .swatch.excluded {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--muted),
-    var(--muted) 2px,
-    transparent 2px,
-    transparent 4px
-  );
+  background: #3d424a;
 }
 .swatch.placed {
   background: var(--accent);
@@ -1389,13 +1355,7 @@ code {
   box-shadow: none;
 }
 .week-table td.hour.excluded {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--muted),
-    var(--muted) 3px,
-    transparent 3px,
-    transparent 6px
-  );
+  background: #3d424a;
 }
 .week-table td.hour.placed {
   background: var(--accent);
@@ -1749,4 +1709,45 @@ code {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+/* Editor virtualization: the grid scrolls inside this fixed-height container
+   (the sticky header pins to it); only the visible rows are mounted. */
+.log-scroll {
+  overflow: auto;
+  max-height: calc(100vh - 240px);
+}
+
+/* Hour multi-select (Formats default clocks) */
+.hour-cell {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hour-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+}
+.hour-pick {
+  padding: 5px 8px;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.hour-pick:hover {
+  border-color: var(--accent);
+}
+.hour-pick.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
 }

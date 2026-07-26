@@ -19,3 +19,6 @@ out/
 
 # Local-only scratch docs
 HANDOVER.md
+
+# Claude Code local session data (permissions, worktrees)
+.claude/

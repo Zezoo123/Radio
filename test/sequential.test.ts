@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sequentialValues } from '@core/sequential/values'
 import { makeResolver, refillQueue } from '@core/sequential/resolve'
 import { mulberry32 } from '@core/sequential/rng'
+import { sanitizeSequential } from '@core/sequential/sanitize'
 import type { Sequential } from '@core/sequential/types'
 import { resolveForDate } from '@core/format/resolveDay'
 import { emptyFormatSet, type HourFormat } from '@core/format/types'
@@ -178,5 +179,24 @@ describe('resolveForDate — distinct files across a day', () => {
     expect(text).toBe('08:00:00|+|JNG-00\r\n09:00:00|+|JNG-01\r\n10:00:00|+|JNG-02\r\n')
     // queue drained this cycle
     expect(sequentials[0].queue).toEqual([])
+  })
+})
+
+describe('sanitizeSequential (portable format file import)', () => {
+  it('keeps a valid sequential with its rotation position intact', () => {
+    const s = sanitizeSequential(seq({ queue: ['05', '06'], last: '04' }))!
+    expect(s.name).toBe('JNG')
+    expect(s.queue).toEqual(['05', '06'])
+    expect(s.last).toBe('04')
+  })
+
+  it('rejects malformed entries and scrubs junk queue values', () => {
+    expect(sanitizeSequential(null)).toBeNull()
+    expect(sanitizeSequential({})).toBeNull()
+    expect(sanitizeSequential(seq({ id: '' }))).toBeNull()
+    expect(sanitizeSequential({ ...seq(), mode: 'roman' })).toBeNull()
+    expect(sanitizeSequential({ ...seq(), start: 3 })).toBeNull()
+    const s = sanitizeSequential({ ...seq(), queue: ['01', 2, null, '03'] })!
+    expect(s.queue).toEqual(['01', '03'])
   })
 })
