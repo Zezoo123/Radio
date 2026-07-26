@@ -1,3 +1,5 @@
+import PageHelp from '../components/PageHelp'
+
 interface Props {
   stations: string[]
   current?: string | null
@@ -17,11 +19,13 @@ export function StationPicker({ stations, current, onPick }: Props): JSX.Element
   return (
     <div className="station-picker">
       <div className="station-picker-inner">
-        <h1>Choose a station</h1>
-        <p className="muted">
-          Each station keeps its own formats, promos and imports. You can switch any time from the
-          sidebar.
-        </p>
+        <h1>
+          Choose a station
+          <PageHelp>
+            Each station keeps its own formats, promos and imports. You can switch any time from
+            the sidebar.
+          </PageHelp>
+        </h1>
         <div className="station-grid">
           {stations.map((s) => (
             <button

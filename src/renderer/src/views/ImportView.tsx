@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../../main/session'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
+import PageHelp from '../components/PageHelp'
 
 interface Props {
   templates: TemplateSummary[]
@@ -69,7 +70,10 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
   return (
     <div className="view">
       <div className="card-head">
-        <h1>Import</h1>
+        <h1>
+          Import
+          <PageHelp>Add audio element templates and promos to build this schedule.</PageHelp>
+        </h1>
         <div className="menu-wrap">
           <button className="btn primary" onClick={() => setMenuOpen((o) => !o)}>
             Add ▾
@@ -91,7 +95,6 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
           )}
         </div>
       </div>
-      <p className="muted">Add audio element templates and promos to build this schedule.</p>
 
       {!hasItems && (
         <p className="empty">Nothing added yet. Use “Add” to import audio or promos.</p>

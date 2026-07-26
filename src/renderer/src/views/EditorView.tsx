@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
+import PageHelp from '../components/PageHelp'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { simulateLog, type SimRow } from '../lib/runtime'
 import { ReplaceDialog } from './ReplaceDialog'
@@ -215,7 +216,14 @@ export function EditorView({
   return (
     <div className="view">
       <div className="card-head">
-        <h1>Editor</h1>
+        <h1>
+          Editor
+          <PageHelp>
+            Open an exported log (or send one over from Export) and edit it right here. The
+            Expected column shows the real air time each row will start at, computed from the
+            order, the cue rules and the file durations from your Simian audio database.
+          </PageHelp>
+        </h1>
         <div className="row">
           {rows.length > 0 && (
             <span className="muted" title={path ?? undefined}>
@@ -243,12 +251,6 @@ export function EditorView({
           {status && <span className="muted">{status}</span>}
         </div>
       </div>
-      <p className="muted">
-        Open an exported log (or send one over from Export) and edit it right here. The
-        Expected column shows the real air time each row will start at, computed from the order,
-        the cue rules and the file durations from your Simian audio database.
-      </p>
-
       <section className="card">
         <div className="row">
           <button className="btn" onClick={openDb}>
