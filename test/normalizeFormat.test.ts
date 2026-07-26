@@ -60,4 +60,32 @@ describe('normalizeFormatSet (format file import)', () => {
     expect(set.formats[0].rows[0].name).toBe('ADS_1710_A')
     expect(set.defaultClocks![0].rows[0].category).toBe('ADV')
   })
+
+  it('migrates the legacy single hour into the hours list and sanitizes it', () => {
+    const legacy = {
+      formats: [],
+      grid: { cells: [] },
+      defaultClocks: [
+        {
+          id: 'd',
+          name: 'D',
+          color: '#fff',
+          rows: [
+            { hour: 23, minute: 59, second: 59, cue: '+', name: 'LOG' },
+            { hours: [9, 7, 7, 30, -1, 2.5], minute: 0, second: 0, cue: '+', name: 'JUNKY' },
+            { hours: [], minute: 0, second: 0, cue: '+', name: 'EMPTY' },
+            { hours: Array.from({ length: 24 }, (_, h) => h), minute: 0, second: 0, cue: '+', name: 'FULL' }
+          ]
+        }
+      ]
+    }
+    const rows = normalizeFormatSet(legacy)!.defaultClocks![0].rows
+    expect(rows[0].hours).toEqual([23])
+    expect(rows[0].hour).toBeUndefined()
+    // Deduped, sorted, out-of-range and fractional values dropped.
+    expect(rows[1].hours).toEqual([7, 9])
+    // Empty and full-24 selections both mean "every hour" — no restriction kept.
+    expect(rows[2].hours).toBeUndefined()
+    expect(rows[3].hours).toBeUndefined()
+  })
 })

@@ -7,9 +7,15 @@ import type { Cue } from '../types'
  */
 export interface FormatRow {
   /**
-   * Optional absolute hour (0-23). When set, the row fires only at that hour
-   * (once per day). When unset, it fires at every hour the clock is used —
-   * e.g. a top-of-hour ID in a default clock.
+   * Absolute hours (0-23) the row fires at — one event per listed hour. Unset
+   * or empty means it fires at every hour the clock is used — e.g. a
+   * top-of-hour ID in a default clock.
+   */
+  hours?: number[]
+  /**
+   * Legacy single absolute hour from data saved before multi-hour selection.
+   * normalizeFormatSet migrates it into `hours`; only expandFormatAtHour still
+   * honors it directly (for unnormalized in-memory data).
    */
   hour?: number
   /** Minute within the hour, 0-59. */

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { FormatRow, HourFormat } from '../../../main/core/format/types'
 import { InsertDialog } from './InsertDialog'
+import { HourPickerDialog, hoursSummary } from './HourPickerDialog'
 
 const CUES: Cue[] = ['+', '@', '#']
 
@@ -26,7 +27,10 @@ const ADD_CATEGORY = '__add__'
 // Sentinel: a one-click "load next day's log" row (auto-configured + locked).
 const NEXT_DAY_LOG = '__nextdaylog__'
 const LOG_DESCRIPTION = '[Day] [YYMMDD] Log'
-const HOURS = Array.from({ length: 24 }, (_, h) => h)
+
+/** A row's hour selection, tolerating pre-migration data (legacy `hour`). */
+const rowHours = (row: FormatRow): number[] =>
+  row.hours ?? (row.hour != null ? [row.hour] : [])
 // Categories that carry no audio file/cart — the Name/cart cell is disabled for
 // these (MACRO commands live in Description; COMMENT rows are plain comments).
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -61,6 +65,9 @@ export function ClockEditor({
   // Row index whose Category cell is currently entering a brand-new category.
   const [addingCatRow, setAddingCatRow] = useState<number | null>(null)
   const [newCat, setNewCat] = useState('')
+
+  // Row index whose Hours picker is open (default clocks only).
+  const [hourPickRow, setHourPickRow] = useState<number | null>(null)
 
   // Clock (in the list) awaiting delete confirmation; auto-cancels after a moment.
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -161,7 +168,8 @@ export function ClockEditor({
   // Category LOG, fixed Description, next-day on. Locked until you change category.
   function configureLogRow(index: number): void {
     patchRow(index, {
-      hour: 23,
+      hours: [23],
+      hour: undefined,
       minute: 59,
       second: 59,
       cue: '+',
@@ -247,7 +255,7 @@ export function ClockEditor({
             <table className="tbl">
               <thead>
                 <tr>
-                  {showHour && <th style={{ width: 88 }}>Hour</th>}
+                  {showHour && <th style={{ width: 112 }}>Hours</th>}
                   <th style={{ width: 64 }}>Min</th>
                   <th style={{ width: 64 }}>Sec</th>
                   <th style={{ width: 70 }}>Cue</th>
@@ -264,23 +272,18 @@ export function ClockEditor({
                   <tr key={i} className={row.logRow ? 'row-log' : ''}>
                     {showHour && (
                       <td>
-                        <select
-                          value={row.hour ?? ''}
+                        <button
+                          className="btn hour-cell"
                           disabled={row.logRow}
-                          {...nonTargetFocus}
-                          onChange={(e) =>
-                            patchRow(i, {
-                              hour: e.target.value === '' ? undefined : Number(e.target.value)
-                            })
+                          title={
+                            row.logRow
+                              ? 'Fixed — the log row loads at 23:59:59'
+                              : 'Pick the hours this row fires at'
                           }
+                          onClick={() => setHourPickRow(i)}
                         >
-                          <option value="">every</option>
-                          {HOURS.map((h) => (
-                            <option key={h} value={h}>
-                              {String(h).padStart(2, '0')}
-                            </option>
-                          ))}
-                        </select>
+                          {hoursSummary(rowHours(row))}
+                        </button>
                       </td>
                     )}
                     <td>
@@ -435,6 +438,22 @@ export function ClockEditor({
         onPick={insertText}
         onClose={() => setInsertOpen(false)}
       />
+
+      {selected && hourPickRow != null && selected.rows[hourPickRow] && (
+        <HourPickerDialog
+          open
+          targetLabel={`Row ${hourPickRow + 1}${
+            selected.rows[hourPickRow].name ? ` · ${selected.rows[hourPickRow].name}` : ''
+          }`}
+          hours={rowHours(selected.rows[hourPickRow])}
+          onChange={(hours) =>
+            // Empty = every hour (no restriction). A full 24 pick also means
+            // "every"; it stays selected in the UI and normalize collapses it.
+            patchRow(hourPickRow, { hours: hours.length > 0 ? hours : undefined, hour: undefined })
+          }
+          onClose={() => setHourPickRow(null)}
+        />
+      )}
     </div>
   )
 }

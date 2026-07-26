@@ -1654,3 +1654,37 @@ code {
   overflow: auto;
   max-height: calc(100vh - 240px);
 }
+
+/* Hour multi-select (Formats default clocks) */
+.hour-cell {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hour-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-top: 10px;
+}
+.hour-pick {
+  padding: 5px 8px;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.hour-pick:hover {
+  border-color: var(--accent);
+}
+.hour-pick.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
