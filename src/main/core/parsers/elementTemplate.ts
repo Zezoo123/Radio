@@ -1,4 +1,6 @@
 import ExcelJS from 'exceljs'
+import { weekday } from '../dates'
+import { WEEKDAY_LABELS } from '../format/types'
 import type { CalendarDate, ScheduleEvent, Section } from '../types'
 
 /**
@@ -169,4 +171,36 @@ export function eventsForDate(tpl: ElementTemplate, date: CalendarDate): Schedul
 /** The section (header + events) this template contributes for one date. */
 export function sectionForDate(tpl: ElementTemplate, date: CalendarDate): Section {
   return { code: tpl.code, group: tpl.group, events: eventsForDate(tpl, date) }
+}
+
+/** One template's plan as a dates × times matrix (the Import grid preview). */
+export interface TemplateGrid {
+  code: string
+  group: string
+  /** Every date the template covers, chronological. */
+  days: { iso: string; day: number; month: number; weekday: string }[]
+  /** One row per broadcast time: the track letter per day (aligned with `days`). */
+  rows: { time: string; cells: (string | null)[]; count: number }[]
+  /** Filled-cell count per day (aligned with `days`). */
+  totals: number[]
+}
+
+export function templateGrid(tpl: ElementTemplate): TemplateGrid {
+  const cols = [...tpl.dayColumns].sort(
+    (a, b) => a.year - b.year || a.month - b.month || a.day - b.day
+  )
+  const days = cols.map((c) => ({
+    iso: `${c.year}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`,
+    day: c.day,
+    month: c.month,
+    weekday: WEEKDAY_LABELS[weekday({ year: c.year, month: c.month, day: c.day })]
+  }))
+  const rows = [...tpl.timeRows]
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .map((row) => {
+      const cells = cols.map((c) => row.tracks.get(c.col) ?? null)
+      return { time: row.time, cells, count: cells.filter(Boolean).length }
+    })
+  const totals = cols.map((_, i) => rows.filter((r) => r.cells[i] !== null).length)
+  return { code: tpl.code, group: tpl.group, days, rows, totals }
 }

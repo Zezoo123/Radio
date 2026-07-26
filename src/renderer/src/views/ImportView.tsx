@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { AppConfig, TemplateSummary } from '../../../main/session'
+import type { AppConfig, TemplateGrid, TemplateSummary } from '../../../main/session'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
 import PageHelp from '../components/PageHelp'
@@ -13,6 +13,8 @@ interface Props {
 export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+  const [previewMode, setPreviewMode] = useState<'grid' | 'text'>('grid')
+  const [previewGrid, setPreviewGrid] = useState<TemplateGrid | null>(null)
   const [previewDate, setPreviewDate] = useState('')
   const [previewText, setPreviewText] = useState('')
 
@@ -52,6 +54,7 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
     const date = templates[index].firstDate ?? ''
     setPreviewIndex(index)
     setPreviewDate(date)
+    setPreviewGrid(await window.api.templateGrid(index))
     await runPreview(index, date)
   }
 
@@ -63,6 +66,20 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
   async function changeCategory(index: number, category: string): Promise<void> {
     onTemplates(await window.api.setTemplateCategory(index, category))
     if (previewIndex === index) await runPreview(index, previewDate)
+  }
+
+  /** Commit an edited element code; every exported file name derives from it. */
+  async function commitCode(index: number, input: HTMLInputElement): Promise<void> {
+    const code = input.value.trim()
+    if (!code || code === templates[index].code) {
+      input.value = templates[index].code // snap back on empty/unchanged
+      return
+    }
+    onTemplates(await window.api.setTemplateCode(index, code))
+    if (previewIndex === index) {
+      setPreviewGrid(await window.api.templateGrid(index))
+      await runPreview(index, previewDate)
+    }
   }
 
   const hasItems = templates.length > 0
@@ -130,7 +147,19 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
                     </select>
                   </td>
                   <td>{t.group}</td>
-                  <td>{t.code}</td>
+                  <td>
+                    <input
+                      key={`${t.code}-${i}`}
+                      defaultValue={t.code}
+                      spellCheck={false}
+                      title="Element code — exported file names derive from it (CODE, CODE-A, …). Edit and press Enter."
+                      style={{ width: 110 }}
+                      onBlur={(e) => commitCode(i, e.currentTarget)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                      }}
+                    />
+                  </td>
                   <td>{t.timeCount}</td>
                   <td className="muted">{t.fileName}</td>
                   <td>
@@ -154,28 +183,104 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
                   Preview — {templates[previewIndex].code}{' '}
                   <span className="pill">{templates[previewIndex].category || '—'}</span>
                 </h2>
-                <label>
-                  Date{' '}
-                  <input
-                    type="date"
-                    value={previewDate}
-                    min={templates[previewIndex].firstDate ?? undefined}
-                    max={templates[previewIndex].lastDate ?? undefined}
-                    onChange={(e) => changePreviewDate(e.target.value)}
-                  />
-                </label>
+                <div className="row">
+                  <div className="row seg">
+                    <button
+                      className={`seg-btn ${previewMode === 'grid' ? 'on' : ''}`}
+                      onClick={() => setPreviewMode('grid')}
+                    >
+                      Grid
+                    </button>
+                    <button
+                      className={`seg-btn ${previewMode === 'text' ? 'on' : ''}`}
+                      onClick={() => setPreviewMode('text')}
+                    >
+                      Simian text
+                    </button>
+                  </div>
+                  {previewMode === 'text' && (
+                    <label>
+                      Date{' '}
+                      <input
+                        type="date"
+                        value={previewDate}
+                        min={templates[previewIndex].firstDate ?? undefined}
+                        max={templates[previewIndex].lastDate ?? undefined}
+                        onChange={(e) => changePreviewDate(e.target.value)}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
-              <p className="muted" style={{ marginTop: 0 }}>
-                Just this template, composed into Simian lines for the chosen date (covers{' '}
-                {templates[previewIndex].firstDate ?? '—'} to {templates[previewIndex].lastDate ?? '—'}).
-              </p>
-              <textarea
-                className="preview"
-                readOnly
-                value={previewText || '(no rows for this date)'}
-                spellCheck={false}
-                dir="auto"
-              />
+
+              {previewMode === 'grid' && previewGrid && (
+                <>
+                  <p className="muted" style={{ marginTop: 0 }}>
+                    The whole plan at a glance: one column per day, one row per broadcast time,
+                    each cell the track that plays ({previewGrid.days[0]?.iso ?? '—'} to{' '}
+                    {previewGrid.days[previewGrid.days.length - 1]?.iso ?? '—'}).
+                  </p>
+                  <div className="tpl-grid-scroll">
+                    <table className="tgrid">
+                      <thead>
+                        <tr>
+                          <th className="t-time">Time</th>
+                          {previewGrid.days.map((d) => (
+                            <th key={d.iso} title={d.iso}>
+                              {d.day}
+                              <span className="t-wd">{d.weekday}</span>
+                            </th>
+                          ))}
+                          <th className="t-count">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {previewGrid.rows.map((r) => (
+                          <tr key={r.time}>
+                            <td className="t-time">{r.time.slice(0, 5)}</td>
+                            {r.cells.map((c, ci) => (
+                              <td key={ci} className={c ? 't-cell' : ''}>
+                                {c ?? ''}
+                              </td>
+                            ))}
+                            <td className="t-count">{r.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td className="t-time">Total</td>
+                          {previewGrid.totals.map((n, ti) => (
+                            <td key={ti} className="t-total">
+                              {n || ''}
+                            </td>
+                          ))}
+                          <td className="t-count">
+                            {previewGrid.totals.reduce((a, b) => a + b, 0)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {previewMode === 'text' && (
+                <>
+                  <p className="muted" style={{ marginTop: 0 }}>
+                    Just this template, composed into Simian lines for the chosen date (covers{' '}
+                    {templates[previewIndex].firstDate ?? '—'} to{' '}
+                    {templates[previewIndex].lastDate ?? '—'}).
+                  </p>
+                  <textarea
+                    className="preview"
+                    readOnly
+                    value={previewText || '(no rows for this date)'}
+                    spellCheck={false}
+                    dir="auto"
+                  />
+                </>
+              )}
             </div>
           )}
         </section>

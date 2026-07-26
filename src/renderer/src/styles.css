@@ -1751,3 +1751,71 @@ code {
   border-color: var(--accent);
   color: var(--accent-fg);
 }
+
+/* Import: template plan grid preview (dates × times) */
+.tpl-grid-scroll {
+  overflow: auto;
+  max-height: 440px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tgrid {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tgrid th,
+.tgrid td {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 2px 7px;
+  text-align: center;
+  white-space: nowrap;
+}
+.tgrid thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+  z-index: 2;
+}
+.tgrid thead th .t-wd {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 10px;
+}
+.tgrid .t-time {
+  position: sticky;
+  left: 0;
+  background: var(--panel-2);
+  font-weight: 600;
+  z-index: 1;
+}
+.tgrid thead th.t-time {
+  z-index: 3;
+}
+.tgrid td.t-cell {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tgrid .t-count {
+  position: sticky;
+  right: 0;
+  font-weight: 600;
+  background: var(--panel-2);
+  border-left: 1px solid var(--border);
+  z-index: 1;
+}
+.tgrid thead th.t-count {
+  z-index: 3;
+}
+.tgrid tfoot td {
+  background: var(--panel-2);
+  font-weight: 600;
+  position: sticky;
+  bottom: 0;
+}
+.tgrid tfoot td.t-count {
+  z-index: 2;
+}

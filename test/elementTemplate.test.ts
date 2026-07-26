@@ -7,6 +7,7 @@ import {
   parseElementTemplate,
   parseElementWorkbook,
   sectionForDate,
+  templateGrid,
   type ElementTemplate
 } from '@core/parsers/elementTemplate'
 import { serialize } from '@core/export/simian'
@@ -81,6 +82,38 @@ describe('element template parser', () => {
     const tpl = parseElementWorkbook(wb)
     const events = eventsForDate(tpl, { year: 2026, month: 6, day: 1 })
     expect(events.map((e) => e.time)).toEqual(['08:20:01', '17:20:01'])
+  })
+
+  it('builds the dates × times grid with per-row and per-day counts', () => {
+    const tpl: ElementTemplate = {
+      group: 'Promo',
+      code: 'ADS_1710',
+      dayColumns: [
+        { col: 3, day: 2, month: 6, year: 2026 }, // out of order on purpose
+        { col: 2, day: 1, month: 6, year: 2026 }
+      ],
+      timeRows: [
+        { time: '17:00:00', tracks: new Map([[2, 'B']]) },
+        {
+          time: '08:00:00',
+          tracks: new Map([
+            [2, 'A'],
+            [3, 'B']
+          ])
+        }
+      ]
+    }
+    const grid = templateGrid(tpl)
+    expect(grid.days.map((d) => `${d.iso} ${d.weekday}`)).toEqual([
+      '2026-06-01 Mon',
+      '2026-06-02 Tue'
+    ])
+    // Rows come out time-sorted; cells align with the sorted days.
+    expect(grid.rows.map((r) => r.time)).toEqual(['08:00:00', '17:00:00'])
+    expect(grid.rows[0].cells).toEqual(['A', 'B'])
+    expect(grid.rows[1].cells).toEqual(['B', null])
+    expect(grid.rows.map((r) => r.count)).toEqual([2, 1])
+    expect(grid.totals).toEqual([2, 1])
   })
 
   it('emits the template category on every event (Simian Category column)', async () => {
