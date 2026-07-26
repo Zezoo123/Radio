@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import type { LogRow } from '../lib/logRows'
 
 interface Props {
@@ -62,13 +62,18 @@ export function ReplaceDialog({ open, rows, onApply, onClose }: Props): JSX.Elem
 
   const scope = SCOPES.find((s) => s.key === scopeKey) ?? SCOPES[0]
 
+  // The live match count rescans every cell; on multi-thousand-row logs doing
+  // that synchronously per keystroke makes the Find input stutter. Deferring
+  // the scanned value keeps typing instant — the count trails by a frame.
+  const deferredFind = useDeferredValue(find)
   const { matches, cells } = useMemo(() => {
-    if (!open || !find) return { matches: 0, cells: 0 }
+    if (!open || !deferredFind) return { matches: 0, cells: 0 }
+    const fields = (SCOPES.find((s) => s.key === scopeKey) ?? SCOPES[0]).fields
     let matches = 0
     let cells = 0
     for (const r of rows) {
-      for (const fi of scope.fields) {
-        const n = countIn(r.fields[fi], find, matchCase)
+      for (const fi of fields) {
+        const n = countIn(r.fields[fi], deferredFind, matchCase)
         if (n > 0) {
           matches += n
           cells++
@@ -76,25 +81,33 @@ export function ReplaceDialog({ open, rows, onApply, onClose }: Props): JSX.Elem
       }
     }
     return { matches, cells }
-  }, [open, rows, find, matchCase, scope])
+  }, [open, rows, deferredFind, matchCase, scopeKey])
 
   if (!open) return null
 
   function replaceAll(): void {
-    if (!find || matches === 0) return
+    // Counted live (not from the deferred display value) so Enter right after
+    // typing replaces exactly what the current input matches.
+    if (!find) return
+    let replaced = 0
+    let cellsHit = 0
     const next = rows.map((r) => {
       let fields: LogRow['fields'] | null = null
       for (const fi of scope.fields) {
-        if (countIn(r.fields[fi], find, matchCase) === 0) continue
+        const n = countIn(r.fields[fi], find, matchCase)
+        if (n === 0) continue
+        replaced += n
+        cellsHit++
         fields = fields ?? ([...r.fields] as LogRow['fields'])
         fields[fi] = replaceIn(fields[fi], find, repl, matchCase)
       }
       return fields ? { ...r, fields } : r
     })
+    if (replaced === 0) return
     onApply(
       next,
-      `Replaced ${matches} occurrence${matches === 1 ? '' : 's'} in ${cells} cell${
-        cells === 1 ? '' : 's'
+      `Replaced ${replaced} occurrence${replaced === 1 ? '' : 's'} in ${cellsHit} cell${
+        cellsHit === 1 ? '' : 's'
       }`
     )
     onClose()

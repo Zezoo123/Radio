@@ -45,28 +45,47 @@ export function FormatsView(): JSX.Element {
     })
   }, [])
 
-  // Auto-save after the initial load.
+  // Auto-save after the initial load, debounced: every keystroke in a clock
+  // cell produces a new set, and writing the JSON per key makes typing laggy
+  // on the station PCs. The unmount flush keeps the last edits from being
+  // lost on a quick tab switch.
+  const pendingSave = useRef<FormatSet | null>(null)
   useEffect(() => {
     if (!loaded.current) return
-    window.api.saveFormats(set)
+    pendingSave.current = set
+    const t = setTimeout(() => {
+      pendingSave.current = null
+      window.api.saveFormats(set)
+    }, 350)
+    return () => clearTimeout(t)
   }, [set])
+  useEffect(
+    () => () => {
+      if (pendingSave.current) window.api.saveFormats(pendingSave.current)
+    },
+    []
+  )
 
   const date = toCalendarDate(exportDate)
   const [preview, setPreview] = useState('')
 
   // Preview is a dry-run resolve in main (date + sequential tokens), so it does
-  // not advance the rotation queues.
+  // not advance the rotation queues. Debounced for the same reason as the save:
+  // resolving a whole day per keystroke is wasted work while typing.
   useEffect(() => {
     if (!date) {
       setPreview('')
       return
     }
     let cancelled = false
-    window.api.previewFormatForDate(set, date).then((t) => {
-      if (!cancelled) setPreview(t)
-    })
+    const t = setTimeout(() => {
+      window.api.previewFormatForDate(set, date).then((text) => {
+        if (!cancelled) setPreview(text)
+      })
+    }, 250)
     return () => {
       cancelled = true
+      clearTimeout(t)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [set, exportDate])
