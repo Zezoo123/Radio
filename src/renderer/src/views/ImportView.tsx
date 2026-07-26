@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppConfig, TemplateGrid, TemplateSummary } from '../../../main/session'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
+import { clampISO, tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
 
 interface Props {
@@ -51,7 +52,10 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
       setPreviewIndex(null)
       return
     }
-    const date = templates[index].firstDate ?? ''
+    // Default to tomorrow (the day being scheduled), clamped into the range
+    // the template actually covers.
+    const t = templates[index]
+    const date = t.firstDate ? clampISO(tomorrowISO(), t.firstDate, t.lastDate) : ''
     setPreviewIndex(index)
     setPreviewDate(date)
     setPreviewGrid(await window.api.templateGrid(index))

@@ -3,6 +3,7 @@ import type { PromoSummary } from '../../../main/session'
 import type { PromoEntry } from '../../../main/core/parsers/promosFile'
 import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/schedule'
 import { toCalendarDate } from '../App'
+import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -18,9 +19,9 @@ function weekdayOf(value: string): number | null {
 export function PromosView(): JSX.Element {
   const [summary, setSummary] = useState<PromoSummary | null>(null)
   const [entries, setEntries] = useState<PromoEntry[]>([])
-  const [anchor, setAnchor] = useState('2026-06-07')
+  const [anchor, setAnchor] = useState(tomorrowISO)
   const [week, setWeek] = useState<PromoWeekRow[]>([])
-  const [previewDate, setPreviewDate] = useState('2026-06-07')
+  const [previewDate, setPreviewDate] = useState(tomorrowISO)
   const [previewText, setPreviewText] = useState('')
 
   const refreshInfo = useCallback(async () => {
