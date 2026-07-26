@@ -260,3 +260,60 @@ describe('time overrides', () => {
     expect(events.map((e) => e.time)).toEqual(['06:30:00', '20:15:00'])
   })
 })
+
+describe('station rules: blocked hours + break minutes', () => {
+  const HOURS_OF_FAGR = [2, 3, 4, 5, 6]
+
+  it('never places a promo in the station blocked hours', async () => {
+    const set = await parsePromosFile(fixture('Promos.xlsx'))
+    const { events } = promoEventsForDate(set, SUN, {
+      rules: { blockedHours: HOURS_OF_FAGR, breaks: [] }
+    })
+    expect(events.length).toBeGreaterThan(0)
+    for (const ev of events) {
+      expect(HOURS_OF_FAGR).not.toContain(parseInt(ev.time.slice(0, 2), 10))
+    }
+  })
+
+  it('lands every promo exactly on a break minute, seconds 00', async () => {
+    const set = await parsePromosFile(fixture('Promos.xlsx'))
+    const { events } = promoEventsForDate(set, SUN, {
+      rules: { blockedHours: [], breaks: [20, 40] }
+    })
+    expect(events.length).toBeGreaterThan(0)
+    for (const ev of events) {
+      expect([20, 40]).toContain(parseInt(ev.time.slice(3, 5), 10))
+      expect(ev.time.slice(6)).toBe('00')
+    }
+  })
+
+  it('keeps the legacy random minute when no breaks are configured', async () => {
+    const set = await parsePromosFile(fixture('Promos.xlsx'))
+    const { events } = promoEventsForDate(set, SUN, {})
+    const minutes = new Set(events.map((ev) => parseInt(ev.time.slice(3, 5), 10)))
+    expect(minutes.size).toBeGreaterThan(2) // spread, not pinned to breaks
+  })
+})
+
+describe('no identical hour set on consecutive days', () => {
+  it('differs from the previous day across a whole month', async () => {
+    const e = byFile(await load(), 'HP25-LazizWeSay2') // 5 promos every day
+    let prev = ''
+    for (let day = 1; day <= 30; day++) {
+      const hours = autoHoursForDate(e, { year: 2026, month: 6, day }).join(',')
+      if (day > 1) expect(hours, `day ${day} repeats day ${day - 1}`).not.toBe(prev)
+      prev = hours
+    }
+  })
+
+  it('holds for a 1-promo program too (preferred hour can move)', async () => {
+    const entries = await load()
+    const e = { ...entries[0], promoCounts: [1, 1, 1, 1, 1, 1, 1] }
+    let prev = ''
+    for (let day = 1; day <= 30; day++) {
+      const hours = autoHoursForDate(e, { year: 2026, month: 6, day }).join(',')
+      if (day > 1) expect(hours, `day ${day} repeats day ${day - 1}`).not.toBe(prev)
+      prev = hours
+    }
+  })
+})

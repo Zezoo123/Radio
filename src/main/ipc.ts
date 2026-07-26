@@ -174,6 +174,11 @@ export function registerIpc(): void {
     (_e, { fileName, date }: { fileName: string; date: CalendarDate }) =>
       session.resetPromoTimes(fileName, date)
   )
+  ipcMain.handle('promos:getRules', () => session.promoRules())
+  ipcMain.handle('promos:setRules', (_e, rules: { blockedHours?: number[]; breaks?: number[] }) =>
+    session.setPromoRules(rules)
+  )
+
   ipcMain.handle(
     'promos:setExcludedHours',
     (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { PromoSummary } from '../../../main/session'
+import type { PromoRules } from '../../../preload'
 import type { PromoEntry } from '../../../main/core/parsers/promosFile'
 import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/schedule'
 import { toCalendarDate } from '../App'
@@ -23,10 +24,13 @@ export function PromosView(): JSX.Element {
   const [week, setWeek] = useState<PromoWeekRow[]>([])
   const [previewDate, setPreviewDate] = useState(tomorrowISO)
   const [previewText, setPreviewText] = useState('')
+  const [rules, setRules] = useState<PromoRules>({ blockedHours: [], breaks: [] })
+  const [newBreak, setNewBreak] = useState('')
 
   const refreshInfo = useCallback(async () => {
     setSummary(await window.api.getPromos())
     setEntries(await window.api.listPromoEntries())
+    setRules(await window.api.getPromoRules())
   }, [])
 
   const refreshWeek = useCallback(async (value: string) => {
@@ -66,6 +70,30 @@ export function PromosView(): JSX.Element {
     setSummary(await window.api.removePromos())
     setEntries([])
     setWeek([])
+  }
+
+  /** Save station rules and refresh everything derived from them. */
+  async function saveRules(next: PromoRules): Promise<void> {
+    setRules(await window.api.setPromoRules(next))
+    await refreshWeek(anchor)
+  }
+
+  function toggleBlockedHour(h: number): void {
+    const set = new Set(rules.blockedHours)
+    if (set.has(h)) set.delete(h)
+    else set.add(h)
+    void saveRules({ ...rules, blockedHours: [...set].sort((a, b) => a - b) })
+  }
+
+  function addBreak(): void {
+    const m = parseInt(newBreak, 10)
+    if (!Number.isInteger(m) || m < 0 || m > 59 || rules.breaks.includes(m)) return
+    setNewBreak('')
+    void saveRules({ ...rules, breaks: [...rules.breaks, m].sort((a, b) => a - b) })
+  }
+
+  function removeBreak(m: number): void {
+    void saveRules({ ...rules, breaks: rules.breaks.filter((b) => b !== m) })
   }
 
   async function toggleExclude(
@@ -175,6 +203,67 @@ export function PromosView(): JSX.Element {
           </section>
 
           <section className="card">
+            <h2>Station rules</h2>
+            <p className="muted">
+              Apply to every promo on this station. Blocked hours never receive a promo — e.g. the
+              Fagr window. Breaks are the minutes promos land on within their hour (e.g. :20 and
+              :40, matching the station&apos;s hourly breaks); the randomiser then only picks hours.
+            </p>
+            <div className="rule-row">
+              <strong className="rule-label">Blocked hours</strong>
+              <div className="hour-block-row">
+                {Array.from({ length: 24 }, (_, h) => (
+                  <button
+                    key={h}
+                    className={`hour-pick gblock ${rules.blockedHours.includes(h) ? 'on' : ''}`}
+                    title={`${String(h).padStart(2, '0')}:00 – ${String((h + 1) % 24).padStart(2, '0')}:00 — click to ${
+                      rules.blockedHours.includes(h) ? 'allow' : 'block'
+                    } promos`}
+                    onClick={() => toggleBlockedHour(h)}
+                  >
+                    {String(h).padStart(2, '0')}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="rule-row">
+              <strong className="rule-label">Breaks</strong>
+              <div className="row" style={{ flexWrap: 'wrap' }}>
+                {rules.breaks.length === 0 && (
+                  <span className="muted">none — promos get a random minute (legacy)</span>
+                )}
+                {rules.breaks.map((m) => (
+                  <span key={m} className="pill break-pill">
+                    :{String(m).padStart(2, '0')}
+                    <button
+                      className="btn-link"
+                      title="Remove this break"
+                      onClick={() => removeBreak(m)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  placeholder="min"
+                  value={newBreak}
+                  style={{ width: 64 }}
+                  onChange={(e) => setNewBreak(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') addBreak()
+                  }}
+                />
+                <button className="btn" onClick={addBreak}>
+                  + Add break
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="card">
             <div className="card-head">
               <h2>
                 Weekly placement{range && <span className="pill">{range}</span>}
@@ -186,6 +275,9 @@ export function PromosView(): JSX.Element {
             </div>
 
             <div className="hour-legend">
+              <span>
+                <i className="swatch gblocked" /> blocked hours (station rules)
+              </span>
               <span>
                 <i className="swatch blocked" /> blackout (on-air + 2h)
               </span>
@@ -205,6 +297,7 @@ export function PromosView(): JSX.Element {
                   <WeekRow
                     key={row.fileName}
                     row={row}
+                    stationBlocked={rules.blockedHours}
                     onToggleHour={(day, h) => toggleExclude(row, day, h)}
                   />
                 ))}
@@ -243,9 +336,11 @@ export function PromosView(): JSX.Element {
 
 function WeekRow({
   row,
+  stationBlocked,
   onToggleHour
 }: {
   row: PromoWeekRow
+  stationBlocked: number[]
   onToggleHour: (day: PromoDayPlacement, hour: number) => void
 }): JSX.Element {
   return (
@@ -270,7 +365,12 @@ function WeekRow({
         </thead>
         <tbody>
           {row.days.map((day) => (
-            <DayRow key={day.weekday} day={day} onToggle={(h) => onToggleHour(day, h)} />
+            <DayRow
+              key={day.weekday}
+              day={day}
+              stationBlocked={stationBlocked}
+              onToggle={(h) => onToggleHour(day, h)}
+            />
           ))}
         </tbody>
       </table>
@@ -280,14 +380,17 @@ function WeekRow({
 
 function DayRow({
   day,
+  stationBlocked,
   onToggle
 }: {
   day: PromoDayPlacement
+  stationBlocked: number[]
   onToggle: (hour: number) => void
 }): JSX.Element {
   const placed = new Set(day.times.map((t) => parseInt(t.slice(0, 2), 10)))
   const blocked = new Set(day.blockedHours)
   const excluded = new Set(day.excludedHours)
+  const gblocked = new Set(stationBlocked)
   return (
     <tr className={day.count === 0 ? 'inactive' : ''}>
       <th className="wd-col" scope="row">
@@ -299,23 +402,26 @@ function DayRow({
       </th>
       {Array.from({ length: 24 }, (_, h) => {
         let cls = 'free'
-        if (blocked.has(h)) cls = 'blocked'
+        if (gblocked.has(h)) cls = 'gblocked'
+        else if (blocked.has(h)) cls = 'blocked'
         else if (excluded.has(h)) cls = 'excluded'
         else if (placed.has(h)) cls = 'placed'
-        const isBlocked = blocked.has(h)
+        const locked = gblocked.has(h) || blocked.has(h)
         const label = `${String(h).padStart(2, '0')}:00`
         return (
           <td
             key={h}
             className={`hour ${cls}`}
             title={
-              isBlocked
-                ? `${label} — blackout`
-                : excluded.has(h)
-                  ? `${label} — excluded (click to allow)`
-                  : `${label} — click to exclude`
+              gblocked.has(h)
+                ? `${label} — blocked for all promos (Station rules)`
+                : blocked.has(h)
+                  ? `${label} — blackout`
+                  : excluded.has(h)
+                    ? `${label} — excluded (click to allow)`
+                    : `${label} — click to exclude`
             }
-            onClick={isBlocked ? undefined : () => onToggle(h)}
+            onClick={locked ? undefined : () => onToggle(h)}
           />
         )
       })}

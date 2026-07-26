@@ -42,6 +42,31 @@ export function exclusionsForWeekday(
   return exclusions?.[fileName]?.[wd] ?? []
 }
 
+/** Station-wide placement rules (persisted per station, apply to every promo). */
+export interface PromoRules {
+  /** Hours (0-23) no promo may ever use — e.g. the Fagr window. */
+  blockedHours?: number[]
+  /**
+   * Break minutes within the hour (e.g. [20, 40]): every promo lands exactly on
+   * `HH:MM:00` for one of these. Empty/unset = the legacy random minute.
+   */
+  breaks?: number[]
+}
+
+/**
+ * Excluded hours as a per-weekday resolver. Public entry points accept either a
+ * plain iterable (applied to every day) or a resolver keyed by weekday — the
+ * latter lets the consecutive-day comparison use each neighbor's own rules.
+ */
+type ExcludedArg = Iterable<number> | ((wd: number) => number[]) | undefined
+
+function excludedResolver(excluded: ExcludedArg, global?: number[]): (wd: number) => number[] {
+  const extra = global ?? []
+  if (typeof excluded === 'function') return (wd) => [...excluded(wd), ...extra]
+  const fixed = [...(excluded ?? [])]
+  return () => [...fixed, ...extra]
+}
+
 export interface PromoPlacement {
   fileName: string
   program: string
@@ -141,18 +166,20 @@ function chooseHours(
   date: CalendarDate,
   count: number,
   salt: number,
-  excluded?: Iterable<number>
+  exFor: (wd: number) => number[]
 ): number[] {
-  const allowed = allowedHoursForDate(entry, date, excluded)
+  const allowed = allowedHoursForDate(entry, date, exFor(weekday(date)))
   const n = Math.min(count, allowed.length)
   if (n <= 0) return []
 
   const rng = mulberry32((hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(salt, 0x9e3779b1)) >>> 0)
   const picked = new Set<number>()
 
-  // Seed the preferred hour first so it tends to win a slot when available.
+  // Seed the preferred hour first so it tends to win a slot when available —
+  // but only on the base pick (salt 0). Re-roll salts must be free to move off
+  // it, or a 1-promo program repeats the same hour every day (rule 7 loses).
   const pref = preferredHour(entry, date)
-  if (pref != null && allowed.includes(pref)) picked.add(pref)
+  if (salt === 0 && pref != null && allowed.includes(pref)) picked.add(pref)
 
   // Even spread: one hour per equal-width segment of the allowed list, jittered.
   for (let i = 0; i < n && picked.size < n; i++) {
@@ -173,49 +200,86 @@ function chooseHours(
 
 const setKey = (hours: number[]): string => hours.join(',')
 
+const SALT_TRIES = 12
+
 /**
- * The auto-chosen hours for `date`, re-rolled until they differ from the base
- * picks of the previous day, next day, and the same weekday a week earlier
- * (rule 7). Falls back to the base pick if the pool is too small to differ.
+ * The actual hour set for `date`: re-rolled until it differs from the previous
+ * day's ACTUAL pick (rule 7's real intent — comparing against the neighbor's
+ * base pick let two re-rolled days coincide), plus the next day's and last
+ * week's base picks. The previous-day recursion is anchored at the 1st of the
+ * month (where the neighbor is approximated by its base pick), so the chain is
+ * bounded at 31 days and fully deterministic.
  */
-export function autoHoursForDate(
+function actualHoursAt(
   entry: PromoEntry,
   date: CalendarDate,
-  excluded?: Iterable<number>
+  exFor: (wd: number) => number[]
 ): number[] {
   const count = entry.promoCounts[weekday(date)] ?? 0
   if (count <= 0) return []
 
   const baseAt = (d: CalendarDate): string =>
-    setKey(chooseHours(entry, d, entry.promoCounts[weekday(d)] ?? 0, 0, excluded))
-  const neighbours = [baseAt(addDays(date, -1)), baseAt(addDays(date, 1)), baseAt(addDays(date, -7))]
+    setKey(chooseHours(entry, d, entry.promoCounts[weekday(d)] ?? 0, 0, exFor))
+  const prev = addDays(date, -1)
+  const prevKey = date.day === 1 ? baseAt(prev) : setKey(actualHoursAt(entry, prev, exFor))
+  const avoid = [prevKey, baseAt(addDays(date, 1)), baseAt(addDays(date, -7))]
 
   let fallback: number[] = []
-  for (let salt = 0; salt < 8; salt++) {
-    const hours = chooseHours(entry, date, count, salt, excluded)
+  for (let salt = 0; salt < SALT_TRIES; salt++) {
+    const hours = chooseHours(entry, date, count, salt, exFor)
     if (salt === 0) fallback = hours
-    if (!neighbours.includes(setKey(hours))) return hours
+    if (!avoid.includes(setKey(hours))) return hours
   }
   return fallback
 }
 
-/** Deterministic minute (1-58) within an hour, avoiding the top-of-hour markers. */
-function minuteFor(entry: PromoEntry, date: CalendarDate, hour: number): number {
+/**
+ * The auto-chosen hours for `date` (rule 7 applied). `excluded` may be a plain
+ * hour list or a per-weekday resolver; `globalBlocked` (the station's blackout
+ * hours) is excluded on every day.
+ */
+export function autoHoursForDate(
+  entry: PromoEntry,
+  date: CalendarDate,
+  excluded?: ExcludedArg,
+  globalBlocked?: number[]
+): number[] {
+  return actualHoursAt(entry, date, excludedResolver(excluded, globalBlocked))
+}
+
+/**
+ * Deterministic minute within an hour. With station breaks configured the
+ * promo lands exactly on one of the break minutes; otherwise 1-58, avoiding
+ * the top-of-hour markers.
+ */
+function minuteFor(entry: PromoEntry, date: CalendarDate, hour: number, breaks?: number[]): number {
   const rng = mulberry32((hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(hour + 1, 2654435761)) >>> 0)
+  if (breaks && breaks.length > 0) return breaks[Math.floor(rng() * breaks.length)]
   return 1 + Math.floor(rng() * 58)
 }
 
-function timesFromHours(entry: PromoEntry, date: CalendarDate, hours: number[]): string[] {
-  return hours.map((h) => `${pad2(h)}:${pad2(minuteFor(entry, date, h))}:00`)
+function timesFromHours(
+  entry: PromoEntry,
+  date: CalendarDate,
+  hours: number[],
+  breaks?: number[]
+): string[] {
+  return hours.map((h) => `${pad2(h)}:${pad2(minuteFor(entry, date, h, breaks))}:00`)
 }
 
 /** The auto-generated broadcast times for a promo on a date, `HH:MM:SS`. */
 export function autoTimesForDate(
   entry: PromoEntry,
   date: CalendarDate,
-  excluded?: Iterable<number>
+  excluded?: ExcludedArg,
+  rules?: PromoRules
 ): string[] {
-  return timesFromHours(entry, date, autoHoursForDate(entry, date, excluded))
+  return timesFromHours(
+    entry,
+    date,
+    autoHoursForDate(entry, date, excluded, rules?.blockedHours),
+    rules?.breaks
+  )
 }
 
 /** Final times for a promo on a date: a manual override if present, else auto. */
@@ -223,11 +287,12 @@ export function finalTimesForDate(
   entry: PromoEntry,
   date: CalendarDate,
   overrides?: PromoOverrides,
-  excluded?: Iterable<number>
+  excluded?: ExcludedArg,
+  rules?: PromoRules
 ): string[] {
   const override = overrides?.[entry.fileName]?.[dateKey(date)]
   if (override) return [...override].sort((a, b) => a.localeCompare(b))
-  return autoTimesForDate(entry, date, excluded)
+  return autoTimesForDate(entry, date, excluded, rules)
 }
 
 /** Per-program placement details for the Promos planning view (includes all programs). */
@@ -235,15 +300,18 @@ export function placementsForDate(
   set: PromoSet,
   date: CalendarDate,
   overrides?: PromoOverrides,
-  exclusions?: PromoExclusions
+  exclusions?: PromoExclusions,
+  rules?: PromoRules
 ): PromoPlacement[] {
   const wd = weekday(date)
+  const global = rules?.blockedHours ?? []
   return set.entries
     .filter((e) => (e.promoCounts[wd] ?? 0) > 0)
     .map((e) => {
       const count = e.promoCounts[wd] ?? 0
-      const excluded = exclusionsForWeekday(exclusions, e.fileName, wd)
-      const allowed = allowedHoursForDate(e, date, excluded)
+      const exFor = (d: number): number[] => exclusionsForWeekday(exclusions, e.fileName, d)
+      const excluded = exFor(wd)
+      const allowed = allowedHoursForDate(e, date, [...excluded, ...global])
       const override = overrides?.[e.fileName]?.[dateKey(date)]
       return {
         fileName: e.fileName,
@@ -251,7 +319,7 @@ export function placementsForDate(
         presenter: e.presenter,
         recorded: e.recorded,
         count,
-        times: finalTimesForDate(e, date, overrides, excluded),
+        times: finalTimesForDate(e, date, overrides, exFor, rules),
         overridden: Boolean(override),
         blockedHours: [...blockedHoursForDate(e, date)].sort((a, b) => a - b),
         excludedHours: [...excluded].sort((a, b) => a - b),
@@ -279,25 +347,31 @@ export interface PromoEventsResult {
 export function promoEventsForDate(
   set: PromoSet,
   date: CalendarDate,
-  opts: { overrides?: PromoOverrides; exclusions?: PromoExclusions; sort?: 'time' | 'promo' } = {}
+  opts: {
+    overrides?: PromoOverrides
+    exclusions?: PromoExclusions
+    rules?: PromoRules
+    sort?: 'time' | 'promo'
+  } = {}
 ): PromoEventsResult {
   const wd = weekday(date)
   const events: ScheduleEvent[] = []
   const warnings: string[] = []
+  const global = opts.rules?.blockedHours ?? []
 
   for (const entry of set.entries) {
     const count = entry.promoCounts[wd] ?? 0
     if (count <= 0) continue
 
-    const excluded = exclusionsForWeekday(opts.exclusions, entry.fileName, wd)
-    const allowed = allowedHoursForDate(entry, date, excluded)
+    const exFor = (d: number): number[] => exclusionsForWeekday(opts.exclusions, entry.fileName, d)
+    const allowed = allowedHoursForDate(entry, date, [...exFor(wd), ...global])
     if (count > allowed.length) {
       warnings.push(
         `Promo ${entry.fileName} (${entry.program}) wants ${count} on ${dateKey(date)} but only ${allowed.length} hour(s) are free`
       )
     }
 
-    for (const time of finalTimesForDate(entry, date, opts.overrides, excluded)) {
+    for (const time of finalTimesForDate(entry, date, opts.overrides, exFor, opts.rules)) {
       events.push({
         time,
         cue: '+',
@@ -355,37 +429,42 @@ export function placementsForWeek(
   set: PromoSet,
   weekStart: CalendarDate,
   overrides?: PromoOverrides,
-  exclusions?: PromoExclusions
+  exclusions?: PromoExclusions,
+  rules?: PromoRules
 ): PromoWeekRow[] {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const global = rules?.blockedHours ?? []
   return set.entries
     .filter((e) => e.promoCounts.some((c) => c > 0))
-    .map((e) => ({
-      fileName: e.fileName,
-      program: e.program,
-      presenter: e.presenter,
-      recorded: e.recorded,
-      airStart: e.airStart,
-      airEnd: e.airEnd,
-      days: dates.map((date) => {
-        const wd = weekday(date)
-        const count = e.promoCounts[wd] ?? 0
-        const excluded = exclusionsForWeekday(exclusions, e.fileName, wd)
-        const allowed = allowedHoursForDate(e, date, excluded)
-        const override = overrides?.[e.fileName]?.[dateKey(date)]
-        return {
-          date: dateKey(date),
-          weekday: wd,
-          airs: e.airDays[wd],
-          count,
-          times: count > 0 ? finalTimesForDate(e, date, overrides, excluded) : [],
-          overridden: Boolean(override),
-          blockedHours: [...blockedHoursForDate(e, date)].sort((a, b) => a - b),
-          excludedHours: [...excluded].sort((a, b) => a - b),
-          allowedHours: allowed,
-          preferredHour: preferredHour(e, date),
-          capped: count > allowed.length
-        }
-      })
-    }))
+    .map((e) => {
+      const exFor = (d: number): number[] => exclusionsForWeekday(exclusions, e.fileName, d)
+      return {
+        fileName: e.fileName,
+        program: e.program,
+        presenter: e.presenter,
+        recorded: e.recorded,
+        airStart: e.airStart,
+        airEnd: e.airEnd,
+        days: dates.map((date) => {
+          const wd = weekday(date)
+          const count = e.promoCounts[wd] ?? 0
+          const excluded = exFor(wd)
+          const allowed = allowedHoursForDate(e, date, [...excluded, ...global])
+          const override = overrides?.[e.fileName]?.[dateKey(date)]
+          return {
+            date: dateKey(date),
+            weekday: wd,
+            airs: e.airDays[wd],
+            count,
+            times: count > 0 ? finalTimesForDate(e, date, overrides, exFor, rules) : [],
+            overridden: Boolean(override),
+            blockedHours: [...blockedHoursForDate(e, date)].sort((a, b) => a - b),
+            excludedHours: [...excluded].sort((a, b) => a - b),
+            allowedHours: allowed,
+            preferredHour: preferredHour(e, date),
+            capped: count > allowed.length
+          }
+        })
+      }
+    })
 }

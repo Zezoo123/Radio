@@ -1819,3 +1819,41 @@ code {
 .tgrid tfoot td.t-count {
   z-index: 2;
 }
+
+/* Promos: station-wide rules (blocked hours + breaks) */
+.rule-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+}
+.rule-label {
+  flex: 0 0 110px;
+  padding-top: 4px;
+}
+.hour-block-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.hour-block-row .hour-pick {
+  min-width: 34px;
+  padding: 4px 0;
+}
+.hour-pick.gblock.on {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+.break-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.week-table td.hour.gblocked {
+  background: #000;
+  cursor: default;
+}
+.hour-legend .swatch.gblocked {
+  background: #000;
+}
