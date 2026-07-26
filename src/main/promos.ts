@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import type { PromoSet } from './core/parsers/promosFile'
-import type { PromoExclusions, PromoOverrides } from './core/promos/schedule'
+import type { PromoExclusions, PromoOverrides, PromoRules } from './core/promos/schedule'
 import { stationFile, stationFileEnsured } from './station'
 
 /** What's persisted to promos.json: the imported set + the user's edits. */
@@ -11,10 +11,34 @@ export interface PromosFile {
   overrides: PromoOverrides
   /** Per-program hours excluded from the random range. */
   exclusions: PromoExclusions
+  /** Station-wide rules: blackout hours + break minutes, applied to every promo. */
+  rules: Required<PromoRules>
 }
 
 export function emptyPromosFile(): PromosFile {
-  return { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {} }
+  return {
+    fileName: null,
+    set: { entries: [] },
+    overrides: {},
+    exclusions: {},
+    rules: { blockedHours: [], breaks: [] }
+  }
+}
+
+/** Coerce arbitrary input into well-formed station rules. */
+export function sanitizeRules(raw: Partial<PromoRules> | undefined): Required<PromoRules> {
+  return {
+    blockedHours: intList(raw?.blockedHours, 23),
+    breaks: intList(raw?.breaks, 59)
+  }
+}
+
+/** Sanitize a persisted int list: whole numbers within [0, max], deduped, sorted. */
+function intList(raw: unknown, max: number): number[] {
+  if (!Array.isArray(raw)) return []
+  return [...new Set(raw.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= max))].sort(
+    (a, b) => a - b
+  )
 }
 
 /**
@@ -47,7 +71,8 @@ class PromosStore {
         fileName: raw.fileName ?? null,
         set: raw.set?.entries ? raw.set : { entries: [] },
         overrides: raw.overrides ?? {},
-        exclusions: normalizeExclusions(raw.exclusions)
+        exclusions: normalizeExclusions(raw.exclusions),
+        rules: sanitizeRules(raw.rules)
       }
     } catch (err) {
       // Only a missing file means "first run"; other errors must surface so

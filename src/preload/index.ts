@@ -6,6 +6,12 @@ import type { UiSettings } from '../main/uiSettings'
 import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
 import type { PromoPlacement, PromoWeekRow } from '../main/core/promos/schedule'
+
+/** Station-wide promo rules: blackout hours (0-23) + break minutes (0-59). */
+export interface PromoRules {
+  blockedHours: number[]
+  breaks: number[]
+}
 import type { PromoEntry } from '../main/core/parsers/promosFile'
 import type { CalendarDate } from '../main/core/types'
 
@@ -95,6 +101,9 @@ const api = {
     ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
   resetPromoTimes: (fileName: string, date: CalendarDate): Promise<PromoPlacement[]> =>
     ipcRenderer.invoke('promos:resetTimes', { fileName, date }),
+  getPromoRules: (): Promise<PromoRules> => ipcRenderer.invoke('promos:getRules'),
+  setPromoRules: (rules: PromoRules): Promise<PromoRules> =>
+    ipcRenderer.invoke('promos:setRules', rules),
   setPromoExcludedHours: (
     fileName: string,
     weekday: number,

@@ -23,7 +23,8 @@ import {
   type PromoPlacement,
   type PromoWeekRow
 } from './core/promos/schedule'
-import { promosStore, type PromosFile } from './promos'
+import { promosStore, sanitizeRules, type PromosFile } from './promos'
+import type { PromoRules } from './core/promos/schedule'
 import { getActiveStation, type Station } from './station'
 import type { CalendarDate } from './core/types'
 
@@ -209,7 +210,10 @@ class Session {
 
   async loadPromos(filePath: string): Promise<PromoSummary | null> {
     const set = await parsePromosFile(filePath)
-    this.st().promos = { fileName: basename(filePath), set, overrides: {}, exclusions: {} }
+    // Rules (blackout hours + breaks) are station properties — keep them when
+    // the promo spreadsheet is replaced.
+    const rules = (await this.ensurePromos()).rules
+    this.st().promos = { fileName: basename(filePath), set, overrides: {}, exclusions: {}, rules }
     await promosStore.save(this.st().promos!)
     return this.promoSummary()
   }
@@ -225,15 +229,28 @@ class Session {
   }
 
   async removePromos(): Promise<PromoSummary | null> {
-    this.st().promos = { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {} }
+    const rules = (await this.ensurePromos()).rules
+    this.st().promos = { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {}, rules }
     await promosStore.save(this.st().promos!)
     return this.promoSummary()
+  }
+
+  /** Station-wide promo rules: blackout hours + break minutes. */
+  async promoRules(): Promise<Required<PromoRules>> {
+    return (await this.ensurePromos()).rules
+  }
+
+  async setPromoRules(rules: Partial<PromoRules>): Promise<Required<PromoRules>> {
+    const file = await this.ensurePromos()
+    file.rules = sanitizeRules(rules)
+    await promosStore.save(file)
+    return file.rules
   }
 
   /** Per-program placement for the whole week containing `anchor` (Sun..Sat). */
   async promoWeek(anchor: CalendarDate): Promise<PromoWeekRow[]> {
     const file = await this.ensurePromos()
-    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions)
+    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions, file.rules)
   }
 
   /**
@@ -246,6 +263,7 @@ class Session {
     const { events } = promoEventsForDate(file.set, date, {
       overrides: file.overrides,
       exclusions: file.exclusions,
+      rules: file.rules,
       sort: 'promo'
     })
     return events.map(eventLine).join('\r\n')
@@ -271,7 +289,7 @@ class Session {
     if (week.every((d) => d.length === 0)) delete file.exclusions[fileName]
     else file.exclusions[fileName] = week
     await promosStore.save(file)
-    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions)
+    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions, file.rules)
   }
 
   /** Save (or clear, when `times` is empty) a manual time override. */
@@ -292,7 +310,7 @@ class Session {
       ;(file.overrides[fileName] ??= {})[key] = clean
     }
     await promosStore.save(file)
-    return placementsForDate(file.set, date, file.overrides, file.exclusions)
+    return placementsForDate(file.set, date, file.overrides, file.exclusions, file.rules)
   }
 
   /** Drop a manual override so the date falls back to the auto schedule. */
@@ -315,7 +333,8 @@ class Session {
     for (const date of dateRange(start, end)) {
       const { events, warnings: w } = promoEventsForDate(file.set, date, {
         overrides: file.overrides,
-        exclusions: file.exclusions
+        exclusions: file.exclusions,
+        rules: file.rules
       })
       warnings.push(...w)
       if (events.length) byDate.set(dateKey(date), events.map(eventLine))
