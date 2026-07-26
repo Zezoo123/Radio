@@ -152,16 +152,30 @@ export function ClockEditor({
     onChangeFormat({ ...selected, rows })
   }
 
-  function removeRow(index: number): void {
-    if (!selected) return
-    // Removing a row shifts indices (or deletes the focused row outright), so
-    // the tracked insert target is stale — clear it or Insert patches the
-    // wrong row / reads out of bounds.
+  // Adding/removing a row shifts indices (or deletes the focused row outright),
+  // so the tracked insert target is stale — clear it or Insert patches the
+  // wrong row / reads out of bounds.
+  function clearInsertTarget(): void {
     focusedEl.current = null
     focusedRow.current = null
     focusedField.current = null
     setActiveField(null)
+  }
+
+  function removeRow(index: number): void {
+    if (!selected) return
+    clearInsertTarget()
     onChangeFormat({ ...selected, rows: selected.rows.filter((_, i) => i !== index) })
+  }
+
+  /** Insert an identical copy of a row right below it (like the Editor's ⧉). */
+  function duplicateRow(index: number): void {
+    if (!selected) return
+    clearInsertTarget()
+    const src = selected.rows[index]
+    const rows = [...selected.rows]
+    rows.splice(index + 1, 0, { ...src, hours: src.hours ? [...src.hours] : undefined })
+    onChangeFormat({ ...selected, rows })
   }
 
   // "NEXT DAY LOG": one-click load-next-day row — 23:59:59 +, empty name,
@@ -405,7 +419,14 @@ export function ClockEditor({
                       />
                     </td>
                     <td>
-                      <button className="btn-link" onClick={() => removeRow(i)}>
+                      <button
+                        className="btn-link"
+                        title="Duplicate this row (copy inserted below)"
+                        onClick={() => duplicateRow(i)}
+                      >
+                        ⧉
+                      </button>
+                      <button className="btn-link" title="Delete row" onClick={() => removeRow(i)}>
                         ✕
                       </button>
                     </td>
@@ -418,6 +439,14 @@ export function ClockEditor({
             <div className="row" style={{ marginTop: 10 }}>
               <button className="btn" onClick={addRow}>
                 + Add row
+              </button>
+              <button
+                className="btn"
+                disabled={selected.rows.length === 0}
+                title="Duplicate the line before (the last row)"
+                onClick={() => duplicateRow(selected.rows.length - 1)}
+              >
+                ⧉ Duplicate last row
               </button>
               <button
                 className="btn"
