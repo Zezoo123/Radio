@@ -148,6 +148,15 @@ export async function parseElementTemplate(filePath: string): Promise<ElementTem
   return parseElementWorkbook(wb)
 }
 
+/**
+ * A day cell's individual track values. Cells usually hold one letter, but can
+ * carry several — `A B` means both tracks play at that time, so each token
+ * becomes its own event. The `1` sentinel stays a single token.
+ */
+export function trackTokens(raw: string): string[] {
+  return raw.split(/[^A-Za-z0-9]+/).filter(Boolean)
+}
+
 /** Events for one date, sorted by time. Empty if the date isn't in the template. */
 export function eventsForDate(tpl: ElementTemplate, date: CalendarDate): ScheduleEvent[] {
   const column = tpl.dayColumns.find(
@@ -159,10 +168,12 @@ export function eventsForDate(tpl: ElementTemplate, date: CalendarDate): Schedul
   for (const row of tpl.timeRows) {
     const track = row.tracks.get(column.col)
     if (!track) continue
-    // A cell of `1` means "play the code itself once" — emit the bare code with
-    // no track suffix. Any other value is a track letter → `<CODE>-<TRACK>`.
-    const name = track === '1' ? tpl.code : `${tpl.code}-${track}`
-    events.push({ time: row.time, cue: '+', name, category: tpl.category })
+    for (const token of trackTokens(track)) {
+      // A `1` means "play the code itself once" — emit the bare code with no
+      // track suffix. Any other value is a track letter → `<CODE>-<TRACK>`.
+      const name = token === '1' ? tpl.code : `${tpl.code}-${token}`
+      events.push({ time: row.time, cue: '+', name, category: tpl.category })
+    }
   }
   events.sort((a, b) => a.time.localeCompare(b.time))
   return events
@@ -173,15 +184,19 @@ export function sectionForDate(tpl: ElementTemplate, date: CalendarDate): Sectio
   return { code: tpl.code, group: tpl.group, events: eventsForDate(tpl, date) }
 }
 
-/** One template's plan as a dates × times matrix (the Import grid preview). */
+/** One template's plan as a dates × hours matrix (the Import grid preview). */
 export interface TemplateGrid {
   code: string
   group: string
   /** Every date the template covers, chronological. */
   days: { iso: string; day: number; month: number; weekday: string }[]
-  /** One row per broadcast time: the track letter per day (aligned with `days`). */
+  /**
+   * One row per broadcast HOUR (`HH:00`): each cell aggregates every play of
+   * that hour on that day as sorted track letters — `AAB` = A twice, B once,
+   * regardless of the exact minutes. `count` totals the row's plays.
+   */
   rows: { time: string; cells: (string | null)[]; count: number }[]
-  /** Filled-cell count per day (aligned with `days`). */
+  /** Plays per day (aligned with `days`). */
   totals: number[]
 }
 
@@ -195,12 +210,31 @@ export function templateGrid(tpl: ElementTemplate): TemplateGrid {
     month: c.month,
     weekday: WEEKDAY_LABELS[weekday({ year: c.year, month: c.month, day: c.day })]
   }))
-  const rows = [...tpl.timeRows]
-    .sort((a, b) => a.time.localeCompare(b.time))
-    .map((row) => {
-      const cells = cols.map((c) => row.tracks.get(c.col) ?? null)
-      return { time: row.time, cells, count: cells.filter(Boolean).length }
+
+  // Condense the minute-level rows into hours: hour → dayIndex → track tokens.
+  // Multi-value cells (`A B`) contribute every token, so nothing is lost.
+  const byHour = new Map<string, string[][]>()
+  for (const row of tpl.timeRows) {
+    const hour = row.time.slice(0, 2)
+    let slots = byHour.get(hour)
+    if (!slots) {
+      slots = cols.map(() => [])
+      byHour.set(hour, slots)
+    }
+    cols.forEach((c, i) => {
+      const raw = row.tracks.get(c.col)
+      if (raw) slots![i].push(...trackTokens(raw))
     })
-  const totals = cols.map((_, i) => rows.filter((r) => r.cells[i] !== null).length)
+  }
+
+  const totals = cols.map(() => 0)
+  const rows = [...byHour.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([hour, slots]) => {
+      slots.forEach((tokens, i) => (totals[i] += tokens.length))
+      const cells = slots.map((tokens) => (tokens.length ? [...tokens].sort().join('') : null))
+      const count = slots.reduce((sum, tokens) => sum + tokens.length, 0)
+      return { time: `${hour}:00`, cells, count }
+    })
   return { code: tpl.code, group: tpl.group, days, rows, totals }
 }

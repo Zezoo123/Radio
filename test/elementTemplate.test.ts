@@ -84,7 +84,21 @@ describe('element template parser', () => {
     expect(events.map((e) => e.time)).toEqual(['08:20:01', '17:20:01'])
   })
 
-  it('builds the dates × times grid with per-row and per-day counts', () => {
+  it('splits multi-value cells (`A B`) into one event per track', () => {
+    const tpl: ElementTemplate = {
+      group: 'Promo',
+      code: 'ADS_1734',
+      dayColumns: [{ col: 2, day: 1, month: 6, year: 2026 }],
+      timeRows: [{ time: '09:20:02', tracks: new Map([[2, 'A B']]) }]
+    }
+    const events = eventsForDate(tpl, { year: 2026, month: 6, day: 1 })
+    expect(events.map((e) => `${e.time}|${e.name}`)).toEqual([
+      '09:20:02|ADS_1734-A',
+      '09:20:02|ADS_1734-B'
+    ])
+  })
+
+  it('condenses the grid by hour: sorted letters per cell, play counts', () => {
     const tpl: ElementTemplate = {
       group: 'Promo',
       code: 'ADS_1710',
@@ -93,14 +107,17 @@ describe('element template parser', () => {
         { col: 2, day: 1, month: 6, year: 2026 }
       ],
       timeRows: [
-        { time: '17:00:00', tracks: new Map([[2, 'B']]) },
+        // Three plays inside hour 09 on day 1 (B before A to prove sorting),
+        // one of them a multi-value cell; day 2 gets one play at 09:50.
+        { time: '09:20:00', tracks: new Map([[2, 'B']]) },
         {
-          time: '08:00:00',
+          time: '09:40:00',
           tracks: new Map([
-            [2, 'A'],
-            [3, 'B']
+            [2, 'A B'],
+            [3, 'C']
           ])
-        }
+        },
+        { time: '17:00:00', tracks: new Map([[2, 'B']]) }
       ]
     }
     const grid = templateGrid(tpl)
@@ -108,12 +125,13 @@ describe('element template parser', () => {
       '2026-06-01 Mon',
       '2026-06-02 Tue'
     ])
-    // Rows come out time-sorted; cells align with the sorted days.
-    expect(grid.rows.map((r) => r.time)).toEqual(['08:00:00', '17:00:00'])
-    expect(grid.rows[0].cells).toEqual(['A', 'B'])
+    // Hour rows, minutes gone; letters aggregated + sorted within the hour.
+    expect(grid.rows.map((r) => r.time)).toEqual(['09:00', '17:00'])
+    expect(grid.rows[0].cells).toEqual(['ABB', 'C'])
     expect(grid.rows[1].cells).toEqual(['B', null])
-    expect(grid.rows.map((r) => r.count)).toEqual([2, 1])
-    expect(grid.totals).toEqual([2, 1])
+    // Counts are plays (letters), not filled cells.
+    expect(grid.rows.map((r) => r.count)).toEqual([4, 1])
+    expect(grid.totals).toEqual([4, 1])
   })
 
   it('emits the template category on every event (Simian Category column)', async () => {

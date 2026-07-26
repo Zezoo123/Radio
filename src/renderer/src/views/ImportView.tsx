@@ -220,8 +220,9 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
               {previewMode === 'grid' && previewGrid && (
                 <>
                   <p className="muted" style={{ marginTop: 0 }}>
-                    The whole plan at a glance: one column per day, one row per broadcast time,
-                    each cell the track that plays ({previewGrid.days[0]?.iso ?? '—'} to{' '}
+                    The whole plan at a glance: one column per day, one row per hour, each cell
+                    every track played that hour, sorted — e.g. AAB = A twice and B once,
+                    whatever the minutes ({previewGrid.days[0]?.iso ?? '—'} to{' '}
                     {previewGrid.days[previewGrid.days.length - 1]?.iso ?? '—'}).
                   </p>
                   <div className="tpl-grid-scroll">
