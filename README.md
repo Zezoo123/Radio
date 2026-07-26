@@ -16,8 +16,16 @@ separate data. Pick a station on launch and switch any time from the sidebar.
 Load the planning spreadsheets:
 - **Element templates** (Excel) — per sponsor/group tables that say exactly when each audio
   element (ads, features, commercial liners…) plays on each calendar day. A cell holds a track
-  letter (`A` → file `ADV-1710-A`) or `1` (play the bare code once).
-- Everything imported is previewable per template, per day, before it goes near an export.
+  letter (`A` → file `ADV-1710-A`), several at once (`A B` — both tracks play), or `1` (play the
+  bare code once).
+- Import files one by one, or point **Add → Audio folder** at a directory and every template in
+  it comes in — files that aren't templates are skipped and reported, never fatal.
+- The element **code is editable in place**; exported file names derive from it, so a rename
+  reaches every preview and export instantly.
+- Each template previews as a **plan grid** like the stations' management tool: one column per
+  day under a month band, one row per hour, cells like `3A B 2C` (three A's, one B, two C's that
+  hour, whatever the minutes), with play counts per row and totals per day. The composed Simian
+  text for any date sits behind a toggle.
 
 ### Formats
 A Natural Grid–style **clock builder**:
@@ -26,7 +34,11 @@ A Natural Grid–style **clock builder**:
 - Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …), **`{sequential}` tokens** (rotating
   jingle/ID numbers with persisted no-repeat queues), and a **NEXT DAY LOG** row that makes
   Simian load tomorrow's log at 23:59:59.
-- The whole format set can be saved to / loaded from a portable JSON file.
+- A default-clock row can target a **set of hours** (say 07–09 + 16–18) picked in a multi-select
+  hour dialog — one row instead of six — and any row duplicates with one click (⧉).
+- The whole format set can be saved to / loaded from a portable JSON file, which also **bundles
+  the sequentials with their rotation counters** so `{tokens}` keep numbering correctly when the
+  file is loaded on another PC.
 
 ### Promos
 Automatic distribution of program promos from the promos spreadsheet. For every program it reads
@@ -34,8 +46,14 @@ the airdays, airtime, promo file name and a per-weekday promo count, then places
 the station's rules:
 - never during the program or for 2 hours after it ends (the *blackout*),
 - at most one per hour,
-- a different spread every day, and different from the same weekday last week,
+- a different spread every day — never the same hours two days running — and different from the
+  same weekday last week,
 - deterministic per date — the preview always matches the export.
+
+**Station rules** apply on top, per station: hand-picked **blocked hours** (say the Fagr window,
+02–06) that never receive a promo and show black in every grid, and the station's **break
+minutes** (e.g. `:20`/`:40`) so every promo lands exactly on `HH:MM:00` at a break — the
+randomiser then only chooses hours, never minutes.
 
 The weekly grid shows every program's placements; click hours to exclude them per weekday, and a
 day preview shows the exact rows that will be exported.
@@ -45,7 +63,9 @@ Compose any date range into a Simian program log: date headers, the Formats cloc
 comment markers, the computed **AZAN** rows (5 daily prayers, Cairo timetable, format configurable
 in Settings), promos, and one section per element template. Preview it, export it to a `.txt` the
 station imports via *Simian → Tools → Program Options → Log Import* — or send it straight to the
-Editor.
+Editor. Logs are written as **ANSI (Windows-1256)** so Arabic survives Simian's import; opening a
+log auto-detects older UTF-8 files. Every date picker defaults to tomorrow (the day being
+scheduled) and the From/To range keeps itself valid.
 
 ### Editor
 A Simian-style log editor:
@@ -53,9 +73,11 @@ A Simian-style log editor:
   parsed directly, Arabic text re-decoded, durations read from the file).
 - Every cell is editable; rows drag to reorder, duplicate, insert, delete (two-click confirm);
   columns resize like a spreadsheet and remember their widths.
+- **Search & replace** across the whole log, scopable to a single column, with live match counts.
 - Load the station's **`audio.mdb`** (Simian's audio database) and every row gets its real
-  duration; the **Expected** column then simulates the whole day the way the Simian deck actually
-  plays it:
+  duration; **Update Dur & Desc from DB** also overwrites descriptions from the library (Arabic
+  re-decoded correctly). The **Expected** column then simulates the whole day the way the Simian
+  deck actually plays it:
   - `+` starts when the previous item finishes,
   - `@` fires **exactly** at its scheduled time — cutting whatever is playing (marked **red**) and
     skipping the queue up to it (marked **yellow**),
@@ -104,7 +126,7 @@ Everything persists as JSON under Electron's `userData` directory
 | File | Scope | Contents |
 |---|---|---|
 | `stations/<Station>/formats.json` | per station | clocks, default clocks, week grid |
-| `stations/<Station>/promos.json` | per station | imported promo set, hour exclusions, time overrides |
+| `stations/<Station>/promos.json` | per station | imported promo set, hour exclusions, time overrides, station rules (blocked hours + breaks) |
 | `stations/<Station>/sequentials.json` | per station | sequential definitions + rotation queues |
 | `azan-format.json` | global | the AZAN row format |
 | `ui-settings.json` | global | category colors |
