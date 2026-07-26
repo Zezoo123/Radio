@@ -198,7 +198,13 @@ export function FormatsView(): JSX.Element {
       setSet(res.set)
       setSelectedId(res.set.formats[0]?.id ?? null)
       setSelectedDefaultId(res.set.defaultClocks?.[0]?.id ?? null)
-      setStatus('Format file loaded')
+      setStatus(
+        res.sequentials
+          ? `Format file loaded — ${res.sequentials} sequential${
+              res.sequentials === 1 ? '' : 's'
+            } imported with their counters`
+          : 'Format file loaded'
+      )
     } else if (res.status === 'invalid') {
       setStatus('Not a valid format file')
     }

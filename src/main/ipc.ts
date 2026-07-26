@@ -8,6 +8,7 @@ import { formatStore, normalizeFormatSet } from './formats'
 import { gridHasAssignments, serializeWeek } from './core/format/expand'
 import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
+import { sanitizeSequential } from './core/sequential/sanitize'
 import { loadSimianDb, lookupDuration, lookupTrack, type SimianDb } from './core/simianDb'
 import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
@@ -195,7 +196,10 @@ export function registerIpc(): void {
       filters: [FORMAT_FILTER]
     })
     if (res.canceled || !res.filePath) return { saved: false }
-    await writeFile(res.filePath, JSON.stringify(set, null, 2), 'utf-8')
+    // Bundle the sequentials (definitions + current rotation position) so the
+    // clocks' {tokens} keep resolving when the file is loaded on another PC.
+    const sequentials = await sequentialStore.load()
+    await writeFile(res.filePath, JSON.stringify({ ...set, sequentials }, null, 2), 'utf-8')
     return { saved: true, path: res.filePath }
   })
 
@@ -209,7 +213,29 @@ export function registerIpc(): void {
     try {
       const raw = JSON.parse(await readFile(res.filePaths[0], 'utf-8'))
       const set = normalizeFormatSet(raw)
-      return set ? { status: 'loaded' as const, set } : { status: 'invalid' as const }
+      if (!set) return { status: 'invalid' as const }
+      // Import bundled sequentials (older format files simply don't have any):
+      // same id replaces, everything else is kept — queue position included.
+      let importedSequentials = 0
+      const bundled = (raw as { sequentials?: unknown }).sequentials
+      if (Array.isArray(bundled)) {
+        const incoming = bundled
+          .map(sanitizeSequential)
+          .filter((s): s is Sequential => s !== null)
+        if (incoming.length > 0) {
+          const existing = await sequentialStore.load()
+          const merged = [
+            ...existing.filter((s) => !incoming.some((i) => i.id === s.id)),
+            ...incoming
+          ]
+          await sequentialStore.save(merged)
+          importedSequentials = incoming.length
+        }
+      }
+      // The bundle key is not part of the format set proper — don't let it
+      // leak into formats.json via the renderer's auto-save.
+      delete (set as FormatSet & { sequentials?: unknown }).sequentials
+      return { status: 'loaded' as const, set, sequentials: importedSequentials }
     } catch {
       return { status: 'invalid' as const }
     }
