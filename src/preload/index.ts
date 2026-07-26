@@ -54,6 +54,8 @@ const api = {
     ipcRenderer.invoke('station:set', station),
 
   addTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:add'),
+  addTemplatesFolder: (): Promise<{ templates: TemplateSummary[]; skipped: string[] } | null> =>
+    ipcRenderer.invoke('templates:addFolder'),
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),

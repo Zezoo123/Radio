@@ -33,10 +33,27 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
   const [previewDate, setPreviewDate] = useState('')
   const [previewText, setPreviewText] = useState('')
 
+  const [importNote, setImportNote] = useState('')
+
   // --- Add menu actions ---
   async function addAudio(): Promise<void> {
     setMenuOpen(false)
+    setImportNote('')
     onTemplates(await window.api.addTemplates())
+  }
+
+  async function addAudioFolder(): Promise<void> {
+    setMenuOpen(false)
+    const res = await window.api.addTemplatesFolder()
+    if (!res) return
+    const added = res.templates.length - templates.length
+    onTemplates(res.templates)
+    setImportNote(
+      added === 0 && res.skipped.length === 0
+        ? 'No Excel templates found in that folder'
+        : `Imported ${added} template${added === 1 ? '' : 's'} from the folder` +
+            (res.skipped.length > 0 ? ` — skipped ${res.skipped.join(', ')}` : '')
+    )
   }
 
   async function addPromos(): Promise<void> {
@@ -119,7 +136,11 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
               <div className="menu">
                 <button className="menu-item" onClick={addAudio}>
                   <strong>Audio</strong>
-                  <span className="muted">Element template · category AUDIO</span>
+                  <span className="muted">Pick one or more element templates</span>
+                </button>
+                <button className="menu-item" onClick={addAudioFolder}>
+                  <strong>Audio folder</strong>
+                  <span className="muted">Every Excel template inside a directory</span>
                 </button>
                 <button className="menu-item" onClick={addPromos}>
                   <strong>Promos</strong>
@@ -130,6 +151,8 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
           )}
         </div>
       </div>
+
+      {importNote && <p className="muted">{importNote}</p>}
 
       {!hasItems && (
         <p className="empty">Nothing added yet. Use “Add” to import audio or promos.</p>
