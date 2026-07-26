@@ -442,14 +442,6 @@ export function ClockEditor({
               </button>
               <button
                 className="btn"
-                disabled={selected.rows.length === 0}
-                title="Duplicate the line before (the last row)"
-                onClick={() => duplicateRow(selected.rows.length - 1)}
-              >
-                ⧉ Duplicate last row
-              </button>
-              <button
-                className="btn"
                 disabled={!activeField}
                 title={activeField ? '' : 'Click into a Name or Description field first'}
                 onClick={openInsert}
