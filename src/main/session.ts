@@ -108,6 +108,27 @@ class Session {
     return this.templateSummaries()
   }
 
+  /**
+   * Folder import: a directory can hold stray spreadsheets that aren't element
+   * templates, so files that fail to parse are skipped (and reported) instead
+   * of aborting the whole batch.
+   */
+  async addTemplatesLenient(
+    filePaths: string[]
+  ): Promise<{ templates: TemplateSummary[]; skipped: string[] }> {
+    const skipped: string[] = []
+    for (const filePath of filePaths) {
+      try {
+        const template = await parseElementTemplate(filePath)
+        template.category = 'AUDIO'
+        this.st().templates.push({ fileName: basename(filePath), template })
+      } catch {
+        skipped.push(basename(filePath))
+      }
+    }
+    return { templates: this.templateSummaries(), skipped }
+  }
+
   removeTemplate(index: number): TemplateSummary[] {
     this.st().templates.splice(index, 1)
     return this.templateSummaries()

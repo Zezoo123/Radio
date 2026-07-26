@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import iconv from 'iconv-lite'
 import { session } from './session'
@@ -103,6 +104,22 @@ export function registerIpc(): void {
     })
     if (res.canceled || res.filePaths.length === 0) return session.templateSummaries()
     return session.addTemplates(res.filePaths)
+  })
+
+  // Folder import: every Excel file in the chosen directory (Office lock files
+  // like `~$…` excluded); unparseable ones are skipped, not fatal.
+  ipcMain.handle('templates:addFolder', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Add every element template in a folder',
+      properties: ['openDirectory']
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    const dir = res.filePaths[0]
+    const files = (await readdir(dir))
+      .filter((n) => /\.(xlsx|xlsm)$/i.test(n) && !n.startsWith('~$'))
+      .sort()
+      .map((n) => join(dir, n))
+    return session.addTemplatesLenient(files)
   })
 
   ipcMain.handle('templates:remove', (_e, index: number) => session.removeTemplate(index))
