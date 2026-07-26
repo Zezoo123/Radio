@@ -200,6 +200,22 @@ export interface TemplateGrid {
   totals: number[]
 }
 
+/** `['1','1']` → `2` · `['A','A','A','B','B']` → `3A 2B` · `['1','A']` → `1 A`. */
+export function formatHourCell(tokens: string[]): string {
+  const counts = new Map<string, number>()
+  for (const t of tokens) counts.set(t, (counts.get(t) ?? 0) + 1)
+  const parts: string[] = []
+  const bare = counts.get('1')
+  if (bare != null) {
+    parts.push(String(bare)) // sentinel plays: just how many times the code airs
+    counts.delete('1')
+  }
+  for (const [track, n] of [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    parts.push(n > 1 ? `${n}${track}` : track)
+  }
+  return parts.join(' ')
+}
+
 export function templateGrid(tpl: ElementTemplate): TemplateGrid {
   const cols = [...tpl.dayColumns].sort(
     (a, b) => a.year - b.year || a.month - b.month || a.day - b.day
@@ -213,6 +229,10 @@ export function templateGrid(tpl: ElementTemplate): TemplateGrid {
 
   // Condense the minute-level rows into hours: hour → dayIndex → track tokens.
   // Multi-value cells (`A B`) contribute every token, so nothing is lost.
+  //
+  // Cell display: the `1` sentinel (bare code, no tracks) shows as the PLAY
+  // COUNT — two plays render `2`, never `11`. Track letters compress to
+  // `3A 2B` (count + letter, single plays as the bare letter).
   const byHour = new Map<string, string[][]>()
   for (const row of tpl.timeRows) {
     const hour = row.time.slice(0, 2)
@@ -232,7 +252,7 @@ export function templateGrid(tpl: ElementTemplate): TemplateGrid {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([hour, slots]) => {
       slots.forEach((tokens, i) => (totals[i] += tokens.length))
-      const cells = slots.map((tokens) => (tokens.length ? [...tokens].sort().join('') : null))
+      const cells = slots.map((tokens) => (tokens.length ? formatHourCell(tokens) : null))
       const count = slots.reduce((sum, tokens) => sum + tokens.length, 0)
       return { time: `${hour}:00`, cells, count }
     })

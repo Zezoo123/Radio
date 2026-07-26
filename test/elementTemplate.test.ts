@@ -125,13 +125,34 @@ describe('element template parser', () => {
       '2026-06-01 Mon',
       '2026-06-02 Tue'
     ])
-    // Hour rows, minutes gone; letters aggregated + sorted within the hour.
+    // Hour rows, minutes gone; letters aggregated + compressed within the hour.
     expect(grid.rows.map((r) => r.time)).toEqual(['09:00', '17:00'])
-    expect(grid.rows[0].cells).toEqual(['ABB', 'C'])
+    expect(grid.rows[0].cells).toEqual(['A 2B', 'C'])
     expect(grid.rows[1].cells).toEqual(['B', null])
     // Counts are plays (letters), not filled cells.
     expect(grid.rows.map((r) => r.count)).toEqual([4, 1])
     expect(grid.totals).toEqual([4, 1])
+  })
+
+  it('shows `1`-sentinel plays as a count, and mixes cleanly with letters', () => {
+    const tpl: ElementTemplate = {
+      group: 'Promo',
+      code: 'FEA_0817',
+      dayColumns: [{ col: 2, day: 1, month: 6, year: 2026 }],
+      timeRows: [
+        { time: '09:10:00', tracks: new Map([[2, '1']]) },
+        { time: '09:40:00', tracks: new Map([[2, '1']]) },
+        { time: '11:20:00', tracks: new Map([[2, '1']]) },
+        { time: '14:15:00', tracks: new Map([[2, '1 A']]) }
+      ]
+    }
+    const grid = templateGrid(tpl)
+    expect(grid.rows.map((r) => [r.time, r.cells[0]])).toEqual([
+      ['09:00', '2'], // two bare-code plays → the count, never `11`
+      ['11:00', '1'],
+      ['14:00', '1 A'] // sentinel count first, then track letters
+    ])
+    expect(grid.totals).toEqual([5])
   })
 
   it('emits the template category on every event (Simian Category column)', async () => {
