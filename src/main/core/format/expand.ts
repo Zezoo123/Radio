@@ -8,6 +8,12 @@ import { WEEKDAY_LABELS } from './types'
 const pad2 = (n: number): string => String(n).padStart(2, '0')
 const LINE_SEP = '\r\n'
 
+/** True when a row fires at this hour: listed in `hours`, or hour-unrestricted. */
+export function rowFiresAtHour(row: FormatRow, hour: number): boolean {
+  if (row.hours && row.hours.length > 0) return row.hours.includes(hour)
+  return row.hour === undefined || row.hour === hour
+}
+
 /**
  * Expand one format's rows into events at a given hour (0-23). When `date` is
  * given, date-sensitive tokens in name/description are substituted for it.
@@ -18,7 +24,7 @@ export function expandFormatAtHour(
   date?: CalendarDate
 ): ScheduleEvent[] {
   return format.rows
-    .filter((row) => row.hour === undefined || row.hour === hour)
+    .filter((row) => rowFiresAtHour(row, hour))
     .map((row) => rowToEvent(row, hour, date))
     .sort((a, b) => a.time.localeCompare(b.time))
 }

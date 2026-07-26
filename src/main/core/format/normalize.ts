@@ -21,8 +21,24 @@ function migrateCategories(set: FormatSet): void {
       if (row.category && RENAMED_CATEGORIES[row.category]) {
         row.category = RENAMED_CATEGORIES[row.category]
       }
+      migrateRowHours(row)
     }
   }
+}
+
+/**
+ * Fold the legacy single `hour` into the `hours` list and sanitize it: ints
+ * 0-23, deduped, sorted. An empty or full (all 24) list means "every hour" and
+ * is stored as no restriction at all.
+ */
+function migrateRowHours(row: HourFormat['rows'][number]): void {
+  const raw = Array.isArray(row.hours) ? row.hours : row.hour != null ? [row.hour] : []
+  const clean = [...new Set(raw.filter((h) => Number.isInteger(h) && h >= 0 && h <= 23))].sort(
+    (a, b) => a - b
+  )
+  if (clean.length > 0 && clean.length < 24) row.hours = clean
+  else delete row.hours
+  delete row.hour
 }
 
 /** Coerce a parsed grid into a well-formed 7×24 grid. */
