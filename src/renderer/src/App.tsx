@@ -177,7 +177,7 @@ export default function App(): JSX.Element {
           <span className="brand-mark">{BRAND_MARK}</span>
           <span className="brand-text">
             Radio Scheduler
-            <span className="brand-sub">BSI Simian export</span>
+            <span className="brand-sub">Text log export</span>
           </span>
         </div>
         <div className="station-switch" title={`Station: ${station}`}>

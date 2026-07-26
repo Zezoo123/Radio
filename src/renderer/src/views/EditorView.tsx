@@ -3,6 +3,7 @@ import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { simulateLog, type SimRow } from '../lib/runtime'
+import { ReplaceDialog } from './ReplaceDialog'
 
 interface Props {
   /** A log handed over from the Export tab (not yet written to any file). */
@@ -38,6 +39,7 @@ export function EditorView({
   const [db, setDb] = useState<SimianDbSummary | null>(null)
   /** Row id → duration seconds (from the DB lookup, or edited by hand). */
   const [durations, setDurations] = useState<Map<number, number>>(new Map())
+  const [replaceOpen, setReplaceOpen] = useState(false)
 
   useEffect(() => {
     window.api.getSimianDb().then(setDb)
@@ -82,6 +84,48 @@ export function EditorView({
       return next
     })
     refreshSim() // new durations → recompute the Expected column right away
+  }
+
+  /**
+   * Pull Duration AND Description from the audio DB for every row whose file
+   * name it knows. Descriptions overwrite the log's text (that's the point —
+   * the library is the source of truth), so this only runs from its button,
+   * never automatically, and it marks the log dirty.
+   */
+  async function fillFromDb(): Promise<void> {
+    const names = [
+      ...new Set(
+        rows.filter((r) => rowKind(r) === 'event' && r.fields[2].trim()).map((r) => r.fields[2].trim())
+      )
+    ]
+    if (names.length === 0) return
+    const found = await window.api.simianTracks(names)
+    setDurations((prev) => {
+      const next = new Map(prev)
+      for (const r of rows) {
+        const d = found[r.fields[2].trim()]?.duration
+        if (d != null) next.set(r.id, Math.round(d))
+      }
+      return next
+    })
+    let changed = 0
+    const next = rows.map((r) => {
+      if (rowKind(r) !== 'event') return r
+      const desc = found[r.fields[2].trim()]?.description
+      if (!desc || desc === r.fields[4]) return r
+      changed++
+      const fields = [...r.fields] as LogRow['fields']
+      fields[4] = desc
+      return { ...r, fields }
+    })
+    if (changed > 0) updateRows(next)
+    refreshSim()
+    const matched = Object.keys(found).length
+    setStatus(
+      `Updated from DB: ${matched} of ${names.length} names matched, ${changed} description${
+        changed === 1 ? '' : 's'
+      } changed`
+    )
   }
 
   function loadText(
@@ -200,7 +244,7 @@ export function EditorView({
         </div>
       </div>
       <p className="muted">
-        Open an exported Simian log (or send one over from Export) and edit it right here. The
+        Open an exported log (or send one over from Export) and edit it right here. The
         Expected column shows the real air time each row will start at, computed from the order,
         the cue rules and the file durations from your Simian audio database.
       </p>
@@ -220,9 +264,18 @@ export function EditorView({
             </span>
           )}
           {db && rows.length > 0 && (
-            <button className="btn-link" onClick={() => fillDurations(rows)}>
-              refresh durations
-            </button>
+            <>
+              <button className="btn-link" onClick={() => fillDurations(rows)}>
+                refresh durations
+              </button>
+              <button
+                className="btn"
+                title="Fill Duration and overwrite Description from the audio database for every row whose file name it knows"
+                onClick={fillFromDb}
+              >
+                Update Dur &amp; Desc from DB
+              </button>
+            </>
           )}
         </div>
       </section>
@@ -243,6 +296,13 @@ export function EditorView({
             >
               ↻ Refresh expected
             </button>
+            <button
+              className="btn"
+              title="Find and replace text across the log's cells, optionally in a single column"
+              onClick={() => setReplaceOpen(true)}
+            >
+              Search &amp; replace…
+            </button>
             {simStale && (
               <span className="pill warn-pill" title="Rows changed since the last refresh">
                 expected outdated
@@ -260,6 +320,16 @@ export function EditorView({
           />
         </section>
       )}
+
+      <ReplaceDialog
+        open={replaceOpen}
+        rows={rows}
+        onApply={(next, summary) => {
+          updateRows(next)
+          setStatus(summary)
+        }}
+        onClose={() => setReplaceOpen(false)}
+      />
     </div>
   )
 }

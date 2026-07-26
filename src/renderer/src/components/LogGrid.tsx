@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { tintBackground } from '../lib/colors'
 import { blankRow, cloneRow, rowKind, type LogRow } from '../lib/logRows'
 import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../lib/runtime'
 
@@ -44,7 +45,7 @@ function rowStyle(
 ): React.CSSProperties | undefined {
   if (!tint && !textColor) return undefined
   return {
-    ...(tint ? { background: `${tint}24`, boxShadow: `inset 3px 0 0 0 ${tint}` } : {}),
+    ...(tint ? { background: tintBackground(tint), boxShadow: `inset 3px 0 0 0 ${tint}` } : {}),
     color: textColor
   }
 }

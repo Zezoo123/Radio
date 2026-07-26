@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import iconv from 'iconv-lite'
 import { session } from './session'
 import { azanFormatStore } from './azanFormat'
 import { uiSettingsStore, type UiSettings } from './uiSettings'
@@ -7,7 +8,7 @@ import { formatStore, normalizeFormatSet } from './formats'
 import { gridHasAssignments, serializeWeek } from './core/format/expand'
 import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
-import { loadSimianDb, lookupDuration, type SimianDb } from './core/simianDb'
+import { loadSimianDb, lookupDuration, lookupTrack, type SimianDb } from './core/simianDb'
 import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
@@ -25,6 +26,21 @@ interface RangeArg {
 }
 
 const dateKey = (d: CalendarDate): string => `${d.year}-${d.month}-${d.day}`
+
+// Simian reads log files as ANSI (the Windows Arabic codepage on the stations'
+// PCs), not UTF-8 — Arabic descriptions exported as UTF-8 come out as mojibake
+// in Simian. All log text therefore round-trips through Windows-1256.
+const LOG_CODEPAGE = 'windows-1256'
+const encodeLogText = (text: string): Buffer => iconv.encode(text, LOG_CODEPAGE)
+
+/** Read a log file: UTF-8 when it strictly is (older exports), ANSI otherwise. */
+function decodeLogText(buffer: Buffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+  } catch {
+    return iconv.decode(buffer, LOG_CODEPAGE)
+  }
+}
 
 /**
  * Resolve the Formats week-grid clock rows for every day in a range, threading
@@ -63,7 +79,7 @@ async function saveText(
     filters: [{ name: 'Text', extensions: ['txt'] }]
   })
   if (res.canceled || !res.filePath) return { saved: false }
-  await writeFile(res.filePath, text, 'utf-8')
+  await writeFile(res.filePath, encodeLogText(text))
   return { saved: true, path: res.filePath }
 }
 
@@ -260,29 +276,31 @@ export function registerIpc(): void {
     ).padStart(2, '0')}.txt`
     const win = BrowserWindow.getFocusedWindow() ?? undefined
     const res = await dialog.showSaveDialog(win!, {
-      title: 'Export Simian log',
+      title: 'Export log',
       defaultPath: defaultName,
       filters: [{ name: 'Text', extensions: ['txt'] }]
     })
     if (res.canceled || !res.filePath) return { saved: false, warnings }
-    await writeFile(res.filePath, text, 'utf-8')
+    await writeFile(res.filePath, encodeLogText(text))
     // Persist the advanced sequential queues only once the file is written.
     await sequentialStore.save(sequentials)
     return { saved: true, path: res.filePath, warnings }
   })
 
-  // --- Log editor: open any exported Simian log, edit in-app, save back ------
-  const LOG_FILTERS = [
-    { name: 'Simian log', extensions: ['txt', 'bsi'] },
+  // --- Log editor: open any exported log, edit in-app, save back as text -----
+  // Opening still accepts native .bsi (read-only Access databases); saving is
+  // always plain text, so the save dialog offers only .txt.
+  const OPEN_LOG_FILTERS = [
+    { name: 'Log files', extensions: ['txt', 'bsi'] },
     { name: 'Text', extensions: ['txt'] },
     { name: 'BSI log', extensions: ['bsi'] }
   ]
 
   ipcMain.handle('log:open', async () => {
     const res = await dialog.showOpenDialog({
-      title: 'Open Simian log',
+      title: 'Open log',
       properties: ['openFile'],
-      filters: LOG_FILTERS
+      filters: OPEN_LOG_FILTERS
     })
     if (res.canceled || !res.filePaths[0]) return null
     const path = res.filePaths[0]
@@ -298,24 +316,24 @@ export function registerIpc(): void {
         bsi: true
       }
     }
-    return { path, text: buffer.toString('utf-8') }
+    return { path, text: decodeLogText(buffer) }
   })
 
   ipcMain.handle(
     'log:save',
     async (_e, { text, path }: { text: string; path?: string }) => {
       if (path) {
-        await writeFile(path, text, 'utf-8')
+        await writeFile(path, encodeLogText(text))
         return { saved: true, path }
       }
       const win = BrowserWindow.getFocusedWindow() ?? undefined
       const res = await dialog.showSaveDialog(win!, {
-        title: 'Save Simian log',
+        title: 'Save log',
         defaultPath: 'log.txt',
-        filters: LOG_FILTERS
+        filters: [{ name: 'Text', extensions: ['txt'] }]
       })
       if (res.canceled || !res.filePath) return { saved: false }
-      await writeFile(res.filePath, text, 'utf-8')
+      await writeFile(res.filePath, encodeLogText(text))
       return { saved: true, path: res.filePath }
     }
   )
@@ -350,6 +368,24 @@ export function registerIpc(): void {
     for (const name of names) {
       const hit = lookupDuration(simianDb.db.tracks, name)
       if (hit != null) out[name] = hit
+    }
+    return out
+  })
+
+  // Batch lookup: names → duration + library description (names the DB doesn't
+  // know are simply absent from the result).
+  ipcMain.handle('simian:tracks', (_e, names: string[]) => {
+    const out: Record<string, { duration?: number; description?: string }> = {}
+    if (!simianDb) return out
+    for (const name of names) {
+      const duration = lookupDuration(simianDb.db.tracks, name)
+      const description = lookupTrack(simianDb.db.descriptions, name)
+      if (duration != null || description != null) {
+        out[name] = {
+          ...(duration != null ? { duration } : {}),
+          ...(description != null ? { description } : {})
+        }
+      }
     }
     return out
   })

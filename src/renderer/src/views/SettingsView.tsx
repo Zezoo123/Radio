@@ -4,6 +4,7 @@ import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
+import { tintBackground } from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -187,7 +188,7 @@ export function SettingsView({
                 <span
                   className="color-name"
                   style={{
-                    background: color ? `${color}24` : undefined,
+                    background: color ? tintBackground(color) : undefined,
                     color: textColor
                   }}
                 >
