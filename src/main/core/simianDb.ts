@@ -1,4 +1,5 @@
 import MDBReader from 'mdb-reader'
+import { fixMisdecodedText } from './encoding'
 
 /**
  * Reads a BSI Simian audio database (an Access .mdb file) and builds a
@@ -109,11 +110,15 @@ export function loadSimianDb(buffer: Buffer): SimianDb {
       if (typeof rawName !== 'string' || !rawName.trim()) continue
       const duration = parseDurationValue(row[cols.duration])
       if (duration == null) continue
-      const key = normalizeName(rawName)
+      // Jet stores the station's text as ANSI Arabic (Windows-1256) which the
+      // reader mis-decodes as CP1252 — same fix as the .bsi log parser.
+      const key = normalizeName(fixMisdecodedText(rawName))
       tracks.set(key, duration)
       if (cols.description != null) {
         const desc = row[cols.description]
-        if (typeof desc === 'string' && desc.trim()) descriptions.set(key, desc.trim())
+        if (typeof desc === 'string' && desc.trim()) {
+          descriptions.set(key, fixMisdecodedText(desc.trim()))
+        }
       }
     }
     if (tracks.size > 0) return { tracks, descriptions, table: tableName }

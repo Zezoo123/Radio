@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fixArabicText, isBsiBuffer } from '../src/main/core/parsers/bsiLog'
+import { fixMisdecodedText } from '../src/main/core/encoding'
 
 describe('bsi log helpers', () => {
   it('detects the Jet database magic', () => {
@@ -17,5 +18,12 @@ describe('bsi log helpers', () => {
     expect(fixArabicText('ÑÇãì ÌãÇá')).toBe('رامى جمال')
     expect(fixArabicText('PROMO - NOON TUNES')).toBe('PROMO - NOON TUNES')
     expect(fixArabicText('HP25-LazizWeSay2')).toBe('HP25-LazizWeSay2')
+  })
+
+  it('fixMisdecodedText never touches text that is already real Arabic', () => {
+    // The audio-DB description reported as rubbish by the station.
+    expect(fixMisdecodedText('íÇ áÐíÐ íÇ ÓÇíÞ - ãíÑÇ ÇáÚÇãÑì')).toBe('يا لذيذ يا سايق - ميرا العامرى')
+    expect(fixMisdecodedText('رامى جمال')).toBe('رامى جمال') // correct already — unchanged
+    expect(fixMisdecodedText('ADS-1705-B')).toBe('ADS-1705-B')
   })
 })
