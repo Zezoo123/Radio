@@ -11,6 +11,20 @@ interface Props {
   onConfig: (c: AppConfig) => void
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Consecutive same-month day columns collapsed into one labeled span. */
+function monthGroups(days: TemplateGrid['days']): { label: string; span: number }[] {
+  const groups: { label: string; span: number }[] = []
+  for (const d of days) {
+    const label = `${MONTH_NAMES[d.month - 1]} ${d.iso.slice(0, 4)}`
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) last.span++
+    else groups.push({ label, span: 1 })
+  }
+  return groups
+}
+
 export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
@@ -220,13 +234,23 @@ export function ImportView({ templates, onTemplates, onConfig }: Props): JSX.Ele
               {previewMode === 'grid' && previewGrid && (
                 <>
                   <p className="muted" style={{ marginTop: 0 }}>
-                    The whole plan at a glance: one column per day, one row per broadcast time,
-                    each cell the track that plays ({previewGrid.days[0]?.iso ?? '—'} to{' '}
+                    The whole plan at a glance: one column per day, one row per hour, each cell
+                    every track played that hour, sorted — e.g. AAB = A twice and B once,
+                    whatever the minutes ({previewGrid.days[0]?.iso ?? '—'} to{' '}
                     {previewGrid.days[previewGrid.days.length - 1]?.iso ?? '—'}).
                   </p>
                   <div className="tpl-grid-scroll">
                     <table className="tgrid">
                       <thead>
+                        <tr className="t-month-row">
+                          <th className="t-time" />
+                          {monthGroups(previewGrid.days).map((g) => (
+                            <th key={g.label} colSpan={g.span} className="t-month">
+                              <span className="t-mlabel">{g.label}</span>
+                            </th>
+                          ))}
+                          <th className="t-count" />
+                        </tr>
                         <tr>
                           <th className="t-time">Time</th>
                           {previewGrid.days.map((d) => (

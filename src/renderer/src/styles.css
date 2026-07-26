@@ -1843,3 +1843,24 @@ code {
 .hour-legend .swatch.gblocked {
   background: #000;
 }
+
+/* Month band above the day numbers: one label per month, no extra width. */
+.tgrid thead .t-month-row th {
+  height: 20px;
+  padding: 0 8px;
+  top: 0;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+/* The day-number row sits sticky just below the month band. */
+.tgrid thead tr:not(.t-month-row) th {
+  top: 20px;
+}
+/* Keep the month name readable while scrolling within a wide month. */
+.t-month .t-mlabel {
+  position: sticky;
+  left: 76px;
+  display: inline-block;
+}
