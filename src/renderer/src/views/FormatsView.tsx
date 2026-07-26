@@ -218,7 +218,7 @@ export function FormatsView(): JSX.Element {
           Formats
           <PageHelp>
             Build reusable hour formats (clocks), then paint them onto the week grid. Each cell is
-            one hour; export a Simian skeleton for a day or the whole week.
+            one hour; export a text skeleton for a day or the whole week.
           </PageHelp>
         </h1>
         <div className="row">
@@ -250,10 +250,6 @@ export function FormatsView(): JSX.Element {
           </button>
         </div>
       </div>
-      <p className="muted">
-        Build reusable hour formats (clocks), then paint them onto the week grid. Each cell is one
-        hour; export a text skeleton for a day or the whole week.
-      </p>
 
       {tab === 'clocks' && (
         <ClockEditor

@@ -219,7 +219,7 @@ export function EditorView({
         <h1>
           Editor
           <PageHelp>
-            Open an exported Simian log (or send one over from Export) and edit it right here. The
+            Open an exported log (or send one over from Export) and edit it right here. The
             Expected column shows the real air time each row will start at, computed from the
             order, the cue rules and the file durations from your Simian audio database.
           </PageHelp>
@@ -251,12 +251,6 @@ export function EditorView({
           {status && <span className="muted">{status}</span>}
         </div>
       </div>
-      <p className="muted">
-        Open an exported log (or send one over from Export) and edit it right here. The
-        Expected column shows the real air time each row will start at, computed from the order,
-        the cue rules and the file durations from your Simian audio database.
-      </p>
-
       <section className="card">
         <div className="row">
           <button className="btn" onClick={openDb}>
