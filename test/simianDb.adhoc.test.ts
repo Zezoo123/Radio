@@ -32,6 +32,17 @@ describe.skipIf(!existsSync(DB_PATH))('Simian audio.mdb (local integration)', ()
     expect(typeof desc).toBe('string')
     expect((desc as string).length).toBeGreaterThan(0)
   })
+
+  it('descriptions come out as real Arabic, not cp1252 mojibake', () => {
+    const db = loadSimianDb(readFileSync(DB_PATH))
+    const all = [...db.descriptions.values()]
+    // The library is full of Arabic song titles — some must decode as Arabic…
+    expect(all.some((d) => /[؀-ۿ]/.test(d))).toBe(true)
+    // …and none should carry the CP1252-misdecode signature (Ç Ð Ñ Ó etc.,
+    // high-Latin letters that never appear in real English/French titles here).
+    const mojibake = all.filter((d) => /[ÇÐÑÓÚÞáãí]{2}/.test(d))
+    expect(mojibake).toEqual([])
+  })
 })
 
 describe.skipIf(!existsSync(BSI_PATH))('Simian .bsi log (local integration)', () => {
