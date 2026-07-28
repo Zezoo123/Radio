@@ -50,15 +50,33 @@ describe('export log rows', () => {
     expect(rowToLine(row)).toBe(line)
   })
 
-  it('captures a Length 6th field as the duration and never saves it back', () => {
-    // A Simian-saved log line: the Length rides as a 6th field.
-    const [row] = parseLogText('00:00:10|+|L024-073|LI|Liner ID Arabic|00:07' + CRLF)
+  it('reads the Length column between Name and Category (Simian-saved logs)', () => {
+    const line = '00:00:10|+|L024-073|00:07|LI|Liner ID Arabic'
+    const [row] = parseLogText(line + CRLF)
     expect(row.srcDuration).toBe(7)
-    expect(row.fields[4]).toBe('Liner ID Arabic') // Description stays clean
+    expect(row.fields).toEqual(['00:00:10', '+', 'L024-073', 'LI', 'Liner ID Arabic'])
+    // Saving with the duration reproduces the six-column line byte-for-byte.
+    expect(rowToLine(row, row.srcDuration)).toBe(line)
+    // Without a duration the canonical five columns come out.
     expect(rowToLine(row)).toBe('00:00:10|+|L024-073|LI|Liner ID Arabic')
+  })
 
-    const [long] = parseLogText('01:00:00|+|SHOW-01|A|Full show|1:02:30' + CRLF)
-    expect(long.srcDuration).toBe(3750)
+  it('also accepts a trailing Length field, and writes it back between Name and Category', () => {
+    const [row] = parseLogText('00:04:07|+|8041-08|A|Hob ElHob|03:32' + CRLF)
+    expect(row.srcDuration).toBe(212)
+    expect(row.fields[4]).toBe('Hob ElHob')
+    expect(rowToLine(row, 212)).toBe('00:04:07|+|8041-08|03:32|A|Hob ElHob')
+  })
+
+  it('serializeRows writes Dur only for rows that have one; comments stay untouched', () => {
+    const text =
+      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+    const rows = parseLogText(text)
+    const durs = new Map([[rows[1].id, 190]])
+    const out = serializeRows(rows, (r) => durs.get(r.id) ?? 0)
+    expect(out).toBe(
+      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|03:10|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+    )
   })
 
   it('still folds a non-duration 6th field into the description', () => {

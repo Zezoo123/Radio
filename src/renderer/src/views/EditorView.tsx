@@ -204,7 +204,12 @@ export function EditorView({
   }
 
   async function save(as: boolean): Promise<void> {
-    const res = await window.api.saveLog(serializeRows(rows), as ? undefined : (path ?? undefined))
+    // Rows with a known duration save in Simian's six-column shape (Length
+    // between Name and Category); rows without one stay five-column.
+    const res = await window.api.saveLog(
+      serializeRows(rows, durationOf),
+      as ? undefined : (path ?? undefined)
+    )
     if (!res.saved) {
       setStatus('Save cancelled')
       return
