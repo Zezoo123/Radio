@@ -73,7 +73,9 @@ scheduled) and the From/To range keeps itself valid.
 ### Editor
 A Simian-style log editor:
 - Opens exported `.txt` logs **and Simian's native `.bsi` logs** (they are Access databases —
-  parsed directly, Arabic text re-decoded, durations read from the file).
+  parsed directly, Arabic text re-decoded, durations read from the file). A Length column in a
+  Simian-saved text log is read into **Dur** too — and saving always writes the clean 5-column
+  log, never the duration.
 - Every cell is editable; rows drag to reorder, duplicate, insert, delete (two-click confirm);
   columns resize like a spreadsheet and remember their widths.
 - **Search & replace** across the whole log, scopable to a single column, with live match counts.
@@ -90,8 +92,8 @@ A Simian-style log editor:
 
 ### Settings
 App-wide preferences: **theme** (Dark, Light, Minimal, Graphite, Studio + high-contrast),
-**per-category row colors** (highlight and text, each with its own opacity %), and the **AZAN
-format** (the deckfade macro and extra lines emitted around each prayer).
+**per-category row colors** (highlight and text, with one app-wide opacity % for each), and the
+**AZAN format** (the deckfade macro and extra lines emitted around each prayer).
 
 ## The Simian log format
 

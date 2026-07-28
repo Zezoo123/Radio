@@ -9,15 +9,17 @@ import { app } from 'electron'
  */
 
 export interface UiSettings {
-  /**
-   * Simian Category (UPPERCASE) → row highlight color, `#rrggbb` or
-   * `#rrggbbaa` (user-set opacity). Absent = no tint.
-   */
+  /** Simian Category (UPPERCASE) → row highlight color as `#rrggbb`. Absent = no tint. */
   categoryColors: Record<string, string>
-  /** Simian Category (UPPERCASE) → row text color, `#rrggbb[aa]`. Absent = default text. */
+  /** Simian Category (UPPERCASE) → row text color as `#rrggbb`. Absent = default text. */
   categoryTextColors: Record<string, string>
+  /** App-wide opacity % (1-100) applied to every highlight color. */
+  tintOpacity: number
+  /** App-wide opacity % (1-100) applied to every category text color. */
+  textOpacity: number
 }
 
+// Colors persist solid; an alpha suffix from transient builds is dropped.
 const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i
 
 /** Category renames applied to older persisted data (old name → new name). */
@@ -32,17 +34,25 @@ function normalizeColorMap(raw: unknown): Record<string, string> {
       const renamed = RENAMED_CATEGORIES[key]
       // A color already stored under the new name wins over the legacy one.
       if (renamed && renamed in out) continue
-      out[renamed ?? key] = color.toLowerCase()
+      out[renamed ?? key] = color.toLowerCase().slice(0, 7)
     }
   }
   return out
+}
+
+function normalizePct(raw: unknown, fallback: number): number {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 && raw <= 100
+    ? raw
+    : fallback
 }
 
 export function normalizeUiSettings(raw: unknown): UiSettings {
   const obj = raw && typeof raw === 'object' ? (raw as Partial<UiSettings>) : {}
   return {
     categoryColors: normalizeColorMap(obj.categoryColors),
-    categoryTextColors: normalizeColorMap(obj.categoryTextColors)
+    categoryTextColors: normalizeColorMap(obj.categoryTextColors),
+    tintOpacity: normalizePct(obj.tintOpacity, 35),
+    textOpacity: normalizePct(obj.textOpacity, 100)
   }
 }
 

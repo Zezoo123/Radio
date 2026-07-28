@@ -139,8 +139,9 @@ export function EditorView({
     setRows(parsed)
     setPath(newPath)
     setDirty(isDirty)
-    // Seed per-row durations when the source carries them (.bsi logs do); the
-    // audio-database lookup then refines whatever it can match.
+    // Seed per-row durations when the source carries them (.bsi logs, or the
+    // Length field of a Simian-saved text log); the audio-database lookup then
+    // refines whatever it can match.
     const seeded = new Map<number, number>()
     if (rowDurations) {
       parsed.forEach((r, i) => {
@@ -148,6 +149,9 @@ export function EditorView({
         if (d != null && d > 0) seeded.set(r.id, Math.round(d))
       })
     }
+    parsed.forEach((r) => {
+      if (r.srcDuration != null && r.srcDuration > 0) seeded.set(r.id, Math.round(r.srcDuration))
+    })
     setDurations(seeded)
     refreshSim() // compute the freshly loaded log immediately
     void fillDurations(parsed)

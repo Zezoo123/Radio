@@ -1628,7 +1628,7 @@ code {
 /* Settings: category color pickers (a highlight swatch + an "A" text color) */
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 8px;
 }
 .color-item {

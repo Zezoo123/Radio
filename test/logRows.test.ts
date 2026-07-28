@@ -50,6 +50,25 @@ describe('export log rows', () => {
     expect(rowToLine(row)).toBe(line)
   })
 
+  it('captures a Length 6th field as the duration and never saves it back', () => {
+    // A Simian-saved log line: the Length rides as a 6th field.
+    const [row] = parseLogText('00:00:10|+|L024-073|LI|Liner ID Arabic|00:07' + CRLF)
+    expect(row.srcDuration).toBe(7)
+    expect(row.fields[4]).toBe('Liner ID Arabic') // Description stays clean
+    expect(rowToLine(row)).toBe('00:00:10|+|L024-073|LI|Liner ID Arabic')
+
+    const [long] = parseLogText('01:00:00|+|SHOW-01|A|Full show|1:02:30' + CRLF)
+    expect(long.srcDuration).toBe(3750)
+  })
+
+  it('still folds a non-duration 6th field into the description', () => {
+    const line = '10:00:00|+|X|CAT|left|right'
+    const [row] = parseLogText(line + CRLF)
+    expect(row.srcDuration).toBeUndefined()
+    expect(row.fields[4]).toBe('left|right')
+    expect(rowToLine(row)).toBe(line) // byte-exact round trip as before
+  })
+
   it('keeps edited times and reordering intact', () => {
     const rows = parseLogText(TEXT)
     rows[3].fields[0] = '08:45:00'

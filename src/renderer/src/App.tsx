@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
 import type { UiSettings } from '../../main/uiSettings'
+import { withOpacity } from './lib/colors'
 import { ImportView } from './views/ImportView'
 import { ExportView } from './views/ExportView'
 import { FormatsView } from './views/FormatsView'
@@ -10,6 +11,13 @@ import { EditorView } from './views/EditorView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
 import { SettingsView } from './views/SettingsView'
 import { THEME_IDS, type ThemeId } from './theme'
+
+/** Bake an opacity % into every color of a category map. */
+function applyOpacityMap(map: Record<string, string>, pct: number): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(map)) out[k] = withOpacity(v, pct)
+  return out
+}
 
 type View = 'import' | 'formats' | 'promos' | 'export' | 'editor' | 'settings'
 type Contrast = 'normal' | 'high'
@@ -94,8 +102,21 @@ export default function App(): JSX.Element {
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
   const [uiSettings, setUiSettings] = useState<UiSettings>({
     categoryColors: {},
-    categoryTextColors: {}
+    categoryTextColors: {},
+    tintOpacity: 35,
+    textOpacity: 100
   })
+
+  // The Editor paints with the app-wide opacity already baked into each color,
+  // so the grid rows never need to know about the settings.
+  const displayColors = useMemo(
+    () => applyOpacityMap(uiSettings.categoryColors, uiSettings.tintOpacity),
+    [uiSettings.categoryColors, uiSettings.tintOpacity]
+  )
+  const displayTextColors = useMemo(
+    () => applyOpacityMap(uiSettings.categoryTextColors, uiSettings.textOpacity),
+    [uiSettings.categoryTextColors, uiSettings.textOpacity]
+  )
 
   useEffect(() => {
     window.api.getUiSettings().then(setUiSettings)
@@ -245,8 +266,8 @@ export default function App(): JSX.Element {
           <EditorView
             incoming={editorLog}
             onConsumed={() => setEditorLog(null)}
-            categoryColors={uiSettings.categoryColors}
-            categoryTextColors={uiSettings.categoryTextColors}
+            categoryColors={displayColors}
+            categoryTextColors={displayTextColors}
           />
         </div>
         {view === 'settings' && (

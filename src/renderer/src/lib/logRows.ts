@@ -17,9 +17,20 @@ export interface LogRow {
   fields: [string, string, string, string, string]
   /** `|`-field count of the original line (capped at 5), for exact round-trips. */
   nFields: number
+  /** Duration seconds carried by the source line's 6th field (Simian-saved logs). */
+  srcDuration?: number
 }
 
 let nextId = 1
+
+/** `mm:ss` / `h:mm:ss` → seconds, or null when it isn't a duration. */
+function durationSeconds(value: string): number | null {
+  const m = /^(\d{1,3}):(\d{2})(?::(\d{2}))?$/.exec(value)
+  if (!m) return null
+  return m[3] != null
+    ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3])
+    : Number(m[1]) * 60 + Number(m[2])
+}
 
 export function parseLogText(text: string): LogRow[] {
   return text
@@ -27,6 +38,18 @@ export function parseLogText(text: string): LogRow[] {
     .filter((line) => line.length > 0)
     .map((line) => {
       const parts = line.split('|')
+      // A Simian-saved log carries a Length 6th field on event rows
+      // (`…|LI|Liner|00:07`). Capture it as the row's duration — it feeds the
+      // Dur column — instead of folding it into Description, so saving writes
+      // the 5 canonical fields and never exports the duration back out.
+      let srcDuration: number | undefined
+      if (parts.length === 6 && parts[0].trim() !== '') {
+        const d = durationSeconds(parts[5].trim())
+        if (d != null) {
+          srcDuration = d
+          parts.pop()
+        }
+      }
       return {
         id: nextId++,
         fields: [
@@ -36,7 +59,8 @@ export function parseLogText(text: string): LogRow[] {
           parts[3] ?? '',
           parts.length > 4 ? parts.slice(4).join('|') : ''
         ] as LogRow['fields'],
-        nFields: Math.min(parts.length, 5)
+        nFields: Math.min(parts.length, 5),
+        ...(srcDuration != null ? { srcDuration } : {})
       }
     })
 }
