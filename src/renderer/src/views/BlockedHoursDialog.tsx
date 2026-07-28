@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { hoursSummary } from './HourPickerDialog'
 
 interface Props {
@@ -24,40 +25,62 @@ export function blockedGridSummary(grid: number[][]): string {
 
 /**
  * Station blocked hours, per day per hour — the same week table as the promo
- * placement grid. Click a cell to block/unblock that hour on that weekday;
- * click an hour header to toggle the whole column, a day name for the whole
+ * placement grid. Click or drag across cells to block/unblock (the first cell
+ * decides which); an hour header toggles the whole column, a day name the whole
  * day. Changes apply immediately; Done just closes.
  */
 export function BlockedHoursDialog({ open, grid, onChange, onClose }: Props): JSX.Element | null {
+  // Drag paint: the cell you press decides block vs clear; sweeping applies it.
+  // `latest` mirrors the grid through a drag — sweep events can outrun React's
+  // re-render, and deriving from props alone would drop the fastest cells.
+  const dragMode = useRef<'block' | 'clear' | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const latest = useRef(grid)
+  if (!dragMode.current) latest.current = grid
+
+  useEffect(() => {
+    const up = (): void => {
+      dragMode.current = null
+      setDragging(false)
+    }
+    window.addEventListener('mouseup', up)
+    return () => window.removeEventListener('mouseup', up)
+  }, [])
+
   if (!open) return null
 
   const sets = grid.map((d) => new Set(d))
-  const commit = (next: Set<number>[]): void =>
-    onChange(next.map((s) => [...s].sort((a, b) => a - b)))
 
-  function toggleCell(wd: number, h: number): void {
-    const next = sets.map((s) => new Set(s))
-    if (next[wd].has(h)) next[wd].delete(h)
-    else next[wd].add(h)
-    commit(next)
+  function commit(next: number[][]): void {
+    latest.current = next
+    onChange(next)
+  }
+
+  function setCell(wd: number, h: number, block: boolean): void {
+    const cur = latest.current
+    if (cur[wd].includes(h) === block) return
+    commit(
+      cur.map((d, i) =>
+        i !== wd ? d : block ? [...d, h].sort((a, b) => a - b) : d.filter((x) => x !== h)
+      )
+    )
   }
 
   /** Hour header: block this hour on every day, or clear it if all days have it. */
   function toggleHour(h: number): void {
-    const everywhere = sets.every((s) => s.has(h))
-    const next = sets.map((s) => new Set(s))
-    for (const s of next) {
-      if (everywhere) s.delete(h)
-      else s.add(h)
-    }
-    commit(next)
+    const cur = latest.current
+    const everywhere = cur.every((d) => d.includes(h))
+    commit(
+      cur.map((d) =>
+        everywhere ? d.filter((x) => x !== h) : d.includes(h) ? d : [...d, h].sort((a, b) => a - b)
+      )
+    )
   }
 
   /** Day name: block the whole day, or clear it if every hour is blocked. */
   function toggleDay(wd: number): void {
-    const next = sets.map((s) => new Set(s))
-    next[wd] = sets[wd].size === 24 ? new Set() : new Set(HOURS)
-    commit(next)
+    const cur = latest.current
+    commit(cur.map((d, i) => (i !== wd ? d : d.length === 24 ? [] : [...HOURS])))
   }
 
   return (
@@ -70,12 +93,12 @@ export function BlockedHoursDialog({ open, grid, onChange, onClose }: Props): JS
           </button>
         </div>
         <p className="muted">
-          No promo may ever use a blocked hour — e.g. the Fagr window. Click a cell to block that
-          hour on that day; click an hour number for the whole column, a day name for the whole
-          day. Blocked hours show black in every weekly grid.
+          No promo may ever use a blocked hour — e.g. the Fagr window. Click or hold and drag
+          across cells to block or unblock them; an hour number toggles the whole column, a day
+          name the whole day. Blocked hours show black in every weekly grid.
         </p>
 
-        <table className="week-table blocked-edit">
+        <table className={`week-table blocked-edit ${dragging ? 'painting' : ''}`}>
           <thead>
             <tr>
               <th className="wd-col" />
@@ -102,8 +125,7 @@ export function BlockedHoursDialog({ open, grid, onChange, onClose }: Props): JS
                     onClick={() => toggleDay(wd)}
                   >
                     <strong>{name}</strong>
-                  </button>{' '}
-                  <span className="muted">{sets[wd].size === 0 ? '' : hoursSummary(grid[wd])}</span>
+                  </button>
                 </th>
                 {HOURS.map((h) => {
                   const on = sets[wd].has(h)
@@ -112,8 +134,16 @@ export function BlockedHoursDialog({ open, grid, onChange, onClose }: Props): JS
                     <td
                       key={h}
                       className={`hour ${on ? 'gblocked' : 'free'}`}
-                      title={on ? `${label} — blocked (click to allow)` : `${label} — click to block`}
-                      onClick={() => toggleCell(wd, h)}
+                      title={on ? `${label} — blocked (drag to allow)` : `${label} — drag to block`}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        dragMode.current = on ? 'clear' : 'block'
+                        setDragging(true)
+                        setCell(wd, h, !on)
+                      }}
+                      onMouseEnter={() => {
+                        if (dragMode.current) setCell(wd, h, dragMode.current === 'block')
+                      }}
                     />
                   )
                 })}
