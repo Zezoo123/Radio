@@ -83,7 +83,8 @@ A Simian-style log editor:
 - Load the station's **`audio.mdb`** (Simian's audio database) and every row gets its real
   duration; **Update Dur & Desc from DB** also overwrites descriptions from the library (Arabic
   re-decoded correctly). The **Expected** column then simulates the whole day the way the Simian
-  deck actually plays it:
+  deck actually plays it — from 00:00:00, or any start time set in the **Start** field next to
+  “Open log” (for logs that begin mid-day):
   - `+` starts when the previous item finishes,
   - `@` fires **exactly** at its scheduled time — cutting whatever is playing (marked **red**) and
     skipping the queue up to it (marked **yellow**),
