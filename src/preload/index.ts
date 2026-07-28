@@ -7,9 +7,9 @@ import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
 import type { PromoPlacement, PromoWeekRow } from '../main/core/promos/schedule'
 
-/** Station-wide promo rules: blackout hours (0-23) + break minutes (0-59). */
+/** Station-wide promo rules: blocked hours per weekday `[Sun..Sat]` + break minutes (0-59). */
 export interface PromoRules {
-  blockedHours: number[]
+  blockedHours: number[][]
   breaks: number[]
 }
 import type { PromoEntry } from '../main/core/parsers/promosFile'

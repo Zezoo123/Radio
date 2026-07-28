@@ -23,7 +23,7 @@ import {
   type PromoPlacement,
   type PromoWeekRow
 } from './core/promos/schedule'
-import { promosStore, sanitizeRules, type PromosFile } from './promos'
+import { promosStore, sanitizeRules, type PromosFile, type StationRules } from './promos'
 import type { PromoRules } from './core/promos/schedule'
 import { getActiveStation, type Station } from './station'
 import type { CalendarDate } from './core/types'
@@ -257,11 +257,11 @@ class Session {
   }
 
   /** Station-wide promo rules: blackout hours + break minutes. */
-  async promoRules(): Promise<Required<PromoRules>> {
+  async promoRules(): Promise<StationRules> {
     return (await this.ensurePromos()).rules
   }
 
-  async setPromoRules(rules: Partial<PromoRules>): Promise<Required<PromoRules>> {
+  async setPromoRules(rules: Partial<PromoRules>): Promise<StationRules> {
     const file = await this.ensurePromos()
     file.rules = sanitizeRules(rules)
     await promosStore.save(file)

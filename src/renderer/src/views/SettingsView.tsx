@@ -4,7 +4,7 @@ import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
-import { tintBackground } from '../lib/colors'
+import { withOpacity } from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -137,6 +137,39 @@ export function SettingsView({
           is recolored across the app (the log Editor). Applies everywhere, on every station.
           Interrupted (red) and skipped (yellow) rows keep their warning text color.
         </p>
+        <div className="row" style={{ marginBottom: 10 }}>
+          <label className="pct-ctl" title="How strongly every highlight color fills its rows">
+            Highlight opacity{' '}
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={settings.tintOpacity}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10)
+                if (Number.isInteger(n))
+                  onSettings({ ...settings, tintOpacity: Math.max(1, Math.min(100, n)) })
+              }}
+            />
+            %
+          </label>
+          <label className="pct-ctl" title="Opacity of every category text color">
+            Text opacity{' '}
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={settings.textOpacity}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10)
+                if (Number.isInteger(n))
+                  onSettings({ ...settings, textOpacity: Math.max(1, Math.min(100, n)) })
+              }}
+            />
+            %
+          </label>
+          <span className="muted">One setting for all colors — applied when rows paint.</span>
+        </div>
         <div className="color-grid">
           {colorRows.map((cat) => {
             const color = categoryColors[cat]
@@ -188,8 +221,8 @@ export function SettingsView({
                 <span
                   className="color-name"
                   style={{
-                    background: color ? tintBackground(color) : undefined,
-                    color: textColor
+                    background: color ? withOpacity(color, settings.tintOpacity) : undefined,
+                    color: textColor ? withOpacity(textColor, settings.textOpacity) : undefined
                   }}
                 >
                   {cat}

@@ -3,7 +3,7 @@ import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import PageHelp from '../components/PageHelp'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
-import { simulateLog, type SimRow } from '../lib/runtime'
+import { formatSeconds, parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
 import { ReplaceDialog } from './ReplaceDialog'
 
 interface Props {
@@ -56,16 +56,30 @@ export function EditorView({
   const [simStale, setSimStale] = useState(false)
   const [simTick, setSimTick] = useState(0)
   const refreshSim = (): void => setSimTick((t) => t + 1)
+  // Clock the Expected simulation starts at — 00:00:00 unless the user picks
+  // another start (for logs that begin mid-day).
+  const [simStart, setSimStart] = useState('00:00:00')
 
   useEffect(() => {
     setSimStale(true)
   }, [rows, durations])
 
   useEffect(() => {
-    setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0))
+    setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0, parseTimeToSeconds(simStart) ?? 0))
     setSimStale(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simTick])
+
+  /** Commit a typed start time: any valid HH:MM:SS re-runs the simulation. */
+  function commitSimStart(input: HTMLInputElement): void {
+    const secs = parseTimeToSeconds(input.value)
+    if (secs == null) {
+      input.value = simStart // snap back on anything that isn't a time
+      return
+    }
+    setSimStart(formatSeconds(secs))
+    refreshSim()
+  }
 
   /** Look up every audio row's file name in the Simian DB (comments stay 0). */
   async function fillDurations(rs: LogRow[]): Promise<void> {
@@ -139,8 +153,9 @@ export function EditorView({
     setRows(parsed)
     setPath(newPath)
     setDirty(isDirty)
-    // Seed per-row durations when the source carries them (.bsi logs do); the
-    // audio-database lookup then refines whatever it can match.
+    // Seed per-row durations when the source carries them (.bsi logs, or the
+    // Length field of a Simian-saved text log); the audio-database lookup then
+    // refines whatever it can match.
     const seeded = new Map<number, number>()
     if (rowDurations) {
       parsed.forEach((r, i) => {
@@ -148,6 +163,9 @@ export function EditorView({
         if (d != null && d > 0) seeded.set(r.id, Math.round(d))
       })
     }
+    parsed.forEach((r) => {
+      if (r.srcDuration != null && r.srcDuration > 0) seeded.set(r.id, Math.round(r.srcDuration))
+    })
     setDurations(seeded)
     refreshSim() // compute the freshly loaded log immediately
     void fillDurations(parsed)
@@ -200,7 +218,12 @@ export function EditorView({
   }
 
   async function save(as: boolean): Promise<void> {
-    const res = await window.api.saveLog(serializeRows(rows), as ? undefined : (path ?? undefined))
+    // Rows with a known duration save in Simian's six-column shape (Length
+    // between Name and Category); rows without one stay five-column.
+    const res = await window.api.saveLog(
+      serializeRows(rows, durationOf),
+      as ? undefined : (path ?? undefined)
+    )
     if (!res.saved) {
       setStatus('Save cancelled')
       return
@@ -234,6 +257,22 @@ export function EditorView({
           <button className="btn" onClick={openLog}>
             Open log…
           </button>
+          <label
+            className="muted"
+            title="The clock the Expected column starts counting from — leave 00:00:00 unless the log starts mid-day"
+          >
+            Start{' '}
+            <input
+              key={simStart}
+              defaultValue={simStart}
+              spellCheck={false}
+              style={{ width: 78, textAlign: 'center' }}
+              onBlur={(e) => commitSimStart(e.currentTarget)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+              }}
+            />
+          </label>
           {rows.length > 0 && (
             <>
               <button

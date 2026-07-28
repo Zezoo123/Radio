@@ -30,6 +30,18 @@ function simulate(lines: string[], durs: number[]): { rows: LogRow[]; sim: SimRo
 const at = (s: SimRow): string => (s.expected != null ? formatSeconds(s.expected) : '—')
 
 describe('playout simulation', () => {
+  it('starts the clock at startAt (default 00:00:00)', () => {
+    const rows = rowsOf(['09:00:00|+|SONG-A', '10:00:00|@|MARK|', '10:10:00|+|SONG-B'])
+    const durs = new Map(rows.map((r) => [r.id, 60]))
+    const sim = simulateLog(rows, (r) => durs.get(r.id) ?? 0, parseTimeToSeconds('09:00:00')!)
+    // First row begins at the chosen start, the @ still pulls to its own time.
+    expect(sim.map((s) => (s.expected != null ? formatSeconds(s.expected) : '—'))).toEqual([
+      '09:00:00',
+      '09:01:00',
+      '09:02:00'
+    ])
+  })
+
   it('a timed row reached before its time plays immediately — no dead air', () => {
     const { sim } = simulate(
       [

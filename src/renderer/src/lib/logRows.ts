@@ -2,11 +2,17 @@
  * Parse a Simian log text into editable rows and serialize them back.
  *
  * Each line is up to five `|`-fields: Time | Cue | Name | Category | Description.
- * Anything past the 4th pipe is folded into the Description field (section
- * headers contain extra pipes), and the original field count is remembered so an
- * untouched row serializes back byte-for-byte — including verbatim AZAN rows and
+ * A Simian-saved log carries the Length as a sixth column between Name and
+ * Category (`Time|Cue|Name|Length|Category|Description`, the .bsi column
+ * order) — that value is lifted into the row's duration on parse, and rows
+ * with a known duration serialize back in the same six-column shape.
+ * Any other extra pipes fold into the Description field (section headers
+ * contain them), and the original field count is remembered so an untouched
+ * row serializes back byte-for-byte — including verbatim AZAN rows and
  * 3-field event rows with no category/description.
  */
+
+import { formatDuration } from './runtime'
 
 const LINE_SEP = '\r\n'
 
@@ -17,9 +23,20 @@ export interface LogRow {
   fields: [string, string, string, string, string]
   /** `|`-field count of the original line (capped at 5), for exact round-trips. */
   nFields: number
+  /** Duration seconds carried by the source line's 6th field (Simian-saved logs). */
+  srcDuration?: number
 }
 
 let nextId = 1
+
+/** `mm:ss` / `h:mm:ss` → seconds, or null when it isn't a duration. */
+function durationSeconds(value: string): number | null {
+  const m = /^(\d{1,3}):(\d{2})(?::(\d{2}))?$/.exec(value)
+  if (!m) return null
+  return m[3] != null
+    ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3])
+    : Number(m[1]) * 60 + Number(m[2])
+}
 
 export function parseLogText(text: string): LogRow[] {
   return text
@@ -27,6 +44,22 @@ export function parseLogText(text: string): LogRow[] {
     .filter((line) => line.length > 0)
     .map((line) => {
       const parts = line.split('|')
+      // A Simian-saved log carries a Length column on event rows — between
+      // Name and Category (the native .bsi order), or trailing in some
+      // exports. Lift it into the row's duration (it feeds the Dur column)
+      // so the editable fields stay the canonical five.
+      let srcDuration: number | undefined
+      if (parts.length === 6 && parts[0].trim() !== '') {
+        const at3 = durationSeconds(parts[3].trim())
+        const at5 = at3 == null ? durationSeconds(parts[5].trim()) : null
+        if (at3 != null) {
+          srcDuration = at3
+          parts.splice(3, 1)
+        } else if (at5 != null) {
+          srcDuration = at5
+          parts.pop()
+        }
+      }
       return {
         id: nextId++,
         fields: [
@@ -36,7 +69,8 @@ export function parseLogText(text: string): LogRow[] {
           parts[3] ?? '',
           parts.length > 4 ? parts.slice(4).join('|') : ''
         ] as LogRow['fields'],
-        nFields: Math.min(parts.length, 5)
+        nFields: Math.min(parts.length, 5),
+        ...(srcDuration != null ? { srcDuration } : {})
       }
     })
 }
@@ -51,7 +85,13 @@ export function cloneRow(row: LogRow): LogRow {
   return { id: nextId++, fields: [...row.fields] as LogRow['fields'], nFields: row.nFields }
 }
 
-export function rowToLine(row: LogRow): string {
+export function rowToLine(row: LogRow, duration?: number): string {
+  // An event row with a known duration writes Simian's six-column shape:
+  // Time|Cue|Name|Length|Category|Description.
+  if (duration != null && duration > 0 && rowKind(row) === 'event') {
+    const [time, cue, name, category, description] = row.fields
+    return [time, cue, name, formatDuration(duration), category, description].join('|')
+  }
   // Emit at least the original field count, extended if a later field now has
   // content. A category added to a bare 3-field event also brings the (empty)
   // description along, matching how eventLine() always emits the pair.
@@ -66,8 +106,11 @@ export function rowToLine(row: LogRow): string {
   return row.fields.slice(0, count).join('|')
 }
 
-export function serializeRows(rows: LogRow[]): string {
-  return rows.length ? rows.map(rowToLine).join(LINE_SEP) + LINE_SEP : ''
+/** `durationOf` (when given) writes each event row's Dur back as the Length column. */
+export function serializeRows(rows: LogRow[], durationOf?: (row: LogRow) => number): string {
+  return rows.length
+    ? rows.map((r) => rowToLine(r, durationOf?.(r))).join(LINE_SEP) + LINE_SEP
+    : ''
 }
 
 /** Style class for a row: date rules/comments, section headers, or events. */

@@ -69,8 +69,15 @@ export interface SimRow {
  *
  * Only the next timed row below the playhead is armed, matching the log order.
  * Comments never play; they show the running clock (`note`).
+ *
+ * `startAt` is the clock (seconds from midnight) the playout begins at —
+ * normally 00:00:00, adjustable for logs that start mid-day.
  */
-export function simulateLog(rows: LogRow[], durationOf: (row: LogRow) => number): SimRow[] {
+export function simulateLog(
+  rows: LogRow[],
+  durationOf: (row: LogRow) => number,
+  startAt = 0
+): SimRow[] {
   const out: SimRow[] = rows.map(() => ({ expected: null, status: 'skipped', cutAt: null }))
 
   // In real Simian logs the @/# rows are usually bare TIME MARKERS — a
@@ -93,7 +100,7 @@ export function simulateLog(rows: LogRow[], durationOf: (row: LogRow) => number)
     return null
   }
 
-  let clock = 0
+  let clock = startAt
   let pos = 0
   while (pos < rows.length) {
     const row = rows[pos]

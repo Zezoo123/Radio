@@ -192,7 +192,7 @@ export function registerIpc(): void {
       session.resetPromoTimes(fileName, date)
   )
   ipcMain.handle('promos:getRules', () => session.promoRules())
-  ipcMain.handle('promos:setRules', (_e, rules: { blockedHours?: number[]; breaks?: number[] }) =>
+  ipcMain.handle('promos:setRules', (_e, rules: { blockedHours?: number[][]; breaks?: number[] }) =>
     session.setPromoRules(rules)
   )
 

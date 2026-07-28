@@ -1,7 +1,15 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import type { PromoSet } from './core/parsers/promosFile'
+import { blockedHoursGrid } from './core/promos/schedule'
 import type { PromoExclusions, PromoOverrides, PromoRules } from './core/promos/schedule'
 import { stationFile, stationFileEnsured } from './station'
+
+/** Station rules in their canonical persisted shape: blocked hours per weekday. */
+export interface StationRules {
+  /** Hours no promo may use, per weekday `[Sun..Sat]`. */
+  blockedHours: number[][]
+  breaks: number[]
+}
 
 /** What's persisted to promos.json: the imported set + the user's edits. */
 export interface PromosFile {
@@ -12,7 +20,7 @@ export interface PromosFile {
   /** Per-program hours excluded from the random range. */
   exclusions: PromoExclusions
   /** Station-wide rules: blackout hours + break minutes, applied to every promo. */
-  rules: Required<PromoRules>
+  rules: StationRules
 }
 
 export function emptyPromosFile(): PromosFile {
@@ -21,14 +29,17 @@ export function emptyPromosFile(): PromosFile {
     set: { entries: [] },
     overrides: {},
     exclusions: {},
-    rules: { blockedHours: [], breaks: [] }
+    rules: sanitizeRules(undefined)
   }
 }
 
-/** Coerce arbitrary input into well-formed station rules. */
-export function sanitizeRules(raw: Partial<PromoRules> | undefined): Required<PromoRules> {
+/**
+ * Coerce arbitrary input into well-formed station rules. Blocked hours become
+ * per-weekday lists; the earlier flat list migrates to the same hours every day.
+ */
+export function sanitizeRules(raw: Partial<PromoRules> | undefined): StationRules {
   return {
-    blockedHours: intList(raw?.blockedHours, 23),
+    blockedHours: blockedHoursGrid(raw?.blockedHours),
     breaks: intList(raw?.breaks, 59)
   }
 }

@@ -24,6 +24,19 @@ describe('date token substitution', () => {
     expect(substituteDateTokens('A[YYMMDD]B', DATE)).toBe('A260618B')
     expect(substituteDateTokens('keep [xyz] as-is', DATE)).toBe('keep [xyz] as-is')
   })
+
+  it('applies a day offset: [yymmdd-1] is the day before, +N days after', () => {
+    expect(substituteDateTokens('EP[yymmdd-1]', DATE)).toBe('EP260617')
+    expect(substituteDateTokens('[yymmdd+3]', DATE)).toBe('260621')
+    expect(substituteDateTokens('[Day-1]', DATE)).toBe('Wednesday')
+    // Rolls across month and year boundaries.
+    expect(substituteDateTokens('[yymmdd-1]', { year: 2026, month: 6, day: 1 })).toBe('260531')
+    expect(substituteDateTokens('[yyyymmdd+1]', { year: 2026, month: 12, day: 31 })).toBe(
+      '20270101'
+    )
+    // Unknown tokens keep their offset untouched too.
+    expect(substituteDateTokens('[xyz-1]', DATE)).toBe('[xyz-1]')
+  })
 })
 
 describe('serializeForDate', () => {

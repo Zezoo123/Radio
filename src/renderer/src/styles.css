@@ -1657,6 +1657,22 @@ code {
   align-items: center;
   gap: 2px;
 }
+/* Opacity % beside each swatch. */
+.pct-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.pct-ctl input[type='number'] {
+  width: 44px;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+.pct-ctl input:disabled {
+  opacity: 0.5;
+}
 /* Text color picker: an "A" in the chosen color; the input opens the dialog. */
 .color-item .text-color-pick {
   position: relative;
@@ -1842,6 +1858,37 @@ code {
 }
 .hour-legend .swatch.gblocked {
   background: #000;
+}
+
+/* Blocked-hours editor: the same week table, but every cell is clickable. */
+.modal.grid-modal {
+  width: 940px;
+}
+/* While drag-painting hour cells, stray text selection would fight the sweep. */
+.week-table.painting,
+.promo-list.painting {
+  user-select: none;
+}
+.week-table.blocked-edit td.hour.gblocked {
+  cursor: pointer;
+}
+.week-table.blocked-edit td.hour.gblocked:hover {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.week-table.blocked-edit th.wd-col .btn-link {
+  padding: 0;
+  font-size: 12px;
+}
+.hour-h-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.hour-h-btn:hover {
+  color: var(--accent);
 }
 
 /* Month band above the day numbers: one label per month, no extra width. */

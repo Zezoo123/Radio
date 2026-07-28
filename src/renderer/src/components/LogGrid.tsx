@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { tintBackground } from '../lib/colors'
+import { colorBase } from '../lib/colors'
 import { blankRow, cloneRow, rowKind, type LogRow } from '../lib/logRows'
 import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../lib/runtime'
 
@@ -27,9 +27,9 @@ interface Props {
   /** Duration in seconds for a row. */
   durationOf: (row: LogRow) => number
   onDuration: (id: number, seconds: number) => void
-  /** App-wide Category → `#rrggbb` map; rows tint by their Category column. */
+  /** Category → highlight color with the app-wide opacity baked in (`#rrggbbaa`). */
   categoryColors?: Record<string, string>
-  /** App-wide Category → `#rrggbb` map; row text recolors by Category. */
+  /** Category → text color with the app-wide opacity baked in. */
   categoryTextColors?: Record<string, string>
 }
 
@@ -45,7 +45,7 @@ function rowStyle(
 ): React.CSSProperties | undefined {
   if (!tint && !textColor) return undefined
   return {
-    ...(tint ? { background: tintBackground(tint), boxShadow: `inset 3px 0 0 0 ${tint}` } : {}),
+    ...(tint ? { background: tint, boxShadow: `inset 3px 0 0 0 ${colorBase(tint)}` } : {}),
     color: textColor
   }
 }

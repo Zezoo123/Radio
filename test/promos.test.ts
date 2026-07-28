@@ -6,9 +6,11 @@ import {
   autoHoursForDate,
   autoTimesForDate,
   blockedHoursForDate,
+  blockedHoursGrid,
   placementsForWeek,
   preferredHour,
   promoEventsForDate,
+  stationBlockedForWeekday,
   weekStartFor,
   type PromoExclusions
 } from '@core/promos/schedule'
@@ -292,6 +294,52 @@ describe('station rules: blocked hours + break minutes', () => {
     const { events } = promoEventsForDate(set, SUN, {})
     const minutes = new Set(events.map((ev) => parseInt(ev.time.slice(3, 5), 10)))
     expect(minutes.size).toBeGreaterThan(2) // spread, not pinned to breaks
+  })
+
+  it('applies per-weekday blocked hours only on their own day', async () => {
+    const set = await parsePromosFile(fixture('Promos.xlsx'))
+    const sundayOnly = wkExcl(0, HOURS_OF_FAGR) // blocked on Sunday, free elsewhere
+
+    // Sunday: no promo lands in the blocked hours.
+    const { events } = promoEventsForDate(set, SUN, {
+      rules: { blockedHours: sundayOnly, breaks: [] }
+    })
+    expect(events.length).toBeGreaterThan(0)
+    for (const ev of events) {
+      expect(HOURS_OF_FAGR).not.toContain(parseInt(ev.time.slice(0, 2), 10))
+    }
+
+    // Every other weekday keeps its full hour range — same as with no rules.
+    // (The picked times may still shift: rule 7 compares against Sunday's
+    // actual pick, which the Sunday block legitimately changes.)
+    const weekStart = weekStartFor(SUN)
+    const withRules = placementsForWeek(set, weekStart, undefined, undefined, {
+      blockedHours: sundayOnly,
+      breaks: []
+    })
+    const withoutRules = placementsForWeek(set, weekStart)
+    for (let p = 0; p < withRules.length; p++) {
+      const sun = withRules[p].days[0]
+      for (const h of HOURS_OF_FAGR) expect(sun.allowedHours).not.toContain(h)
+      for (let wd = 1; wd < 7; wd++) {
+        expect(withRules[p].days[wd].allowedHours).toEqual(withoutRules[p].days[wd].allowedHours)
+      }
+    }
+  })
+
+  it('migrates the legacy flat blocked list to every weekday', () => {
+    expect(blockedHoursGrid([4, 2, 2, 99, -1, 3.5])).toEqual(
+      Array.from({ length: 7 }, () => [2, 4])
+    )
+    expect(blockedHoursGrid(wkExcl(5, [23, 0]))).toEqual(wkExcl(5, [0, 23]))
+    expect(blockedHoursGrid(undefined)).toEqual(Array.from({ length: 7 }, () => []))
+    expect(blockedHoursGrid('junk')).toEqual(Array.from({ length: 7 }, () => []))
+
+    // Both shapes resolve per weekday.
+    expect(stationBlockedForWeekday([2, 3], 4)).toEqual([2, 3])
+    expect(stationBlockedForWeekday(wkExcl(0, [2, 3]), 0)).toEqual([2, 3])
+    expect(stationBlockedForWeekday(wkExcl(0, [2, 3]), 1)).toEqual([])
+    expect(stationBlockedForWeekday(undefined, 0)).toEqual([])
   })
 })
 

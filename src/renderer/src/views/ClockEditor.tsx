@@ -168,6 +168,15 @@ export function ClockEditor({
     onChangeFormat({ ...selected, rows: selected.rows.filter((_, i) => i !== index) })
   }
 
+  /** Reorder the clock's rows by Min:Sec (stable — equal times keep their order). */
+  function sortRows(): void {
+    if (!selected) return
+    clearInsertTarget()
+    setAddingCatRow(null)
+    const rows = [...selected.rows].sort((a, b) => a.minute - b.minute || a.second - b.second)
+    onChangeFormat({ ...selected, rows })
+  }
+
   /** Insert an identical copy of a row right below it (like the Editor's ⧉). */
   function duplicateRow(index: number): void {
     if (!selected) return
@@ -439,6 +448,14 @@ export function ClockEditor({
             <div className="row" style={{ marginTop: 10 }}>
               <button className="btn" onClick={addRow}>
                 + Add row
+              </button>
+              <button
+                className="btn"
+                disabled={selected.rows.length < 2}
+                title="Reorder the rows by their Min:Sec time"
+                onClick={sortRows}
+              >
+                ⇅ Sort by time
               </button>
               <button
                 className="btn"

@@ -31,11 +31,13 @@ Load the planning spreadsheets:
 A Natural Grid–style **clock builder**:
 - Build reusable hour *clocks* (a list of rows with times, cues, names, categories).
 - Paint them onto a **7×24 week grid**; per-day *default clocks* fill every unpainted hour.
-- Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …), **`{sequential}` tokens** (rotating
+- Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …— with an optional day offset, so
+  `[yymmdd-1]` names yesterday's episode), **`{sequential}` tokens** (rotating
   jingle/ID numbers with persisted no-repeat queues), and a **NEXT DAY LOG** row that makes
   Simian load tomorrow's log at 23:59:59.
 - A default-clock row can target a **set of hours** (say 07–09 + 16–18) picked in a multi-select
-  hour dialog — one row instead of six — and any row duplicates with one click (⧉).
+  hour dialog — one row instead of six — any row duplicates with one click (⧉), and **Sort by
+  time** reorders a clock's rows by Min:Sec.
 - The whole format set can be saved to / loaded from a portable JSON file, which also **bundles
   the sequentials with their rotation counters** so `{tokens}` keep numbering correctly when the
   file is loaded on another PC.
@@ -50,10 +52,11 @@ the station's rules:
   same weekday last week,
 - deterministic per date — the preview always matches the export.
 
-**Station rules** apply on top, per station: hand-picked **blocked hours** (say the Fagr window,
-02–06) that never receive a promo and show black in every grid, and the station's **break
-minutes** (e.g. `:20`/`:40`) so every promo lands exactly on `HH:MM:00` at a break — the
-randomiser then only chooses hours, never minutes.
+**Station rules** apply on top, per station: **blocked hours** picked per day per hour on a
+weekly grid (say the Fagr window, 02–06, or different hours on Friday) that never receive a
+promo and show black in every grid, and the station's **break minutes** (e.g. `:20`/`:40`) so
+every promo lands exactly on `HH:MM:00` at a break — the randomiser then only chooses hours,
+never minutes.
 
 The weekly grid shows every program's placements; click hours to exclude them per weekday, and a
 day preview shows the exact rows that will be exported.
@@ -70,14 +73,18 @@ scheduled) and the From/To range keeps itself valid.
 ### Editor
 A Simian-style log editor:
 - Opens exported `.txt` logs **and Simian's native `.bsi` logs** (they are Access databases —
-  parsed directly, Arabic text re-decoded, durations read from the file).
+  parsed directly, Arabic text re-decoded, durations read from the file). A text log's **Length
+  column** (between Name and Category, Simian's own order) is read into **Dur**; logs without
+  one open with durations at zero, as before. Saving writes each row's Dur back as that same
+  Length column — rows with no duration stay in the plain 5-column form.
 - Every cell is editable; rows drag to reorder, duplicate, insert, delete (two-click confirm);
   columns resize like a spreadsheet and remember their widths.
 - **Search & replace** across the whole log, scopable to a single column, with live match counts.
 - Load the station's **`audio.mdb`** (Simian's audio database) and every row gets its real
   duration; **Update Dur & Desc from DB** also overwrites descriptions from the library (Arabic
   re-decoded correctly). The **Expected** column then simulates the whole day the way the Simian
-  deck actually plays it:
+  deck actually plays it — from 00:00:00, or any start time set in the **Start** field next to
+  “Open log” (for logs that begin mid-day):
   - `+` starts when the previous item finishes,
   - `@` fires **exactly** at its scheduled time — cutting whatever is playing (marked **red**) and
     skipping the queue up to it (marked **yellow**),
@@ -87,8 +94,8 @@ A Simian-style log editor:
 
 ### Settings
 App-wide preferences: **theme** (Dark, Light, Minimal, Graphite, Studio + high-contrast),
-**per-category row colors** (highlight and text), and the **AZAN format** (the deckfade macro and
-extra lines emitted around each prayer).
+**per-category row colors** (highlight and text, with one app-wide opacity % for each), and the
+**AZAN format** (the deckfade macro and extra lines emitted around each prayer).
 
 ## The Simian log format
 

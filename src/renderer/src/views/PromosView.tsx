@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PromoSummary } from '../../../main/session'
 import type { PromoRules } from '../../../preload'
 import type { PromoEntry } from '../../../main/core/parsers/promosFile'
@@ -6,7 +6,7 @@ import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/
 import { toCalendarDate } from '../App'
 import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
-import { HourPickerDialog, hoursSummary } from './HourPickerDialog'
+import { BlockedHoursDialog, blockedGridSummary, emptyBlockedGrid } from './BlockedHoursDialog'
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -25,9 +25,15 @@ export function PromosView(): JSX.Element {
   const [week, setWeek] = useState<PromoWeekRow[]>([])
   const [previewDate, setPreviewDate] = useState(tomorrowISO)
   const [previewText, setPreviewText] = useState('')
-  const [rules, setRules] = useState<PromoRules>({ blockedHours: [], breaks: [] })
+  const [rules, setRules] = useState<PromoRules>({ blockedHours: emptyBlockedGrid(), breaks: [] })
   const [newBreak, setNewBreak] = useState('')
   const [blockedOpen, setBlockedOpen] = useState(false)
+
+  // Drag paint over the placement grids: the first cell decides exclude vs
+  // allow; edits apply optimistically per cell and persist once on mouse-up.
+  const dragMode = useRef<'exclude' | 'include' | null>(null)
+  const touched = useRef(new Map<string, { fileName: string; weekday: number; hours: Set<number> }>())
+  const [dragging, setDragging] = useState(false)
 
   const refreshInfo = useCallback(async () => {
     setSummary(await window.api.getPromos())
@@ -50,14 +56,24 @@ export function PromosView(): JSX.Element {
   }, [anchor, refreshWeek, summary])
 
   // Refresh the day preview when the chosen date changes, the file (re)loads, or
-  // any exclusion edit advances `week`.
+  // any exclusion edit advances `week`. Debounced — a drag repaints `week` per
+  // cell, and one preview per swept cell would flood the main process.
   useEffect(() => {
     const d = toCalendarDate(previewDate)
     if (!d || entries.length === 0) {
       setPreviewText('')
       return
     }
-    window.api.promoPreviewForDate(d).then(setPreviewText)
+    let cancelled = false
+    const t = setTimeout(() => {
+      window.api.promoPreviewForDate(d).then((text) => {
+        if (!cancelled) setPreviewText(text)
+      })
+    }, 200)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
   }, [previewDate, week, entries.length])
 
   async function loadFile(): Promise<void> {
@@ -74,12 +90,40 @@ export function PromosView(): JSX.Element {
     setWeek([])
   }
 
-  /** Save station rules and refresh everything derived from them. */
-  async function saveRules(next: PromoRules): Promise<void> {
-    setRules(next) // optimistic — picker toggles respond instantly
-    setRules(await window.api.setPromoRules(next))
-    await refreshWeek(anchor)
+  /**
+   * Save station rules: the UI updates instantly, the write + week refresh are
+   * debounced so dragging across the blocked-hours grid doesn't fire an IPC
+   * round-trip per cell. The unmount flush keeps a quick tab switch safe.
+   */
+  const pendingRules = useRef<PromoRules | null>(null)
+  const rulesTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const anchorRef = useRef(anchor)
+  useEffect(() => {
+    anchorRef.current = anchor
+  }, [anchor])
+
+  const flushRules = useCallback(async () => {
+    const next = pendingRules.current
+    if (!next) return
+    pendingRules.current = null
+    await window.api.setPromoRules(next)
+    await refreshWeek(anchorRef.current)
+  }, [refreshWeek])
+
+  function saveRules(next: PromoRules): void {
+    setRules(next)
+    pendingRules.current = next
+    clearTimeout(rulesTimer.current)
+    rulesTimer.current = setTimeout(() => void flushRules(), 300)
   }
+
+  useEffect(
+    () => () => {
+      clearTimeout(rulesTimer.current)
+      if (pendingRules.current) void window.api.setPromoRules(pendingRules.current)
+    },
+    []
+  )
 
 
   function addBreak(): void {
@@ -93,25 +137,75 @@ export function PromosView(): JSX.Element {
     void saveRules({ ...rules, breaks: rules.breaks.filter((b) => b !== m) })
   }
 
-  async function toggleExclude(
+  /**
+   * Paint one grid cell during a click or drag. `start` (mouse-down) decides
+   * the drag's direction from the cell's current state. The week state updates
+   * optimistically; the accumulated edits persist once, on mouse-up.
+   */
+  function paintExclude(
     row: PromoWeekRow,
     day: PromoDayPlacement,
-    hour: number
-  ): Promise<void> {
-    const d = toCalendarDate(anchor)
-    if (!d) return
-    const next = new Set(day.excludedHours)
-    if (next.has(hour)) next.delete(hour)
-    else next.add(hour)
-    setWeek(
-      await window.api.setPromoExcludedHours(
-        row.fileName,
-        day.weekday,
-        [...next].sort((a, b) => a - b),
-        d
+    hour: number,
+    start: boolean
+  ): void {
+    if (start) {
+      dragMode.current = day.excludedHours.includes(hour) ? 'include' : 'exclude'
+      setDragging(true)
+    }
+    const mode = dragMode.current
+    if (!mode) return
+    const key = `${row.fileName}|${day.weekday}`
+    let entry = touched.current.get(key)
+    if (!entry) {
+      entry = { fileName: row.fileName, weekday: day.weekday, hours: new Set(day.excludedHours) }
+      touched.current.set(key, entry)
+    }
+    const exclude = mode === 'exclude'
+    if (entry.hours.has(hour) === exclude) return
+    if (exclude) entry.hours.add(hour)
+    else entry.hours.delete(hour)
+    const hours = [...entry.hours].sort((a, b) => a - b)
+    setWeek((prev) =>
+      prev.map((r) =>
+        r.fileName !== row.fileName
+          ? r
+          : {
+              ...r,
+              days: r.days.map((d) =>
+                d.weekday !== day.weekday ? d : { ...d, excludedHours: hours }
+              )
+            }
       )
     )
   }
+
+  // Mouse-up anywhere ends the drag and persists every touched (promo, weekday)
+  // once; the final response re-syncs the whole week (placed times move).
+  useEffect(() => {
+    const up = (): void => {
+      if (!dragMode.current) return
+      dragMode.current = null
+      setDragging(false)
+      const entries = [...touched.current.values()]
+      touched.current.clear()
+      const d = toCalendarDate(anchor)
+      if (!d || entries.length === 0) return
+      void (async () => {
+        let latest: PromoWeekRow[] | null = null
+        for (const e of entries) {
+          latest = await window.api.setPromoExcludedHours(
+            e.fileName,
+            e.weekday,
+            [...e.hours].sort((a, b) => a - b),
+            d
+          )
+        }
+        if (latest) setWeek(latest)
+      })()
+    }
+    window.addEventListener('mouseup', up)
+    return () => window.removeEventListener('mouseup', up)
+  }, [anchor])
 
   const wd = weekdayOf(anchor)
   const loaded = entries.length > 0
@@ -203,18 +297,19 @@ export function PromosView(): JSX.Element {
             <h2>Station rules</h2>
             <p className="muted">
               Apply to every promo on this station. Blocked hours never receive a promo — e.g. the
-              Fagr window. Breaks are the minutes promos land on within their hour (e.g. :20 and
-              :40, matching the station&apos;s hourly breaks); the randomiser then only picks hours.
+              Fagr window — and are set per day per hour. Breaks are the minutes promos land on
+              within their hour (e.g. :20 and :40, matching the station&apos;s hourly breaks); the
+              randomiser then only picks hours.
             </p>
             <div className="rule-row">
               <strong className="rule-label">Blocked hours</strong>
               <div className="row">
                 <button
                   className="btn"
-                  title="Pick the hours no promo may ever use"
+                  title="Pick the hours no promo may ever use, per day of the week"
                   onClick={() => setBlockedOpen(true)}
                 >
-                  {rules.blockedHours.length === 0 ? 'none' : hoursSummary(rules.blockedHours)}
+                  {blockedGridSummary(rules.blockedHours)}
                 </button>
               </div>
             </div>
@@ -274,7 +369,7 @@ export function PromosView(): JSX.Element {
                 <i className="swatch blocked" /> blackout (on-air + 2h)
               </span>
               <span>
-                <i className="swatch excluded" /> excluded — click to toggle
+                <i className="swatch excluded" /> excluded — click or drag to toggle
               </span>
               <span>
                 <i className="swatch placed" /> placed
@@ -284,13 +379,13 @@ export function PromosView(): JSX.Element {
             {week.length === 0 ? (
               <p className="empty">No promos scheduled this week.</p>
             ) : (
-              <div className="promo-list">
+              <div className={`promo-list ${dragging ? 'painting' : ''}`}>
                 {week.map((row) => (
                   <WeekRow
                     key={row.fileName}
                     row={row}
                     stationBlocked={rules.blockedHours}
-                    onToggleHour={(day, h) => toggleExclude(row, day, h)}
+                    onPaint={(day, h, start) => paintExclude(row, day, h, start)}
                   />
                 ))}
               </div>
@@ -321,13 +416,10 @@ export function PromosView(): JSX.Element {
             />
           </section>
 
-          <HourPickerDialog
+          <BlockedHoursDialog
             open={blockedOpen}
-            targetLabel="Blocked for all promos"
-            hours={rules.blockedHours}
-            hint="Pick the hours no promo may ever use — e.g. the Fagr window. They show black in every weekly grid. Nothing selected = no blocked hours."
-            emptyLabel="none"
-            onChange={(hours) => void saveRules({ ...rules, blockedHours: hours })}
+            grid={rules.blockedHours}
+            onChange={(grid) => void saveRules({ ...rules, blockedHours: grid })}
             onClose={() => setBlockedOpen(false)}
           />
         </>
@@ -339,11 +431,12 @@ export function PromosView(): JSX.Element {
 function WeekRow({
   row,
   stationBlocked,
-  onToggleHour
+  onPaint
 }: {
   row: PromoWeekRow
-  stationBlocked: number[]
-  onToggleHour: (day: PromoDayPlacement, hour: number) => void
+  /** Station blocked hours per weekday `[Sun..Sat]`. */
+  stationBlocked: number[][]
+  onPaint: (day: PromoDayPlacement, hour: number, start: boolean) => void
 }): JSX.Element {
   return (
     <div className="promo-item">
@@ -370,8 +463,8 @@ function WeekRow({
             <DayRow
               key={day.weekday}
               day={day}
-              stationBlocked={stationBlocked}
-              onToggle={(h) => onToggleHour(day, h)}
+              stationBlocked={stationBlocked[day.weekday] ?? []}
+              onPaint={(h, start) => onPaint(day, h, start)}
             />
           ))}
         </tbody>
@@ -383,11 +476,11 @@ function WeekRow({
 function DayRow({
   day,
   stationBlocked,
-  onToggle
+  onPaint
 }: {
   day: PromoDayPlacement
   stationBlocked: number[]
-  onToggle: (hour: number) => void
+  onPaint: (hour: number, start: boolean) => void
 }): JSX.Element {
   const placed = new Set(day.times.map((t) => parseInt(t.slice(0, 2), 10)))
   const blocked = new Set(day.blockedHours)
@@ -420,10 +513,18 @@ function DayRow({
                 : blocked.has(h)
                   ? `${label} — blackout`
                   : excluded.has(h)
-                    ? `${label} — excluded (click to allow)`
-                    : `${label} — click to exclude`
+                    ? `${label} — excluded (click or drag to allow)`
+                    : `${label} — click or drag to exclude`
             }
-            onClick={locked ? undefined : () => onToggle(h)}
+            onMouseDown={
+              locked
+                ? undefined
+                : (e) => {
+                    e.preventDefault()
+                    onPaint(h, true)
+                  }
+            }
+            onMouseEnter={locked ? undefined : () => onPaint(h, false)}
           />
         )
       })}

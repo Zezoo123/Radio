@@ -50,6 +50,43 @@ describe('export log rows', () => {
     expect(rowToLine(row)).toBe(line)
   })
 
+  it('reads the Length column between Name and Category (Simian-saved logs)', () => {
+    const line = '00:00:10|+|L024-073|00:07|LI|Liner ID Arabic'
+    const [row] = parseLogText(line + CRLF)
+    expect(row.srcDuration).toBe(7)
+    expect(row.fields).toEqual(['00:00:10', '+', 'L024-073', 'LI', 'Liner ID Arabic'])
+    // Saving with the duration reproduces the six-column line byte-for-byte.
+    expect(rowToLine(row, row.srcDuration)).toBe(line)
+    // Without a duration the canonical five columns come out.
+    expect(rowToLine(row)).toBe('00:00:10|+|L024-073|LI|Liner ID Arabic')
+  })
+
+  it('also accepts a trailing Length field, and writes it back between Name and Category', () => {
+    const [row] = parseLogText('00:04:07|+|8041-08|A|Hob ElHob|03:32' + CRLF)
+    expect(row.srcDuration).toBe(212)
+    expect(row.fields[4]).toBe('Hob ElHob')
+    expect(rowToLine(row, 212)).toBe('00:04:07|+|8041-08|03:32|A|Hob ElHob')
+  })
+
+  it('serializeRows writes Dur only for rows that have one; comments stay untouched', () => {
+    const text =
+      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+    const rows = parseLogText(text)
+    const durs = new Map([[rows[1].id, 190]])
+    const out = serializeRows(rows, (r) => durs.get(r.id) ?? 0)
+    expect(out).toBe(
+      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|03:10|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+    )
+  })
+
+  it('still folds a non-duration 6th field into the description', () => {
+    const line = '10:00:00|+|X|CAT|left|right'
+    const [row] = parseLogText(line + CRLF)
+    expect(row.srcDuration).toBeUndefined()
+    expect(row.fields[4]).toBe('left|right')
+    expect(rowToLine(row)).toBe(line) // byte-exact round trip as before
+  })
+
   it('keeps edited times and reordering intact', () => {
     const rows = parseLogText(TEXT)
     rows[3].fields[0] = '08:45:00'
