@@ -44,13 +44,45 @@ export function exclusionsForWeekday(
 
 /** Station-wide placement rules (persisted per station, apply to every promo). */
 export interface PromoRules {
-  /** Hours (0-23) no promo may ever use — e.g. the Fagr window. */
-  blockedHours?: number[]
+  /**
+   * Hours (0-23) no promo may ever use — e.g. the Fagr window. Per-weekday
+   * lists `[Sun..Sat]`; a flat list (the pre-per-day shape) applies to every day.
+   */
+  blockedHours?: number[] | number[][]
   /**
    * Break minutes within the hour (e.g. [20, 40]): every promo lands exactly on
    * `HH:MM:00` for one of these. Empty/unset = the legacy random minute.
    */
   breaks?: number[]
+}
+
+/** The station's blocked hours on one weekday, tolerating the legacy flat list. */
+export function stationBlockedForWeekday(
+  blocked: number[] | number[][] | undefined,
+  wd: number
+): number[] {
+  if (!blocked || blocked.length === 0) return []
+  if (typeof blocked[0] === 'number') return blocked as number[]
+  return (blocked as number[][])[wd] ?? []
+}
+
+/**
+ * Normalize any persisted blocked-hours value to seven per-weekday lists
+ * (Sun..Sat), each deduped, sorted and clamped to real hours. The legacy flat
+ * list becomes the same hours on every day.
+ */
+export function blockedHoursGrid(raw: unknown): number[][] {
+  const hours = (xs: unknown): number[] =>
+    Array.isArray(xs)
+      ? [...new Set(xs.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 23))].sort(
+          (a, b) => a - b
+        )
+      : []
+  if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'number') {
+    const all = hours(raw)
+    return Array.from({ length: 7 }, () => [...all])
+  }
+  return Array.from({ length: 7 }, (_, i) => hours(Array.isArray(raw) ? raw[i] : undefined))
 }
 
 /**
@@ -60,11 +92,14 @@ export interface PromoRules {
  */
 type ExcludedArg = Iterable<number> | ((wd: number) => number[]) | undefined
 
-function excludedResolver(excluded: ExcludedArg, global?: number[]): (wd: number) => number[] {
-  const extra = global ?? []
-  if (typeof excluded === 'function') return (wd) => [...excluded(wd), ...extra]
+function excludedResolver(
+  excluded: ExcludedArg,
+  global?: number[] | number[][]
+): (wd: number) => number[] {
+  if (typeof excluded === 'function')
+    return (wd) => [...excluded(wd), ...stationBlockedForWeekday(global, wd)]
   const fixed = [...(excluded ?? [])]
-  return () => [...fixed, ...extra]
+  return (wd) => [...fixed, ...stationBlockedForWeekday(global, wd)]
 }
 
 export interface PromoPlacement {
@@ -242,7 +277,7 @@ export function autoHoursForDate(
   entry: PromoEntry,
   date: CalendarDate,
   excluded?: ExcludedArg,
-  globalBlocked?: number[]
+  globalBlocked?: number[] | number[][]
 ): number[] {
   return actualHoursAt(entry, date, excludedResolver(excluded, globalBlocked))
 }
@@ -304,14 +339,14 @@ export function placementsForDate(
   rules?: PromoRules
 ): PromoPlacement[] {
   const wd = weekday(date)
-  const global = rules?.blockedHours ?? []
+  const global = rules?.blockedHours
   return set.entries
     .filter((e) => (e.promoCounts[wd] ?? 0) > 0)
     .map((e) => {
       const count = e.promoCounts[wd] ?? 0
       const exFor = (d: number): number[] => exclusionsForWeekday(exclusions, e.fileName, d)
       const excluded = exFor(wd)
-      const allowed = allowedHoursForDate(e, date, [...excluded, ...global])
+      const allowed = allowedHoursForDate(e, date, [...excluded, ...stationBlockedForWeekday(global, wd)])
       const override = overrides?.[e.fileName]?.[dateKey(date)]
       return {
         fileName: e.fileName,
@@ -357,14 +392,17 @@ export function promoEventsForDate(
   const wd = weekday(date)
   const events: ScheduleEvent[] = []
   const warnings: string[] = []
-  const global = opts.rules?.blockedHours ?? []
+  const global = opts.rules?.blockedHours
 
   for (const entry of set.entries) {
     const count = entry.promoCounts[wd] ?? 0
     if (count <= 0) continue
 
     const exFor = (d: number): number[] => exclusionsForWeekday(opts.exclusions, entry.fileName, d)
-    const allowed = allowedHoursForDate(entry, date, [...exFor(wd), ...global])
+    const allowed = allowedHoursForDate(entry, date, [
+      ...exFor(wd),
+      ...stationBlockedForWeekday(global, wd)
+    ])
     if (count > allowed.length) {
       warnings.push(
         `Promo ${entry.fileName} (${entry.program}) wants ${count} on ${dateKey(date)} but only ${allowed.length} hour(s) are free`
@@ -433,7 +471,7 @@ export function placementsForWeek(
   rules?: PromoRules
 ): PromoWeekRow[] {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-  const global = rules?.blockedHours ?? []
+  const global = rules?.blockedHours
   return set.entries
     .filter((e) => e.promoCounts.some((c) => c > 0))
     .map((e) => {
@@ -449,7 +487,10 @@ export function placementsForWeek(
           const wd = weekday(date)
           const count = e.promoCounts[wd] ?? 0
           const excluded = exFor(wd)
-          const allowed = allowedHoursForDate(e, date, [...excluded, ...global])
+          const allowed = allowedHoursForDate(e, date, [
+            ...excluded,
+            ...stationBlockedForWeekday(global, wd)
+          ])
           const override = overrides?.[e.fileName]?.[dateKey(date)]
           return {
             date: dateKey(date),

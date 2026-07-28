@@ -1844,6 +1844,32 @@ code {
   background: #000;
 }
 
+/* Blocked-hours editor: the same week table, but every cell is clickable. */
+.modal.grid-modal {
+  width: 940px;
+}
+.week-table.blocked-edit td.hour.gblocked {
+  cursor: pointer;
+}
+.week-table.blocked-edit td.hour.gblocked:hover {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.week-table.blocked-edit th.wd-col .btn-link {
+  padding: 0;
+  font-size: 12px;
+}
+.hour-h-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 10px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.hour-h-btn:hover {
+  color: var(--accent);
+}
+
 /* Month band above the day numbers: one label per month, no extra width. */
 .tgrid thead .t-month-row th {
   height: 20px;

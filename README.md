@@ -35,7 +35,8 @@ A Natural Grid–style **clock builder**:
   jingle/ID numbers with persisted no-repeat queues), and a **NEXT DAY LOG** row that makes
   Simian load tomorrow's log at 23:59:59.
 - A default-clock row can target a **set of hours** (say 07–09 + 16–18) picked in a multi-select
-  hour dialog — one row instead of six — and any row duplicates with one click (⧉).
+  hour dialog — one row instead of six — any row duplicates with one click (⧉), and **Sort by
+  time** reorders a clock's rows by Min:Sec.
 - The whole format set can be saved to / loaded from a portable JSON file, which also **bundles
   the sequentials with their rotation counters** so `{tokens}` keep numbering correctly when the
   file is loaded on another PC.
@@ -50,10 +51,11 @@ the station's rules:
   same weekday last week,
 - deterministic per date — the preview always matches the export.
 
-**Station rules** apply on top, per station: hand-picked **blocked hours** (say the Fagr window,
-02–06) that never receive a promo and show black in every grid, and the station's **break
-minutes** (e.g. `:20`/`:40`) so every promo lands exactly on `HH:MM:00` at a break — the
-randomiser then only chooses hours, never minutes.
+**Station rules** apply on top, per station: **blocked hours** picked per day per hour on a
+weekly grid (say the Fagr window, 02–06, or different hours on Friday) that never receive a
+promo and show black in every grid, and the station's **break minutes** (e.g. `:20`/`:40`) so
+every promo lands exactly on `HH:MM:00` at a break — the randomiser then only chooses hours,
+never minutes.
 
 The weekly grid shows every program's placements; click hours to exclude them per weekday, and a
 day preview shows the exact rows that will be exported.

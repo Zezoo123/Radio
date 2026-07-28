@@ -6,7 +6,7 @@ import type { PromoDayPlacement, PromoWeekRow } from '../../../main/core/promos/
 import { toCalendarDate } from '../App'
 import { tomorrowISO } from '../lib/dates'
 import PageHelp from '../components/PageHelp'
-import { HourPickerDialog, hoursSummary } from './HourPickerDialog'
+import { BlockedHoursDialog, blockedGridSummary, emptyBlockedGrid } from './BlockedHoursDialog'
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -25,7 +25,7 @@ export function PromosView(): JSX.Element {
   const [week, setWeek] = useState<PromoWeekRow[]>([])
   const [previewDate, setPreviewDate] = useState(tomorrowISO)
   const [previewText, setPreviewText] = useState('')
-  const [rules, setRules] = useState<PromoRules>({ blockedHours: [], breaks: [] })
+  const [rules, setRules] = useState<PromoRules>({ blockedHours: emptyBlockedGrid(), breaks: [] })
   const [newBreak, setNewBreak] = useState('')
   const [blockedOpen, setBlockedOpen] = useState(false)
 
@@ -203,18 +203,19 @@ export function PromosView(): JSX.Element {
             <h2>Station rules</h2>
             <p className="muted">
               Apply to every promo on this station. Blocked hours never receive a promo — e.g. the
-              Fagr window. Breaks are the minutes promos land on within their hour (e.g. :20 and
-              :40, matching the station&apos;s hourly breaks); the randomiser then only picks hours.
+              Fagr window — and are set per day per hour. Breaks are the minutes promos land on
+              within their hour (e.g. :20 and :40, matching the station&apos;s hourly breaks); the
+              randomiser then only picks hours.
             </p>
             <div className="rule-row">
               <strong className="rule-label">Blocked hours</strong>
               <div className="row">
                 <button
                   className="btn"
-                  title="Pick the hours no promo may ever use"
+                  title="Pick the hours no promo may ever use, per day of the week"
                   onClick={() => setBlockedOpen(true)}
                 >
-                  {rules.blockedHours.length === 0 ? 'none' : hoursSummary(rules.blockedHours)}
+                  {blockedGridSummary(rules.blockedHours)}
                 </button>
               </div>
             </div>
@@ -321,13 +322,10 @@ export function PromosView(): JSX.Element {
             />
           </section>
 
-          <HourPickerDialog
+          <BlockedHoursDialog
             open={blockedOpen}
-            targetLabel="Blocked for all promos"
-            hours={rules.blockedHours}
-            hint="Pick the hours no promo may ever use — e.g. the Fagr window. They show black in every weekly grid. Nothing selected = no blocked hours."
-            emptyLabel="none"
-            onChange={(hours) => void saveRules({ ...rules, blockedHours: hours })}
+            grid={rules.blockedHours}
+            onChange={(grid) => void saveRules({ ...rules, blockedHours: grid })}
             onClose={() => setBlockedOpen(false)}
           />
         </>
@@ -342,7 +340,8 @@ function WeekRow({
   onToggleHour
 }: {
   row: PromoWeekRow
-  stationBlocked: number[]
+  /** Station blocked hours per weekday `[Sun..Sat]`. */
+  stationBlocked: number[][]
   onToggleHour: (day: PromoDayPlacement, hour: number) => void
 }): JSX.Element {
   return (
@@ -370,7 +369,7 @@ function WeekRow({
             <DayRow
               key={day.weekday}
               day={day}
-              stationBlocked={stationBlocked}
+              stationBlocked={stationBlocked[day.weekday] ?? []}
               onToggle={(h) => onToggleHour(day, h)}
             />
           ))}
