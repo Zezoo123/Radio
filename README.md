@@ -31,7 +31,8 @@ Load the planning spreadsheets:
 A Natural Grid–style **clock builder**:
 - Build reusable hour *clocks* (a list of rows with times, cues, names, categories).
 - Paint them onto a **7×24 week grid**; per-day *default clocks* fill every unpainted hour.
-- Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …), **`{sequential}` tokens** (rotating
+- Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …— with an optional day offset, so
+  `[yymmdd-1]` names yesterday's episode), **`{sequential}` tokens** (rotating
   jingle/ID numbers with persisted no-repeat queues), and a **NEXT DAY LOG** row that makes
   Simian load tomorrow's log at 23:59:59.
 - A default-clock row can target a **set of hours** (say 07–09 + 16–18) picked in a multi-select

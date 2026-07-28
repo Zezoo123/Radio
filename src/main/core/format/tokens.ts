@@ -1,13 +1,15 @@
 import type { CalendarDate } from '../types'
-import { weekday } from '../dates'
+import { addDays, weekday } from '../dates'
 
 /**
  * Natural Grid-style date-sensitive tokens (manual p.11). A bracketed token in a
  * clock's Name/Description is replaced at export time with the export date:
  *   1234-[DAY]   → 1234-MON
  *   NEWS[yymmdd] → NEWS260618
- * Tokens are case-insensitive; unknown brackets are left untouched. Text around
- * a token is preserved.
+ * A token may carry a day offset — `[yymmdd-1]` is the day before the export
+ * date (yesterday's episode), `[Day+2]` two days after. Tokens are
+ * case-insensitive; unknown brackets are left untouched. Text around a token is
+ * preserved.
  */
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -52,10 +54,11 @@ function tokenValue(token: string, date: CalendarDate): string | null {
   }
 }
 
-/** Replace bracketed date tokens in `text` using `date`. */
+/** Replace bracketed date tokens in `text` using `date` (± any day offset). */
 export function substituteDateTokens(text: string, date: CalendarDate): string {
-  return text.replace(/\[([A-Za-z]+)\]/g, (match, inner: string) => {
-    const value = tokenValue(inner, date)
+  return text.replace(/\[([A-Za-z]+)([+-]\d+)?\]/g, (match, inner: string, offset?: string) => {
+    const when = offset ? addDays(date, parseInt(offset, 10)) : date
+    const value = tokenValue(inner, when)
     return value ?? match
   })
 }

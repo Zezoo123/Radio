@@ -22,6 +22,12 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
   const [sequentials, setSequentials] = useState<Sequential[]>([])
   const [editorOpen, setEditorOpen] = useState(false)
   const [editing, setEditing] = useState<Sequential | null>(null)
+  // Days added to the export date: -1 = the day before (yesterday's episode).
+  const [offset, setOffset] = useState(0)
+
+  /** `[yymmdd]` + offset −1 → `[yymmdd-1]`. */
+  const withOffset = (token: string): string =>
+    offset === 0 ? token : token.replace(']', `${offset > 0 ? '+' : ''}${offset}]`)
 
   useEffect(() => {
     if (open) window.api.listSequentials().then(setSequentials)
@@ -67,17 +73,38 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
             {category === 'date' && (
               <>
                 <p className="muted">Filled in with the export date when you export.</p>
+                <div className="row" style={{ marginBottom: 8 }}>
+                  <label>
+                    Day offset{' '}
+                    <input
+                      type="number"
+                      min={-99}
+                      max={99}
+                      value={offset}
+                      style={{ width: 64 }}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10)
+                        setOffset(Number.isInteger(n) ? Math.max(-99, Math.min(99, n)) : 0)
+                      }}
+                    />
+                  </label>
+                  <span className="muted">
+                    −1 = the day before (e.g. yesterday&apos;s episode), +1 = the day after.
+                  </span>
+                </div>
                 <div className="insert-list">
                   {TOKEN_PRESETS.map((t) => (
                     <button
                       key={t.token}
                       className="insert-item"
                       disabled={disabled}
-                      onClick={() => onPick(t.token)}
+                      onClick={() => onPick(withOffset(t.token))}
                     >
                       <span className="insert-label">{t.label}</span>
-                      <code>{t.token}</code>
-                      <span className="muted">e.g. {substituteDateTokens(t.token, SAMPLE)}</span>
+                      <code>{withOffset(t.token)}</code>
+                      <span className="muted">
+                        e.g. {substituteDateTokens(withOffset(t.token), SAMPLE)}
+                      </span>
                     </button>
                   ))}
                 </div>
