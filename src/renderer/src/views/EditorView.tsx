@@ -3,7 +3,7 @@ import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import PageHelp from '../components/PageHelp'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
-import { formatSeconds, parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
+import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
 import { ReplaceDialog } from './ReplaceDialog'
 
 interface Props {
@@ -70,16 +70,6 @@ export function EditorView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simTick])
 
-  /** Commit a typed start time: any valid HH:MM:SS re-runs the simulation. */
-  function commitSimStart(input: HTMLInputElement): void {
-    const secs = parseTimeToSeconds(input.value)
-    if (secs == null) {
-      input.value = simStart // snap back on anything that isn't a time
-      return
-    }
-    setSimStart(formatSeconds(secs))
-    refreshSim()
-  }
 
   /** Look up every audio row's file name in the Simian DB (comments stay 0). */
   async function fillDurations(rs: LogRow[]): Promise<void> {
@@ -262,14 +252,11 @@ export function EditorView({
             title="The clock the Expected column starts counting from — leave 00:00:00 unless the log starts mid-day"
           >
             Start{' '}
-            <input
-              key={simStart}
-              defaultValue={simStart}
-              spellCheck={false}
-              style={{ width: 78, textAlign: 'center' }}
-              onBlur={(e) => commitSimStart(e.currentTarget)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') e.currentTarget.blur()
+            <TimeField
+              value={simStart}
+              onCommit={(v) => {
+                setSimStart(v)
+                refreshSim()
               }}
             />
           </label>
@@ -372,5 +359,88 @@ export function EditorView({
         onClose={() => setReplaceOpen(false)}
       />
     </div>
+  )
+}
+
+/** Digit slots of the `HH:MM:SS` mask and each slot's maximum first digit. */
+function replaceDigit(value: string, pos: number, digit: string): string | null {
+  const limits: Record<number, number> = {
+    0: 2,
+    1: value[0] === '2' ? 3 : 9, // 20-23 only once the hour starts with 2
+    3: 5,
+    4: 9,
+    6: 5,
+    7: 9
+  }
+  const max = limits[pos]
+  if (max == null || Number(digit) > max) return null
+  let next = value.slice(0, pos) + digit + value.slice(pos + 1)
+  // Typing a leading 2 clamps an existing 4-9 second hour digit to 3 (max 23).
+  if (pos === 0 && digit === '2' && Number(next[1]) > 3) next = '2' + '3' + next.slice(2)
+  return next
+}
+
+/**
+ * Strict `HH:MM:SS` field: the mask never changes shape — a digit key
+ * overwrites the digit under the caret (skipping the colons, hours capped at
+ * 23, minutes/seconds at 59), Backspace zeroes the digit before the caret,
+ * and nothing else can be typed, inserted or pasted. Commits on Enter/blur.
+ */
+function TimeField({
+  value,
+  onCommit
+}: {
+  value: string
+  onCommit: (v: string) => void
+}): JSX.Element {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => setDraft(value), [value])
+
+  function handleKey(e: React.KeyboardEvent<HTMLInputElement>): void {
+    const el = e.currentTarget
+    if (e.key === 'Enter') {
+      el.blur()
+      return
+    }
+    // Leave caret movement and focus keys alone.
+    if (e.key === 'Tab' || e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End') return
+    e.preventDefault()
+
+    let pos = el.selectionStart ?? 0
+    const place = (p: number): void => {
+      requestAnimationFrame(() => el.setSelectionRange(p, p))
+    }
+
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (e.key === 'Backspace') pos = Math.max(0, pos - 1)
+      if (draft[pos] === ':') pos = e.key === 'Backspace' ? pos - 1 : pos + 1
+      if (pos < 0 || pos > 7) return
+      setDraft(draft.slice(0, pos) + '0' + draft.slice(pos + 1))
+      place(pos)
+      return
+    }
+
+    if (!/^\d$/.test(e.key)) return
+    if (pos >= 8) pos = 7 // typing at the very end edits the last digit
+    if (draft[pos] === ':') pos++
+    const next = replaceDigit(draft, pos, e.key)
+    if (!next) return
+    setDraft(next)
+    let np = pos + 1
+    if (next[np] === ':') np++
+    place(np)
+  }
+
+  return (
+    <input
+      value={draft}
+      spellCheck={false}
+      style={{ width: 78, textAlign: 'center' }}
+      onChange={() => {}} // all editing goes through the mask in onKeyDown
+      onKeyDown={handleKey}
+      onPaste={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+      onBlur={() => onCommit(draft)}
+    />
   )
 }
