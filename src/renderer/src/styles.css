@@ -1628,7 +1628,7 @@ code {
 /* Settings: category color pickers (a highlight swatch + an "A" text color) */
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 8px;
 }
 .color-item {
@@ -1656,6 +1656,22 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+}
+/* Opacity % beside each swatch. */
+.pct-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.pct-ctl input[type='number'] {
+  width: 44px;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+.pct-ctl input:disabled {
+  opacity: 0.5;
 }
 /* Text color picker: an "A" in the chosen color; the input opens the dialog. */
 .color-item .text-color-pick {

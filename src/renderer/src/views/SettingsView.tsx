@@ -4,7 +4,13 @@ import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
-import { tintBackground } from '../lib/colors'
+import {
+  colorAlphaPct,
+  colorBase,
+  DEFAULT_TINT_PCT,
+  tintBackground,
+  withAlphaPct
+} from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -134,8 +140,9 @@ export function SettingsView({
         <h2>Category colors</h2>
         <p className="muted">
           Give a Simian category a highlight and/or a text color and every row of that category
-          is recolored across the app (the log Editor). Applies everywhere, on every station.
-          Interrupted (red) and skipped (yellow) rows keep their warning text color.
+          is recolored across the app (the log Editor). The % beside each swatch is its opacity.
+          Applies everywhere, on every station. Interrupted (red) and skipped (yellow) rows keep
+          their warning text color.
         </p>
         <div className="color-grid">
           {colorRows.map((cat) => {
@@ -146,11 +153,26 @@ export function SettingsView({
                 <span className="color-ctl">
                   <input
                     type="color"
-                    value={color ?? '#666666'}
+                    value={color ? colorBase(color) : '#666666'}
                     title={
                       color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`
                     }
-                    onChange={(e) => setColor('categoryColors', cat, e.target.value)}
+                    onChange={(e) =>
+                      // A repick keeps the category's opacity choice.
+                      setColor(
+                        'categoryColors',
+                        cat,
+                        e.target.value + (color && color.length === 9 ? color.slice(7) : '')
+                      )
+                    }
+                  />
+                  <PctInput
+                    value={color ? colorAlphaPct(color, DEFAULT_TINT_PCT) : DEFAULT_TINT_PCT}
+                    disabled={!color}
+                    title="Highlight opacity %"
+                    onCommit={(pct) =>
+                      color && setColor('categoryColors', cat, withAlphaPct(color, pct))
+                    }
                   />
                   {color && (
                     <button
@@ -171,10 +193,25 @@ export function SettingsView({
                     A
                     <input
                       type="color"
-                      value={textColor ?? '#e6e6e6'}
-                      onChange={(e) => setColor('categoryTextColors', cat, e.target.value)}
+                      value={textColor ? colorBase(textColor) : '#e6e6e6'}
+                      onChange={(e) =>
+                        setColor(
+                          'categoryTextColors',
+                          cat,
+                          e.target.value +
+                            (textColor && textColor.length === 9 ? textColor.slice(7) : '')
+                        )
+                      }
                     />
                   </label>
+                  <PctInput
+                    value={textColor ? colorAlphaPct(textColor, 100) : 100}
+                    disabled={!textColor}
+                    title="Text opacity %"
+                    onCommit={(pct) =>
+                      textColor && setColor('categoryTextColors', cat, withAlphaPct(textColor, pct))
+                    }
+                  />
                   {textColor && (
                     <button
                       className="btn-link"
@@ -339,5 +376,35 @@ export function SettingsView({
         )}
       </section>
     </div>
+  )
+}
+
+/** Opacity percentage for a color swatch (1-100, disabled until a color is set). */
+function PctInput({
+  value,
+  disabled,
+  title,
+  onCommit
+}: {
+  value: number
+  disabled?: boolean
+  title: string
+  onCommit: (pct: number) => void
+}): JSX.Element {
+  return (
+    <label className="pct-ctl" title={title}>
+      <input
+        type="number"
+        min={1}
+        max={100}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          const n = parseInt(e.target.value, 10)
+          if (Number.isInteger(n)) onCommit(Math.max(1, Math.min(100, n)))
+        }}
+      />
+      %
+    </label>
   )
 }

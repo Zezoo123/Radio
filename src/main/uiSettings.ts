@@ -9,13 +9,16 @@ import { app } from 'electron'
  */
 
 export interface UiSettings {
-  /** Simian Category (UPPERCASE) → row highlight color as `#rrggbb`. Absent = no tint. */
+  /**
+   * Simian Category (UPPERCASE) → row highlight color, `#rrggbb` or
+   * `#rrggbbaa` (user-set opacity). Absent = no tint.
+   */
   categoryColors: Record<string, string>
-  /** Simian Category (UPPERCASE) → row text color as `#rrggbb`. Absent = default text. */
+  /** Simian Category (UPPERCASE) → row text color, `#rrggbb[aa]`. Absent = default text. */
   categoryTextColors: Record<string, string>
 }
 
-const HEX_COLOR = /^#[0-9a-f]{6}$/i
+const HEX_COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i
 
 /** Category renames applied to older persisted data (old name → new name). */
 const RENAMED_CATEGORIES: Record<string, string> = { ADS: 'ADV' }

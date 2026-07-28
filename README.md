@@ -90,8 +90,8 @@ A Simian-style log editor:
 
 ### Settings
 App-wide preferences: **theme** (Dark, Light, Minimal, Graphite, Studio + high-contrast),
-**per-category row colors** (highlight and text), and the **AZAN format** (the deckfade macro and
-extra lines emitted around each prayer).
+**per-category row colors** (highlight and text, each with its own opacity %), and the **AZAN
+format** (the deckfade macro and extra lines emitted around each prayer).
 
 ## The Simian log format
 
