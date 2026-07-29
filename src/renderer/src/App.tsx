@@ -5,8 +5,7 @@ import type { UiSettings } from '../../main/uiSettings'
 import { withOpacity } from './lib/colors'
 import { ImportView } from './views/ImportView'
 import { ExportView } from './views/ExportView'
-import { FormatsView } from './views/FormatsView'
-import { PromosView } from './views/PromosView'
+import { GridView } from './views/GridView'
 import { EditorView } from './views/EditorView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
 import { SettingsView } from './views/SettingsView'
@@ -20,7 +19,6 @@ function applyOpacityMap(map: Record<string, string>, pct: number): Record<strin
 }
 
 type Section = 'booking' | 'grid' | 'log'
-type GridTab = 'formats' | 'promos'
 type LogTab = 'export' | 'editor'
 type Contrast = 'normal' | 'high'
 
@@ -55,7 +53,6 @@ function errorMessage(reason: unknown): string {
 
 export default function App(): JSX.Element {
   const [section, setSection] = useState<Section>('booking')
-  const [gridTab, setGridTab] = useState<GridTab>('formats')
   const [logTab, setLogTab] = useState<LogTab>('export')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
@@ -206,18 +203,6 @@ export default function App(): JSX.Element {
         </div>
       </header>
 
-      {section === 'grid' && (
-        <div className="subnav">
-          <div className="seg">
-            <button className={`seg-btn ${gridTab === 'formats' ? 'on' : ''}`} onClick={() => setGridTab('formats')}>
-              Clocks &amp; grid
-            </button>
-            <button className={`seg-btn ${gridTab === 'promos' ? 'on' : ''}`} onClick={() => setGridTab('promos')}>
-              Promos
-            </button>
-          </div>
-        </div>
-      )}
       {section === 'log' && (
         <div className="subnav">
           <div className="seg">
@@ -231,7 +216,7 @@ export default function App(): JSX.Element {
         </div>
       )}
 
-      <main className="content" key={station}>
+      <main className={`content ${section === 'grid' ? 'flush' : ''}`} key={station}>
         {error && (
           <div className="error-banner" role="alert">
             <span className="error-banner-text">{error}</span>
@@ -243,8 +228,9 @@ export default function App(): JSX.Element {
         {section === 'booking' && (
           <ImportView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
         )}
-        {section === 'grid' && gridTab === 'formats' && <FormatsView />}
-        {section === 'grid' && gridTab === 'promos' && <PromosView />}
+        {section === 'grid' && (
+          <GridView onOpenLog={() => setSection('log')} onOpenSettings={() => setSettingsOpen(true)} />
+        )}
         {section === 'log' && logTab === 'export' && (
           <ExportView templates={templates} config={config} onConfig={setConfig} onEdit={editLog} />
         )}
