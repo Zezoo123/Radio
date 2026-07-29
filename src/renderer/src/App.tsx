@@ -19,48 +19,16 @@ function applyOpacityMap(map: Record<string, string>, pct: number): Record<strin
   return out
 }
 
-type View = 'import' | 'formats' | 'promos' | 'export' | 'editor' | 'settings'
+type Section = 'booking' | 'grid' | 'log'
+type GridTab = 'formats' | 'promos'
+type LogTab = 'export' | 'editor'
 type Contrast = 'normal' | 'high'
 
-/** Outline icons (stroke = currentColor) shown in the collapsed sidebar. */
-const NAV_ICONS: Partial<Record<View, JSX.Element>> = {
-  import: (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 3v10m0 0-4-4m4 4 4-4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-    </svg>
-  ),
-  formats: (
-    <svg viewBox="0 0 24 24">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  ),
-  promos: (
-    <svg viewBox="0 0 24 24">
-      <path d="M4 9v6h3l7 4V5L7 9H4z" />
-      <path d="M18 8a5 5 0 0 1 0 8" />
-    </svg>
-  ),
-  export: (
-    <svg viewBox="0 0 24 24">
-      <path d="M12 21V11m0 0-4 4m4-4 4 4M4 8V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" />
-    </svg>
-  ),
-  editor: (
-    <svg viewBox="0 0 24 24">
-      <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-  )
-}
-
-const BRAND_MARK = (
-  <svg viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="2" />
-    <path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M6 6a9 9 0 0 0 0 12M18 6a9 9 0 0 1 0 12" />
-  </svg>
-)
+const TABS: { id: Section; label: string; sub: string }[] = [
+  { id: 'booking', label: 'BOOKING', sub: 'AUDIO ELEMENTS' },
+  { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
+  { id: 'log', label: 'LOG', sub: 'BUILD · EDIT · EXPORT' }
+]
 
 const GEAR_ICON = (
   <svg viewBox="0 0 24 24">
@@ -86,12 +54,15 @@ function errorMessage(reason: unknown): string {
 }
 
 export default function App(): JSX.Element {
-  const [view, setView] = useState<View>('import')
+  const [section, setSection] = useState<Section>('booking')
+  const [gridTab, setGridTab] = useState<GridTab>('formats')
+  const [logTab, setLogTab] = useState<LogTab>('export')
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [theme, setTheme] = useState<ThemeId>(() => {
-    const saved = readPref<ThemeId>('ui.theme', 'dark')
-    return THEME_IDS.includes(saved) ? saved : 'dark'
+    const saved = readPref<ThemeId>('ui.theme', 'modernist')
+    return THEME_IDS.includes(saved) ? saved : 'modernist'
   })
   const [contrast, setContrast] = useState<Contrast>(() => readPref('ui.contrast', 'normal'))
   const [error, setError] = useState<string | null>(null)
@@ -129,7 +100,8 @@ export default function App(): JSX.Element {
 
   function editLog(text: string): void {
     setEditorLog({ text })
-    setView('editor')
+    setLogTab('editor')
+    setSection('log')
   }
 
   useEffect(() => {
@@ -150,7 +122,7 @@ export default function App(): JSX.Element {
     // Clear the previous station's view data; the effect above reloads for `next`.
     setTemplates([])
     setConfig(null)
-    setView('import')
+    setSection('booking')
     setStation(next)
   }
 
@@ -165,7 +137,7 @@ export default function App(): JSX.Element {
     return () => window.removeEventListener('unhandledrejection', onRejection)
   }, [])
 
-  // Apply + persist the appearance choice (light/dark, normal/high contrast).
+  // Apply + persist the appearance choice (theme, normal/high contrast).
   useEffect(() => {
     const root = document.documentElement
     root.dataset.theme = theme
@@ -178,13 +150,20 @@ export default function App(): JSX.Element {
     }
   }, [theme, contrast])
 
-  const nav: { id: View; label: string; badge?: number }[] = [
-    { id: 'import', label: 'Import' },
-    { id: 'formats', label: 'Formats' },
-    { id: 'promos', label: 'Promos' },
-    { id: 'export', label: 'Export' },
-    { id: 'editor', label: 'Editor' }
-  ]
+  // The settings drawer closes on Escape like any dialog.
+  useEffect(() => {
+    if (!settingsOpen) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setSettingsOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [settingsOpen])
+
+  const today = new Date()
+    .toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+    .replace(/,/g, '')
+    .toUpperCase()
 
   // Nothing loads until a station is chosen.
   if (!station) {
@@ -193,56 +172,64 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">{BRAND_MARK}</span>
-          <span className="brand-text">
-            Radio Scheduler
-            <span className="brand-sub">Text log export</span>
-          </span>
-        </div>
-        <div className="station-switch" title={`Station: ${station}`}>
-          <span className="station-dot" style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }} />
-          <select
-            className="station-select"
-            value={station}
-            onChange={(e) => switchStation(e.target.value)}
-          >
-            {stations.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-        <nav>
-          {nav.map((n) => (
-            <button
-              key={n.id}
-              className={`nav-item ${view === n.id ? 'active' : ''}`}
-              onClick={() => setView(n.id)}
-              title={n.label}
-            >
-              <span className="nav-ico">{NAV_ICONS[n.id]}</span>
-              <span className="nav-label">{n.label}</span>
-              {n.badge ? <span className="badge">{n.badge}</span> : null}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
+      <header className="topbar">
+        {TABS.map((t) => (
           <button
-            className={`settings-link ${view === 'settings' ? 'active' : ''}`}
-            onClick={() => setView('settings')}
-            title="Settings"
+            key={t.id}
+            className={`tab ${section === t.id ? 'active' : ''}`}
+            onClick={() => setSection(t.id)}
           >
-            <span className="nav-ico">{GEAR_ICON}</span>
-            <span className="nav-label">Settings</span>
+            {t.label}
+            <span className="tab-sub">{t.sub}</span>
           </button>
-          <div className="sidebar-foot">
-            <div className={`dot ${templates.length ? 'on' : ''}`} /> {templates.length} template(s)
+        ))}
+        <div className="chrome">
+          <div className="station-switch" title={`Station: ${station}`}>
+            <span className="station-dot" style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }} />
+            <select
+              className="station-select"
+              value={station}
+              onChange={(e) => switchStation(e.target.value)}
+            >
+              {stations.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <span className="chrome-date">{today}</span>
+          <span className="chrome-note">{templates.length} booked</span>
+          <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Settings">
+            {GEAR_ICON}
+          </button>
+        </div>
+      </header>
+
+      {section === 'grid' && (
+        <div className="subnav">
+          <div className="seg">
+            <button className={`seg-btn ${gridTab === 'formats' ? 'on' : ''}`} onClick={() => setGridTab('formats')}>
+              Clocks &amp; grid
+            </button>
+            <button className={`seg-btn ${gridTab === 'promos' ? 'on' : ''}`} onClick={() => setGridTab('promos')}>
+              Promos
+            </button>
           </div>
         </div>
-      </aside>
+      )}
+      {section === 'log' && (
+        <div className="subnav">
+          <div className="seg">
+            <button className={`seg-btn ${logTab === 'export' ? 'on' : ''}`} onClick={() => setLogTab('export')}>
+              Build &amp; export
+            </button>
+            <button className={`seg-btn ${logTab === 'editor' ? 'on' : ''}`} onClick={() => setLogTab('editor')}>
+              Editor
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="content" key={station}>
         {error && (
@@ -253,16 +240,16 @@ export default function App(): JSX.Element {
             </button>
           </div>
         )}
-        {view === 'import' && (
+        {section === 'booking' && (
           <ImportView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
         )}
-        {view === 'formats' && <FormatsView />}
-        {view === 'promos' && <PromosView />}
-        {view === 'export' && (
+        {section === 'grid' && gridTab === 'formats' && <FormatsView />}
+        {section === 'grid' && gridTab === 'promos' && <PromosView />}
+        {section === 'log' && logTab === 'export' && (
           <ExportView templates={templates} config={config} onConfig={setConfig} onEdit={editLog} />
         )}
         {/* The Editor stays mounted so its unsaved document survives tab switches. */}
-        <div style={{ display: view === 'editor' ? undefined : 'none' }}>
+        <div style={{ display: section === 'log' && logTab === 'editor' ? undefined : 'none' }}>
           <EditorView
             incoming={editorLog}
             onConsumed={() => setEditorLog(null)}
@@ -270,17 +257,32 @@ export default function App(): JSX.Element {
             categoryTextColors={displayTextColors}
           />
         </div>
-        {view === 'settings' && (
-          <SettingsView
-            settings={uiSettings}
-            onSettings={updateUiSettings}
-            theme={theme}
-            onTheme={setTheme}
-            highContrast={contrast === 'high'}
-            onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
-          />
-        )}
       </main>
+
+      {settingsOpen && (
+        <div
+          className="settings-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSettingsOpen(false)
+          }}
+        >
+          <div className="settings-drawer" role="dialog" aria-label="Settings">
+            <div className="settings-drawer-head">
+              <button className="icon-btn" onClick={() => setSettingsOpen(false)} title="Close settings">
+                ✕
+              </button>
+            </div>
+            <SettingsView
+              settings={uiSettings}
+              onSettings={updateUiSettings}
+              theme={theme}
+              onTheme={setTheme}
+              highContrast={contrast === 'high'}
+              onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
