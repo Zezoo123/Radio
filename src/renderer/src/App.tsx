@@ -3,7 +3,7 @@ import type { AppConfig, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
 import type { UiSettings } from '../../main/uiSettings'
 import { withOpacity } from './lib/colors'
-import { ImportView } from './views/ImportView'
+import { BookingView } from './views/BookingView'
 import { GridView } from './views/GridView'
 import { LogView } from './views/LogView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
@@ -192,7 +192,7 @@ export default function App(): JSX.Element {
         </div>
       </header>
 
-      <main className={`content ${section !== 'booking' ? 'flush' : ''}`} key={station}>
+      <main className="content flush" key={station}>
         {error && (
           <div className="error-banner" role="alert">
             <span className="error-banner-text">{error}</span>
@@ -202,7 +202,13 @@ export default function App(): JSX.Element {
           </div>
         )}
         {section === 'booking' && (
-          <ImportView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
+          <BookingView
+            templates={templates}
+            onTemplates={setTemplates}
+            onConfig={setConfig}
+            onOpenGrid={() => setSection('grid')}
+            onOpenLog={() => setSection('log')}
+          />
         )}
         {section === 'grid' && (
           <GridView onOpenLog={() => setSection('log')} onOpenSettings={() => setSettingsOpen(true)} />
