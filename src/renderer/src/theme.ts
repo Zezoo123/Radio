@@ -1,7 +1,7 @@
 /** Theme registry. Ids map to the data-theme token blocks in styles.css.
  * Preview colors are duplicated from those blocks so the Settings picker can
  * render every card in its own look regardless of the active theme. */
-export type ThemeId = 'dark' | 'light' | 'minimal' | 'graphite' | 'studio'
+export type ThemeId = 'modernist' | 'dark' | 'light' | 'minimal' | 'graphite' | 'studio'
 
 export interface ThemeMeta {
   id: ThemeId
@@ -11,6 +11,12 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  {
+    id: 'modernist',
+    name: 'Modernist',
+    desc: 'Ink on paper with signal red. Square edges, Archivo type.',
+    preview: { bg: '#f3f2f2', panel: '#eae9e9', accent: '#ec3013', text: '#201e1d' }
+  },
   {
     id: 'dark',
     name: 'Dark',

@@ -1,8 +1,43 @@
+/* Archivo (variable weight) — bundled locally for the Modernist theme.
+   Subsets split the way Google Fonts serves them, so only used glyph ranges
+   load. One face per subset covers weights 100–900. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./assets/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./assets/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./assets/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0,
+    U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
 /* Themes are token sets keyed by data-theme on <html> (set by the renderer,
-   persisted; picked in Settings → Appearance). Default = dark. A theme is more
-   than a palette: it can set typography (family, size scale, heading weight),
-   shape (radius scale), and feel (transition speed, focus ring, hover glow,
-   press depth), so switching themes changes how the app reads and reacts. */
+   persisted; picked in Settings → Appearance). Default = modernist. A theme is
+   more than a palette: it can set typography (family, size scale, heading
+   weight), shape (radius scale), and feel (transition speed, focus ring, hover
+   glow, press depth), so switching themes changes how the app reads and reacts. */
 :root,
 :root[data-theme='dark'] {
   /* Typography */
@@ -38,6 +73,9 @@
   --radius-lg: 12px;
   --radius: 8px;
   --radius-sm: 6px;
+  /* Heavy structural rule (tab bar, major section splits). Most themes keep it
+     at the border color; modernist draws it in full ink. */
+  --rule-strong: var(--border);
 }
 
 :root[data-theme='light'] {
@@ -151,6 +189,45 @@
   --press: 1px;
 }
 
+/* Modernist: ink on paper with one signal red. Archivo throughout with heavy
+   headings, square corners everywhere, hairline dividers cut by bold 2px ink
+   rules, near-instant motion — flat and editorial, like a printed programme
+   grid. */
+:root[data-theme='modernist'] {
+  --font-ui: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fs-base: 14px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
+  --fs-h1: 24px;
+  --fs-h2: 15px;
+  --heading: #201e1d;
+  --heading-weight: 800;
+  --heading-tracking: -0.015em;
+  --speed: 0.06s;
+  --ease: ease;
+  --focus-ring: 0 0 0 2px #ec3013;
+  --accent-glow: none;
+  --press: 0px;
+  --bg: #f3f2f2;
+  --panel: #eae9e9;
+  --panel-2: #e0dfdf;
+  --text: #201e1d;
+  --muted: #7d7979;
+  --accent: #ec3013;
+  --accent-2: #dd2b0f;
+  --accent-fg: #f3f2f2;
+  --border: #b5b2b1;
+  --rule-strong: #201e1d;
+  --ok: #1a7f4e;
+  --warn: #9a6700;
+  --danger: #ae1800;
+  --code-bg: #eceaea;
+  --code-fg: #2d2b2b;
+  --radius-lg: 0px;
+  --radius: 0px;
+  --radius-sm: 0px;
+}
+
 /* High contrast: stronger borders + text, pure backgrounds, brighter accent. */
 :root[data-theme='dark'][data-contrast='high'] {
   --bg: #000000;
@@ -212,6 +289,20 @@
   --code-fg: #ffffff;
 }
 
+:root[data-theme='modernist'][data-contrast='high'] {
+  --bg: #ffffff;
+  --panel: #f1efef;
+  --panel-2: #e6e4e4;
+  --text: #000000;
+  --heading: #000000;
+  --muted: #444141;
+  --accent: #dd2b0f;
+  --accent-2: #ae1800;
+  --border: #605d5d;
+  --code-bg: #f1efef;
+  --code-fg: #000000;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -224,124 +315,95 @@ body {
   font-size: var(--fs-base);
 }
 
-/* Collapsed rail by default; the sidebar pops out over the content on hover, so
-   the content keeps its full width regardless. */
+/* Top tab shell: three section tabs across the top, chrome on the right. */
 .app-shell {
-  display: grid;
-  grid-template-columns: 64px 1fr;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 64px;
-  z-index: 50;
+.topbar {
+  display: flex;
+  align-items: stretch;
+  flex: none;
   background: var(--panel);
-  border-right: 1px solid var(--border);
-  padding: 16px 12px;
+  border-bottom: 2px solid var(--rule-strong);
+}
+.tab {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: width 0.16s ease, box-shadow 0.16s ease;
-}
-.sidebar:hover {
-  width: 224px;
-  box-shadow: 6px 0 22px rgba(0, 0, 0, 0.28);
-}
-
-/* Labels / extras fade in only when the rail is expanded. */
-.nav-label,
-.brand-text,
-.station-select,
-.sidebar-bottom {
-  opacity: 0;
-  white-space: nowrap;
-  transition: opacity 0.12s ease;
-}
-.sidebar-bottom,
-.station-select {
-  pointer-events: none;
-}
-.sidebar:hover .nav-label,
-.sidebar:hover .brand-text,
-.sidebar:hover .station-select,
-.sidebar:hover .sidebar-bottom {
-  opacity: 1;
-}
-.sidebar:hover .station-select {
-  pointer-events: auto;
-}
-.sidebar:hover .sidebar-bottom {
-  pointer-events: auto;
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 15px;
-  padding: 8px 8px 18px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.brand-mark {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
   justify-content: center;
-}
-.brand-text {
-  display: flex;
-  flex-direction: column;
-}
-.brand-sub {
-  font-weight: 400;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-align: left;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 11px 26px;
   background: transparent;
   border: none;
-  color: var(--muted);
-  padding: 9px 8px;
-  border-radius: var(--radius);
-  font-size: var(--fs-base);
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: var(--heading-weight);
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition:
     background var(--speed) var(--ease),
     color var(--speed) var(--ease);
 }
-.nav-item:hover,
-.nav-item.active {
+.tab:hover {
   background: var(--panel-2);
-  color: var(--text);
 }
-.nav-ico {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+.tab.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+  box-shadow: var(--accent-glow);
+}
+.tab-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.tab.active .tab-sub {
+  opacity: 0.8;
+}
+
+.chrome {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  font-size: var(--fs-sm);
+}
+.chrome-date {
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.chrome-note {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.icon-btn {
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color var(--speed) var(--ease),
+    border-color var(--speed) var(--ease);
 }
-.nav-ico svg {
+.icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+.icon-btn svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -351,87 +413,66 @@ nav {
   stroke-linejoin: round;
 }
 
-.badge {
-  background: var(--warn);
-  color: #1a1205;
-  border-radius: var(--radius);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 7px;
-}
-
-.sidebar-bottom {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.sidebar-foot {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.9;
-  padding: 10px;
-}
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-  margin-right: 6px;
-}
-.dot.on {
-  background: var(--ok);
-}
-
-/* Sidebar station switcher (below the brand) */
+/* Chrome station switcher */
 .station-switch {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 2px 8px 12px;
+  gap: 8px;
 }
 .station-dot {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+  width: 12px;
+  height: 12px;
   border-radius: var(--radius-sm);
 }
 .station-select {
-  flex: 1;
-  min-width: 0;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  padding: 6px 8px;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: var(--fs-sm);
   cursor: pointer;
+  padding: 4px 2px;
+}
+.station-select:hover {
+  border-color: var(--border);
 }
 
-/* Settings link at the bottom of the sidebar (matches nav items) */
-.settings-link {
+/* Sub-navigation under the tab bar for sections hosting two views. */
+.subnav {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  padding: 9px 8px;
-  border-radius: var(--radius);
-  font-size: var(--fs-base);
-  cursor: pointer;
-  transition:
-    background var(--speed) var(--ease),
-    color var(--speed) var(--ease);
+  flex: none;
+  padding: 10px 34px;
+  border-bottom: 1px solid var(--border);
 }
-.settings-link:hover,
-.settings-link.active {
-  background: var(--panel-2);
-  color: var(--text);
+.subnav .seg {
+  display: inline-flex;
+}
+
+/* Settings drawer sliding over the right edge. */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: color-mix(in srgb, #000 45%, transparent);
+  display: flex;
+  justify-content: flex-end;
+}
+.settings-drawer {
+  width: min(780px, 92vw);
+  background: var(--bg);
+  border-left: 2px solid var(--rule-strong);
+  overflow: auto;
+  padding: 20px 28px 32px;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.25);
+}
+.settings-drawer-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
 }
 
 /* Full-screen station chooser on load */
@@ -495,7 +536,8 @@ nav {
 }
 
 .content {
-  grid-column: 2;
+  flex: 1;
+  min-height: 0;
   min-width: 0;
   /* Top spacing lives on the first child, not as padding here: sticky table
      headers pin at the scroller's padding edge, so top padding would leave a
