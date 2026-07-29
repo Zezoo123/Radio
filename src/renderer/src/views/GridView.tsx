@@ -551,7 +551,7 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
   const promosLayer = layer === 'promos'
 
   return (
-    <div className="gridwork">
+    <div className={`gridwork ${mode !== 'grid' ? 'no-insp' : ''}`}>
       {/* ---- Left rail: library (or programs on the promos layer) ---- */}
       <div className="work-side">
         {!promosLayer ? (
@@ -881,14 +881,12 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
         </div>
       )}
 
-      {/* ---- Right: per-hour inspector ---- */}
+      {/* ---- Right: per-hour inspector (hidden while editing a clock so the
+           row editor gets the full width) ---- */}
+      {mode === 'grid' && (
       <div className="work-insp">
         {!sel ? (
-          <p className="empty">
-            {mode === 'grid'
-              ? 'Click an hour in the grid to inspect it.'
-              : 'Editing a clock — go back to the grid to inspect hours.'}
-          </p>
+          <p className="empty">Click an hour in the grid to inspect it.</p>
         ) : (
           <>
             <div>
@@ -1012,6 +1010,7 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
           </>
         )}
       </div>
+      )}
     </div>
   )
 }

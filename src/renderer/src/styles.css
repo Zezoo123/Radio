@@ -469,6 +469,10 @@ body {
   display: grid;
   grid-template-columns: 252px minmax(0, 1fr) 330px;
 }
+/* While a clock is being edited the inspector is hidden — full-width editor. */
+.gridwork.no-insp {
+  grid-template-columns: 252px minmax(0, 1fr);
+}
 .work-side {
   border-right: 1px solid var(--border);
   padding: 14px 16px;
