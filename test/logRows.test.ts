@@ -68,15 +68,46 @@ describe('export log rows', () => {
     expect(rowToLine(row, 212)).toBe('00:04:07|+|8041-08|03:32|A|Hob ElHob')
   })
 
-  it('serializeRows writes Dur only for rows that have one; comments stay untouched', () => {
+  it('serializeRows keeps the Length column on EVERY row — empty when unknown', () => {
     const text =
-      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+      '|||COMMENT|hour 9' +
+      CRLF +
+      '09:00:10|+|SONG-1|A|Nice' +
+      CRLF +
+      '09:03:00|+|JIN-01' +
+      CRLF +
+      '05:05:00|@|DECKFADE CURRENT|ATHAN' +
+      CRLF
     const rows = parseLogText(text)
     const durs = new Map([[rows[1].id, 190]])
     const out = serializeRows(rows, (r) => durs.get(r.id) ?? 0)
     expect(out).toBe(
-      '|||COMMENT|hour 9' + CRLF + '09:00:10|+|SONG-1|03:10|A|Nice' + CRLF + '09:03:00|+|JIN-01' + CRLF
+      '||||COMMENT|hour 9' + // comment: empty Time/Cue/Name/Length
+        CRLF +
+        '09:00:10|+|SONG-1|03:10|A|Nice' +
+        CRLF +
+        '09:03:00|+|JIN-01|||' + // no duration known → column present, empty
+        CRLF +
+        '05:05:00|@|DECKFADE CURRENT||ATHAN|' + // macro: empty Length
+        CRLF
     )
+  })
+
+  it('reads the six-column comment/macro form back into the right fields', () => {
+    const rows = parseLogText(
+      '||||COMMENT|hour 9' + CRLF + '05:05:00|@|DECKFADE CURRENT||ATHAN|' + CRLF
+    )
+    expect(rows[0].fields[3]).toBe('COMMENT')
+    expect(rowKind(rows[0])).toBe('comment')
+    expect(rows[1].fields).toEqual(['05:05:00', '@', 'DECKFADE CURRENT', 'ATHAN', ''])
+    expect(rows[1].srcDuration).toBeUndefined()
+  })
+
+  it('leaves section headers verbatim even when saving with durations', () => {
+    const line = '||||| ' + '-'.repeat(34) + ' '.repeat(23) + 'ADS_1710  Baheya'
+    const rows = parseLogText(line + CRLF)
+    expect(serializeRows(rows, () => 0)).toBe(line + CRLF)
+    expect(rowKind(rows[0])).toBe('section')
   })
 
   it('still folds a non-duration 6th field into the description', () => {

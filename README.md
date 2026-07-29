@@ -75,8 +75,9 @@ A Simian-style log editor:
 - Opens exported `.txt` logs **and Simian's native `.bsi` logs** (they are Access databases —
   parsed directly, Arabic text re-decoded, durations read from the file). A text log's **Length
   column** (between Name and Category, Simian's own order) is read into **Dur**; logs without
-  one open with durations at zero, as before. Saving writes each row's Dur back as that same
-  Length column — rows with no duration stay in the plain 5-column form.
+  one open with durations at zero, as before. Saving writes every row in that same six-column
+  shape — the Length cell just stays empty on rows that have no duration (comments, macros), so
+  the column layout never varies. Section headers keep their exact pipe art.
 - Every cell is editable; rows drag to reorder, duplicate, insert, delete (two-click confirm);
   columns resize like a spreadsheet and remember their widths.
 - **Search & replace** across the whole log, scopable to a single column, with live match counts.

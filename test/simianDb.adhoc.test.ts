@@ -7,7 +7,7 @@ import { parseLogText, serializeRows } from '../src/renderer/src/lib/logRows'
 // Integration checks against the user's real Simian files. They live in
 // Dropbox (not committed), so these suites self-skip where they're absent.
 const DB_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/Radio Scheduler/audio.mdb'
-const BSI_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/H260713.bsi'
+const BSI_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/Radio Scheduler/LOG/H260701.bsi'
 
 describe.skipIf(!existsSync(DB_PATH))('Simian audio.mdb (local integration)', () => {
   it('loads the audio table and finds the station carts', () => {
@@ -51,16 +51,15 @@ describe.skipIf(!existsSync(BSI_PATH))('Simian .bsi log (local integration)', ()
     expect(isBsiBuffer(buffer)).toBe(true)
 
     const { lines, durations } = parseBsiLog(buffer)
-    expect(lines).toHaveLength(833)
-    expect(durations).toHaveLength(833)
+    expect(lines.length).toBeGreaterThan(100) // a real day log
+    expect(durations).toHaveLength(lines.length)
 
-    // First row of the log, in AbsPosition order.
-    expect(lines[0]).toBe('00:00:10|+|L024-073|LI|Liner                    ID Arabic Slow')
-    expect(durations[0]).toBe(7) // Length "00:07"
-    expect(durations[1]).toBe(230) // "03:50"
+    // Durations come from the Length column ("00:07"-style, never all zero).
+    expect(durations.some((d) => d > 0)).toBe(true)
 
-    // Arabic descriptions come out as real Arabic, not cp1252 mojibake.
-    expect(lines[1]).toContain('رامى جمال')
+    // Arabic somewhere in the log comes out as real Arabic, not cp1252
+    // mojibake (broken decoding shows Ã/Ù-range latin instead).
+    expect(lines.join('\n')).toMatch(/[؀-ۿ]/)
     // Cues survive as the three Simian codes.
     const cues = new Set(lines.map((l) => l.split('|')[1]))
     expect([...cues].sort()).toEqual(['#', '+', '@'])

@@ -4,8 +4,10 @@
  * Each line is up to five `|`-fields: Time | Cue | Name | Category | Description.
  * A Simian-saved log carries the Length as a sixth column between Name and
  * Category (`Time|Cue|Name|Length|Category|Description`, the .bsi column
- * order) — that value is lifted into the row's duration on parse, and rows
- * with a known duration serialize back in the same six-column shape.
+ * order) — that value is lifted into the row's duration on parse, and saving
+ * with a duration lookup writes EVERY row in that six-column shape, Length
+ * left empty on rows that have none (comments, macros), so the column layout
+ * never varies per row. Section headers stay verbatim.
  * Any other extra pipes fold into the Description field (section headers
  * contain them), and the original field count is remembered so an untouched
  * row serializes back byte-for-byte — including verbatim AZAN rows and
@@ -44,20 +46,27 @@ export function parseLogText(text: string): LogRow[] {
     .filter((line) => line.length > 0)
     .map((line) => {
       const parts = line.split('|')
-      // A Simian-saved log carries a Length column on event rows — between
-      // Name and Category (the native .bsi order), or trailing in some
-      // exports. Lift it into the row's duration (it feeds the Dur column)
-      // so the editable fields stay the canonical five.
+      // A Simian-saved log carries a Length column — between Name and
+      // Category (the native .bsi order), or trailing in some exports. Lift
+      // it into the row's duration (it feeds the Dur column) so the editable
+      // fields stay the canonical five. Rows without a duration carry the
+      // column EMPTY (comments, macros); drop that placeholder the same way.
+      // Section headers (no time, no category) keep their pipes verbatim.
       let srcDuration: number | undefined
-      if (parts.length === 6 && parts[0].trim() !== '') {
-        const at3 = durationSeconds(parts[3].trim())
-        const at5 = at3 == null ? durationSeconds(parts[5].trim()) : null
+      if (parts.length === 6) {
+        const hasTime = parts[0].trim() !== ''
+        const at3 = hasTime ? durationSeconds(parts[3].trim()) : null
         if (at3 != null) {
           srcDuration = at3
           parts.splice(3, 1)
-        } else if (at5 != null) {
-          srcDuration = at5
-          parts.pop()
+        } else if (parts[3].trim() === '' && (hasTime || parts[4].trim() !== '')) {
+          parts.splice(3, 1)
+        } else if (hasTime) {
+          const at5 = durationSeconds(parts[5].trim())
+          if (at5 != null) {
+            srcDuration = at5
+            parts.pop()
+          }
         }
       }
       return {
@@ -86,11 +95,14 @@ export function cloneRow(row: LogRow): LogRow {
 }
 
 export function rowToLine(row: LogRow, duration?: number): string {
-  // An event row with a known duration writes Simian's six-column shape:
-  // Time|Cue|Name|Length|Category|Description.
-  if (duration != null && duration > 0 && rowKind(row) === 'event') {
+  // With a duration lookup in play (the Editor's Save), every row writes
+  // Simian's six-column shape — Time|Cue|Name|Length|Category|Description —
+  // with Length simply EMPTY for rows that have no duration (comments,
+  // macros, unmatched events), so the column layout never varies per row.
+  // Section headers are decorative pipe art and stay verbatim.
+  if (duration != null && rowKind(row) !== 'section') {
     const [time, cue, name, category, description] = row.fields
-    return [time, cue, name, formatDuration(duration), category, description].join('|')
+    return [time, cue, name, duration > 0 ? formatDuration(duration) : '', category, description].join('|')
   }
   // Emit at least the original field count, extended if a later field now has
   // content. A category added to a bare 3-field event also brings the (empty)
