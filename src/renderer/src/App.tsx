@@ -4,9 +4,8 @@ import type { CalendarDate } from '../../main/core/types'
 import type { UiSettings } from '../../main/uiSettings'
 import { withOpacity } from './lib/colors'
 import { ImportView } from './views/ImportView'
-import { ExportView } from './views/ExportView'
 import { GridView } from './views/GridView'
-import { EditorView } from './views/EditorView'
+import { LogView } from './views/LogView'
 import { StationPicker, STATION_COLOR } from './views/StationPicker'
 import { SettingsView } from './views/SettingsView'
 import { THEME_IDS, type ThemeId } from './theme'
@@ -19,7 +18,6 @@ function applyOpacityMap(map: Record<string, string>, pct: number): Record<strin
 }
 
 type Section = 'booking' | 'grid' | 'log'
-type LogTab = 'export' | 'editor'
 type Contrast = 'normal' | 'high'
 
 const TABS: { id: Section; label: string; sub: string }[] = [
@@ -53,7 +51,6 @@ function errorMessage(reason: unknown): string {
 
 export default function App(): JSX.Element {
   const [section, setSection] = useState<Section>('booking')
-  const [logTab, setLogTab] = useState<LogTab>('export')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [templates, setTemplates] = useState<TemplateSummary[]>([])
   const [config, setConfig] = useState<AppConfig | null>(null)
@@ -65,8 +62,6 @@ export default function App(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
   const [station, setStation] = useState<string | null>(null)
-  // A log handed from Export to the Editor ({} wrapper so re-sends always fire).
-  const [editorLog, setEditorLog] = useState<{ text: string } | null>(null)
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
   const [uiSettings, setUiSettings] = useState<UiSettings>({
     categoryColors: {},
@@ -93,12 +88,6 @@ export default function App(): JSX.Element {
   async function updateUiSettings(next: UiSettings): Promise<void> {
     setUiSettings(next)
     setUiSettings(await window.api.saveUiSettings(next))
-  }
-
-  function editLog(text: string): void {
-    setEditorLog({ text })
-    setLogTab('editor')
-    setSection('log')
   }
 
   useEffect(() => {
@@ -203,20 +192,7 @@ export default function App(): JSX.Element {
         </div>
       </header>
 
-      {section === 'log' && (
-        <div className="subnav">
-          <div className="seg">
-            <button className={`seg-btn ${logTab === 'export' ? 'on' : ''}`} onClick={() => setLogTab('export')}>
-              Build &amp; export
-            </button>
-            <button className={`seg-btn ${logTab === 'editor' ? 'on' : ''}`} onClick={() => setLogTab('editor')}>
-              Editor
-            </button>
-          </div>
-        </div>
-      )}
-
-      <main className={`content ${section === 'grid' ? 'flush' : ''}`} key={station}>
+      <main className={`content ${section !== 'booking' ? 'flush' : ''}`} key={station}>
         {error && (
           <div className="error-banner" role="alert">
             <span className="error-banner-text">{error}</span>
@@ -231,14 +207,14 @@ export default function App(): JSX.Element {
         {section === 'grid' && (
           <GridView onOpenLog={() => setSection('log')} onOpenSettings={() => setSettingsOpen(true)} />
         )}
-        {section === 'log' && logTab === 'export' && (
-          <ExportView templates={templates} config={config} onConfig={setConfig} onEdit={editLog} />
-        )}
-        {/* The Editor stays mounted so its unsaved document survives tab switches. */}
-        <div style={{ display: section === 'log' && logTab === 'editor' ? undefined : 'none' }}>
-          <EditorView
-            incoming={editorLog}
-            onConsumed={() => setEditorLog(null)}
+        {/* The LOG workbench stays mounted so its unsaved document survives
+            tab switches; only its visibility flips. */}
+        <div className="logmount" style={{ display: section === 'log' ? undefined : 'none' }}>
+          <LogView
+            active={section === 'log'}
+            templates={templates}
+            config={config}
+            onConfig={setConfig}
             categoryColors={displayColors}
             categoryTextColors={displayTextColors}
           />
