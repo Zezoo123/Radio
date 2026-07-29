@@ -452,20 +452,28 @@ body {
   display: inline-flex;
 }
 
-/* Full-bleed sections (the GRID workbench) manage their own layout + scroll. */
+/* Full-bleed sections (the GRID/LOG workbenches) manage their own layout +
+   scroll. Column direction so an error banner stacks above the workbench. */
 .content.flush {
   padding: 0;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 .content.flush > :first-child {
   margin-top: 0;
+}
+.content.flush .error-banner {
+  margin: 0;
+  border-radius: 0;
+  flex: none;
 }
 
 /* GRID workbench: library rail | layered week grid | per-hour inspector. */
 .gridwork {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-columns: 252px minmax(0, 1fr) 330px;
 }
@@ -663,6 +671,64 @@ body {
 /* Clock editor without its built-in list (the workbench rail owns it). */
 .clock-layout.solo {
   grid-template-columns: 1fr;
+}
+
+/* LOG workbench: editable log + day inspector. Mounted permanently (unsaved
+   work survives tab switches) inside .logmount, which just carries the flex. */
+.logmount {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.logwork {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+.chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: none;
+  padding: 9px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.chip.readonly {
+  cursor: default;
+  color: var(--muted);
+}
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chip.stale {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+/* The inspector's warning card — loud on purpose. */
+.attn {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.attn-title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.attn-line {
+  font-size: 12.5px;
+  line-height: 1.45;
+  opacity: 0.92;
 }
 
 /* Settings drawer sliding over the right edge. */
@@ -2139,6 +2205,10 @@ code {
 .log-scroll {
   overflow: auto;
   max-height: calc(100vh - 240px);
+}
+/* Inside the LOG workbench the chrome above the grid is shorter. */
+.logwork .log-scroll {
+  max-height: calc(100vh - 200px);
 }
 
 /* Hour multi-select (Formats default clocks) */
