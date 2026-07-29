@@ -106,6 +106,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
   const [selectedDefaultId, setSelectedDefaultId] = useState<string | null>(null)
   const [erasing, setErasing] = useState(false)
   const [sel, setSel] = useState<{ wd: number; hour: number } | null>(null)
+  // Editing a clock clears the hour selection so the inspector goes quiet and
+  // the row editor has the reader's full attention.
+  useEffect(() => {
+    if (mode !== 'grid') setSel(null)
+  }, [mode])
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   useEffect(() => {
     if (!confirmDeleteId) return
@@ -879,7 +884,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
       {/* ---- Right: per-hour inspector ---- */}
       <div className="work-insp">
         {!sel ? (
-          <p className="empty">Click an hour in the grid to inspect it.</p>
+          <p className="empty">
+            {mode === 'grid'
+              ? 'Click an hour in the grid to inspect it.'
+              : 'Editing a clock — go back to the grid to inspect hours.'}
+          </p>
         ) : (
           <>
             <div>
