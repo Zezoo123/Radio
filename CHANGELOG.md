@@ -3,6 +3,57 @@
 All notable changes to the Radio Scheduler, newest first. Windows builds for
 every version are on the [Releases page](https://github.com/Zezoo123/Radio/releases).
 
+## 1.0.0 — 2026-07-30
+
+**The Modernist redesign.** The whole app is reorganized around the operator's
+workflow into three sections — everything about a task on one screen, with the
+data front and center.
+
+### The new shell
+- **Three top tabs replace the sidebar**: **BOOKING** (audio elements),
+  **GRID** (clocks · promos · azan) and **LOG** (build · edit · export).
+  Station switcher, date and Settings (now a right-side drawer) live in the
+  tab bar's chrome.
+- **New default theme, "Modernist"**: ink on paper with a signal-red accent,
+  square corners, strong section rules, and the Archivo typeface bundled into
+  the app. The five previous themes and the high-contrast switch remain in
+  Settings.
+
+### BOOKING (was Import)
+- One table of every booked element — code, group, category, times, covers,
+  source file — with direct **Add file / Add folder / Promos sheet** buttons.
+- Selecting an element keeps its **whole plan in view**: the dates × hours
+  grid with totals, or the Simian-text preview for any date.
+- The inspector edits the element code and category, shows the plan's track
+  letters, and links to where the element lands (Grid → Log).
+
+### GRID (was Formats + Promos, plus Azan from Settings)
+- **One 24×7 week grid with three layers**: CLOCKS (paint clocks onto hours,
+  with a per-day default row), PROMOS (per-program placements, blackouts and
+  drag-to-exclude hours — or aggregate counts across programs), and BLOCKED
+  HOURS (drag to paint; the old dialog is gone).
+- **Clock library on the left**: select to paint, edit rows full-width,
+  duplicate/delete, day-default clocks, format-set save/load and the skeleton
+  export.
+- **Per-hour inspector on the right**: the covering clock's rows, promos
+  placed that hour, and the day's real azan times with the include toggle.
+- **Clock rows are now a flat spreadsheet** — no box around every value; the
+  grid lines are the structure and only the focused cell lights up.
+
+### LOG (was Export + Editor)
+- **Build from Grid** composes a date range (clocks + booked elements +
+  promos + azan) and loads it straight into the editable log grid — no more
+  preview/hand-off two-step. **Export range…** still writes multi-day batches
+  directly to files.
+- **Includes chips** toggle every source individually: CLOCKS, AUDIO
+  ELEMENTS, PROMOS, AZAN and HOURLY MARKERS. Excluding clocks also stops
+  sequential rotations from advancing for rows that never export.
+- **⛶ Full screen**: nothing but the log grid and a slim control bar
+  (Esc exits).
+- The day inspector holds composition warnings (**NEEDS ATTENTION**), the
+  audio-database tools, the Expected legend, and Save/Save as.
+- An unsaved log still survives switching tabs.
+
 ## 0.7.1 — 2026-07-28
 
 ### Promos
