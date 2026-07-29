@@ -710,6 +710,54 @@ body {
   color: var(--warn);
 }
 
+/* BOOKING workbench: element table + plan grid | selected-element inspector. */
+.bookwork {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+.book-row {
+  cursor: pointer;
+}
+.book-row:hover td {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.book-row.sel td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.book-row.sel td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.book-sep td {
+  padding-top: 16px;
+  border-bottom: none;
+}
+.plan-block {
+  margin-top: 18px;
+  border-top: 2px solid var(--rule-strong);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.plan-title {
+  font-size: 16px;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-tracking);
+  color: var(--heading);
+}
+.insp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.insp-field input,
+.insp-field select {
+  width: 100%;
+}
+
 /* The inspector's warning card — loud on purpose. */
 .attn {
   background: var(--accent);
