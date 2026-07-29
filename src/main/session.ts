@@ -52,6 +52,10 @@ export interface AppConfig {
   includeAzan: boolean
   hasPromos: boolean
   includePromos: boolean
+  /** Include the Formats week-grid clock rows in the export. */
+  includeClocks: boolean
+  /** Include the booked audio-element templates in the export. */
+  includeElements: boolean
 }
 
 interface LoadedTemplate {
@@ -66,6 +70,8 @@ interface StationState {
   includeAzan: boolean
   promos: PromosFile | null
   includePromos: boolean
+  includeClocks: boolean
+  includeElements: boolean
 }
 
 function freshState(): StationState {
@@ -74,7 +80,9 @@ function freshState(): StationState {
     hourly: { ...DEFAULT_HOURLY },
     includeAzan: false,
     promos: null,
-    includePromos: true
+    includePromos: true,
+    includeClocks: true,
+    includeElements: true
   }
 }
 
@@ -195,12 +203,24 @@ class Session {
       hourly: st.hourly,
       includeAzan: st.includeAzan,
       hasPromos: (st.promos?.set.entries.length ?? 0) > 0,
-      includePromos: st.includePromos
+      includePromos: st.includePromos,
+      includeClocks: st.includeClocks,
+      includeElements: st.includeElements
     }
   }
 
   setIncludePromos(include: boolean): AppConfig {
     this.st().includePromos = include
+    return this.getConfig()
+  }
+
+  setIncludeClocks(include: boolean): AppConfig {
+    this.st().includeClocks = include
+    return this.getConfig()
+  }
+
+  setIncludeElements(include: boolean): AppConfig {
+    this.st().includeElements = include
     return this.getConfig()
   }
 
@@ -372,9 +392,9 @@ class Session {
     const azanLinesForDate =
       st.includeAzan && azanFormat ? (date: CalendarDate) => computeAzanLines(date, azanFormat) : undefined
     return {
-      templates: st.templates.map((t) => t.template),
+      templates: st.includeElements ? st.templates.map((t) => t.template) : [],
       azanLinesForDate,
-      formatLinesForDate,
+      formatLinesForDate: st.includeClocks ? formatLinesForDate : undefined,
       promoLinesForDate,
       hourly: st.hourly
     }

@@ -79,6 +79,10 @@ const api = {
     ipcRenderer.invoke('config:setIncludeAzan', include),
   setIncludePromos: (include: boolean): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setIncludePromos', include),
+  setIncludeClocks: (include: boolean): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setIncludeClocks', include),
+  setIncludeElements: (include: boolean): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setIncludeElements', include),
 
   getUiSettings: (): Promise<UiSettings> => ipcRenderer.invoke('uiSettings:get'),
   saveUiSettings: (settings: UiSettings): Promise<UiSettings> =>

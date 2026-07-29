@@ -150,6 +150,12 @@ export function registerIpc(): void {
   ipcMain.handle('config:setIncludePromos', (_e, include: boolean) =>
     session.setIncludePromos(include)
   )
+  ipcMain.handle('config:setIncludeClocks', (_e, include: boolean) =>
+    session.setIncludeClocks(include)
+  )
+  ipcMain.handle('config:setIncludeElements', (_e, include: boolean) =>
+    session.setIncludeElements(include)
+  )
 
   // --- AZAN format (global setting) -----------------------------------------
   ipcMain.handle('azanFormat:get', () => azanFormatStore.load())
@@ -311,6 +317,9 @@ export function registerIpc(): void {
   })
 
   ipcMain.handle('schedule:preview', async (_e, { start, end }: RangeArg) => {
+    // Skip the whole Formats resolve when clocks are excluded (composeOptions
+    // would drop the lines anyway; this also spares the disk reads).
+    if (!session.getConfig().includeClocks) return session.preview(start, end)
     const { byDate } = await resolveFormatLines(start, end, false)
     return session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
   })
@@ -320,7 +329,12 @@ export function registerIpc(): void {
   // The sequential queues still advance either way, keeping {sequential}
   // rotation continuity across exports.
   ipcMain.handle('schedule:export', async (_e, { start, end, text: edited }: RangeArg & { text?: string }) => {
-    const { byDate, sequentials } = await resolveFormatLines(start, end, true)
+    // With clocks excluded, skip the Formats resolve so sequential queues
+    // don't advance for rows that never make it into the file.
+    const clocksOn = session.getConfig().includeClocks
+    const { byDate, sequentials } = clocksOn
+      ? await resolveFormatLines(start, end, true)
+      : { byDate: new Map<string, string[]>(), sequentials: null }
     let text = edited
     let warnings: string[] = []
     if (text == null) {
@@ -340,7 +354,7 @@ export function registerIpc(): void {
     if (res.canceled || !res.filePath) return { saved: false, warnings }
     await writeFile(res.filePath, encodeLogText(text))
     // Persist the advanced sequential queues only once the file is written.
-    await sequentialStore.save(sequentials)
+    if (sequentials) await sequentialStore.save(sequentials)
     return { saved: true, path: res.filePath, warnings }
   })
 

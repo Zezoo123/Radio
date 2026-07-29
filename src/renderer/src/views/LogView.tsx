@@ -75,6 +75,16 @@ export function LogView({
   /** Row id → duration seconds (from the DB lookup, or edited by hand). */
   const [durations, setDurations] = useState<Map<number, number>>(new Map())
   const [replaceOpen, setReplaceOpen] = useState(false)
+  // Full-screen mode: the grid takes the whole window over a slim control bar.
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    if (!full) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setFull(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [full])
 
   useEffect(() => {
     window.api.getSimianDb().then(setDb)
@@ -261,8 +271,42 @@ export function LogView({
     start === end ? prettyDate(start) : `${prettyDate(start)} → ${prettyDate(end)}`
 
   return (
-    <div className="logwork">
+    <div className={`logwork ${full ? 'full' : ''}`}>
       <div className="work-main">
+        {full ? (
+          <div className="full-bar">
+            <span className="kick">Log</span>
+            <span className="full-title">{rangeLabel}</span>
+            <span className="muted" style={{ fontSize: 12 }}>
+              {rows.length} rows
+              {dirty ? ' — unsaved' : ''}
+            </span>
+            <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
+              <button
+                className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
+                disabled={rows.length === 0}
+                title="Recompute the Expected column"
+                onClick={refreshSim}
+              >
+                ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
+              </button>
+              <button className="chip" disabled={rows.length === 0} onClick={() => setReplaceOpen(true)}>
+                SEARCH &amp; REPLACE…
+              </button>
+              <button
+                className="btn primary"
+                disabled={rows.length === 0 || (!dirty && Boolean(path))}
+                onClick={() => save(false)}
+              >
+                Save
+              </button>
+              <button className="btn" title="Exit full screen (Esc)" onClick={() => setFull(false)}>
+                ✕ Exit full screen
+              </button>
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="work-head">
           <div>
             <div className="kick">Log for</div>
@@ -300,7 +344,37 @@ export function LogView({
         <div className="chips-row">
           <span className="kick">Includes</span>
           <button
+            className={`chip ${config?.includeClocks ?? true ? 'on' : ''}`}
+            title="Include the Grid's clock rows (formats week grid)"
+            onClick={async () =>
+              onConfig(await window.api.setIncludeClocks(!(config?.includeClocks ?? true)))
+            }
+          >
+            {(config?.includeClocks ?? true) ? '✓ ' : ''}CLOCKS
+          </button>
+          <button
+            className={`chip ${config?.includeElements ?? true ? 'on' : ''}`}
+            title="Include the booked audio elements (Booking tab)"
+            onClick={async () =>
+              onConfig(await window.api.setIncludeElements(!(config?.includeElements ?? true)))
+            }
+          >
+            {(config?.includeElements ?? true) ? '✓ ' : ''}
+            {templates.length} AUDIO ELEMENTS
+          </button>
+          <button
+            className={`chip ${config?.hasPromos && (config?.includePromos ?? true) ? 'on' : ''}`}
+            disabled={!config?.hasPromos}
+            title={config?.hasPromos ? 'Include the scheduled promos' : 'No promos file loaded (Grid → Promos)'}
+            onClick={async () =>
+              onConfig(await window.api.setIncludePromos(!(config?.includePromos ?? true)))
+            }
+          >
+            {config?.hasPromos && (config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
+          </button>
+          <button
             className={`chip ${config?.includeAzan ? 'on' : ''}`}
+            title="Include the 5 daily azan rows"
             onClick={async () => onConfig(await window.api.setIncludeAzan(!config?.includeAzan))}
           >
             {config?.includeAzan ? '✓ ' : ''}AZAN
@@ -331,17 +405,6 @@ export function LogView({
               />
             </>
           )}
-          {config?.hasPromos && (
-            <button
-              className={`chip ${config?.includePromos ?? true ? 'on' : ''}`}
-              onClick={async () =>
-                onConfig(await window.api.setIncludePromos(!(config?.includePromos ?? true)))
-              }
-            >
-              {(config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
-            </button>
-          )}
-          <span className="chip readonly">{templates.length} BOOKED ELEMENTS</span>
           <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
             <label
               className="kick"
@@ -360,8 +423,18 @@ export function LogView({
             >
               ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
             </button>
+            <button
+              className="chip"
+              disabled={rows.length === 0}
+              title="Show only the log grid, full screen (Esc exits)"
+              onClick={() => setFull(true)}
+            >
+              ⛶ FULL SCREEN
+            </button>
           </div>
         </div>
+        </>
+        )}
 
         <div className="work-body">
           {rows.length === 0 ? (
@@ -384,6 +457,7 @@ export function LogView({
         </div>
       </div>
 
+      {!full && (
       <div className="work-insp">
         <div>
           <div className="kick">Log</div>
@@ -478,6 +552,7 @@ export function LogView({
           </div>
         </div>
       </div>
+      )}
 
       <ReplaceDialog
         open={replaceOpen}

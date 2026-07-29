@@ -2211,6 +2211,34 @@ code {
   max-height: calc(100vh - 200px);
 }
 
+/* Full-screen log: the workbench overlays the whole window (tab bar included)
+   — nothing but the grid and a slim control bar. Esc exits. */
+.logwork.full {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--bg);
+  grid-template-columns: minmax(0, 1fr);
+}
+.full-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 8px 18px;
+  border-bottom: 2px solid var(--rule-strong);
+  background: var(--panel);
+}
+.full-title {
+  font-size: 15px;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-tracking);
+  color: var(--heading);
+}
+.logwork.full .log-scroll {
+  max-height: calc(100vh - 120px);
+}
+
 /* Hour multi-select (Formats default clocks) */
 .hour-cell {
   width: 100%;
