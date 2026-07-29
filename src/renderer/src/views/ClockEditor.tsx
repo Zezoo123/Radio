@@ -20,6 +20,8 @@ interface Props {
   onAddCategory: (category: string) => void
   /** Show the per-row Hour column (default clocks only). */
   showHour?: boolean
+  /** Hide the built-in clock list (the Grid workbench rail owns selection). */
+  hideList?: boolean
 }
 
 // Sentinel select value that switches a Category cell into "type a new one" mode.
@@ -45,7 +47,8 @@ export function ClockEditor({
   onDeleteFormat,
   onDuplicateFormat,
   onAddCategory,
-  showHour = false
+  showHour = false,
+  hideList = false
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
 
@@ -205,7 +208,8 @@ export function ClockEditor({
   }
 
   return (
-    <div className="clock-layout">
+    <div className={`clock-layout ${hideList ? 'solo' : ''}`}>
+      {!hideList && (
       <div className="clock-list">
         <div className="card-head">
           <h2>Clocks</h2>
@@ -250,6 +254,7 @@ export function ClockEditor({
           </div>
         ))}
       </div>
+      )}
 
       <div className="clock-edit">
         {!selected ? (
@@ -275,7 +280,7 @@ export function ClockEditor({
               </button>
             </div>
 
-            <table className="tbl">
+            <table className="tbl sheet-tbl">
               <thead>
                 <tr>
                   {showHour && <th style={{ width: 112 }}>Hours</th>}
@@ -427,7 +432,7 @@ export function ClockEditor({
                         }
                       />
                     </td>
-                    <td>
+                    <td className="cell-actions">
                       <button
                         className="btn-link"
                         title="Duplicate this row (copy inserted below)"

@@ -15,6 +15,7 @@ import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
+import { azanTimes } from './core/prayer/azan'
 import type { AzanFormat } from './core/prayer/azanRows'
 import type { Sequential } from './core/sequential/types'
 import type { HourlyOptions } from './core/schedule/hourly'
@@ -156,6 +157,8 @@ export function registerIpc(): void {
     await azanFormatStore.save(format)
     return azanFormatStore.load()
   })
+  // Prayer times for one date (pure adhan math) — the Grid hour inspector.
+  ipcMain.handle('azan:timesForDate', (_e, date: CalendarDate) => azanTimes(date))
 
   // --- Front-end preferences (global setting) --------------------------------
   ipcMain.handle('uiSettings:get', () => uiSettingsStore.load())

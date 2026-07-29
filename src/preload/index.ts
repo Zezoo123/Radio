@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { AzanFormat } from '../main/core/prayer/azanRows'
+import type { AzanTimes } from '../main/core/prayer/azan'
 import type { UiSettings } from '../main/uiSettings'
 import type { FormatSet } from '../main/core/format/types'
 import type { Sequential } from '../main/core/sequential/types'
@@ -86,6 +87,8 @@ const api = {
   getAzanFormat: (): Promise<AzanFormat> => ipcRenderer.invoke('azanFormat:get'),
   saveAzanFormat: (format: AzanFormat): Promise<AzanFormat> =>
     ipcRenderer.invoke('azanFormat:save', format),
+  azanTimesForDate: (date: CalendarDate): Promise<AzanTimes> =>
+    ipcRenderer.invoke('azan:timesForDate', date),
 
   openPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:open'),
   getPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:get'),
