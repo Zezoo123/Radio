@@ -212,7 +212,7 @@ export function BookingView({
             <table className="tbl dense-book">
               <thead>
                 <tr>
-                  <th style={{ width: 130 }}>Code</th>
+                  <th style={{ width: 130 }}>Name</th>
                   <th>Client</th>
                   <th style={{ width: 120 }}>Category</th>
                   <th style={{ width: 60 }}>Spots</th>
@@ -370,7 +370,7 @@ export function BookingView({
             </div>
 
             <div className="insp-field">
-              <span className="kick">Element code — export file names follow it</span>
+              <span className="kick">Element name — export file names follow it</span>
               <input
                 key={`${selected.code}-${sel}`}
                 defaultValue={selected.code}
