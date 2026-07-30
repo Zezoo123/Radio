@@ -1,7 +1,11 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { autoUpdater } from 'electron-updater'
+// electron-updater is CommonJS; a named ESM import crashes the built app at
+// module load ("Named export 'autoUpdater' not found") — go through default.
+import electronUpdater from 'electron-updater'
+
+const { autoUpdater } = electronUpdater
 
 /**
  * Auto-update from GitHub Releases, kept deliberately quiet: the update
