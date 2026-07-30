@@ -29,6 +29,13 @@ interface DayColumn {
   year: number
 }
 
+export interface PlayedDayColumn {
+  col: number
+  day: number
+  month: number
+  year: number
+}
+
 interface MonthMarker {
   col: number
   month: number
@@ -214,6 +221,19 @@ export function formatHourCell(tokens: string[]): string {
     parts.push(n > 1 ? `${n}${track}` : track)
   }
   return parts.join(' ')
+}
+
+/**
+ * The day columns the element actually PLAYS on, date-sorted. Templates often
+ * carry months of empty day columns around a short campaign, so "covers" and
+ * the Booking plan view use this range rather than the sheet's full span.
+ */
+export function playedDayColumns(tpl: ElementTemplate): PlayedDayColumn[] {
+  const played = new Set<number>()
+  for (const row of tpl.timeRows) for (const [col, track] of row.tracks) if (track) played.add(col)
+  return [...tpl.dayColumns]
+    .filter((c) => played.has(c.col))
+    .sort((a, b) => a.year - b.year || a.month - b.month || a.day - b.day)
 }
 
 export function templateGrid(tpl: ElementTemplate): TemplateGrid {

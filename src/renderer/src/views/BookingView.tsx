@@ -8,8 +8,8 @@ interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
   onConfig: (c: AppConfig) => void
+  /** Jump to the Grid tab (the promos-sheet row lives there). */
   onOpenGrid: () => void
-  onOpenLog: () => void
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -24,6 +24,19 @@ function monthGroups(days: TemplateGrid['days']): { label: string; span: number 
     else groups.push({ label, span: 1 })
   }
   return groups
+}
+
+/** `2026-07-01` → `Wed 01 Jul 2026` (the day it starts/ends, for the inspector). */
+function fullDate(iso: string | null): string {
+  const d = iso ? toCalendarDate(iso) : null
+  if (!d) return '—'
+  return new Date(Date.UTC(d.year, d.month - 1, d.day)).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC'
+  })
 }
 
 /** Seconds → `MM:SS` (empty when unknown). */
@@ -57,8 +70,7 @@ export function BookingView({
   templates,
   onTemplates,
   onConfig,
-  onOpenGrid,
-  onOpenLog
+  onOpenGrid
 }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
@@ -170,6 +182,24 @@ export function BookingView({
   }
 
   const selected = sel !== null ? (templates[sel] ?? null) : null
+
+  // Show only the span the element actually plays — the sheet may pad a short
+  // campaign with months of empty day columns on both sides. Empty days
+  // BETWEEN plays stay visible (real gaps in the campaign).
+  const shownGrid = useMemo(() => {
+    if (!planGrid) return null
+    const first = planGrid.totals.findIndex((n) => n > 0)
+    if (first === -1) return planGrid // nothing played — show the sheet as-is
+    let last = planGrid.totals.length - 1
+    while (last > first && planGrid.totals[last] === 0) last--
+    if (first === 0 && last === planGrid.totals.length - 1) return planGrid
+    return {
+      ...planGrid,
+      days: planGrid.days.slice(first, last + 1),
+      rows: planGrid.rows.map((r) => ({ ...r, cells: r.cells.slice(first, last + 1) })),
+      totals: planGrid.totals.slice(first, last + 1)
+    }
+  }, [planGrid])
 
   // Tracks used anywhere in the plan. Letters play as `CODE-A`, `CODE-B`…;
   // the special cell value `1` (or a plan with no letters at all) is the
@@ -338,13 +368,13 @@ export function BookingView({
                 )}
               </div>
 
-              {planMode === 'grid' && planGrid && (
+              {planMode === 'grid' && shownGrid && (
                 <div className="tpl-grid-scroll">
                   <table className="tgrid">
                     <thead>
                       <tr className="t-month-row">
                         <th className="t-time" />
-                        {monthGroups(planGrid.days).map((g) => (
+                        {monthGroups(shownGrid.days).map((g) => (
                           <th key={g.label} colSpan={g.span} className="t-month">
                             <span className="t-mlabel">{g.label}</span>
                           </th>
@@ -353,7 +383,7 @@ export function BookingView({
                       </tr>
                       <tr>
                         <th className="t-time">Time</th>
-                        {planGrid.days.map((d) => (
+                        {shownGrid.days.map((d) => (
                           <th key={d.iso} title={d.iso}>
                             {d.day}
                             <span className="t-wd">{d.weekday}</span>
@@ -363,7 +393,7 @@ export function BookingView({
                       </tr>
                     </thead>
                     <tbody>
-                      {planGrid.rows.map((r) => (
+                      {shownGrid.rows.map((r) => (
                         <tr key={r.time}>
                           <td className="t-time">{r.time.slice(0, 5)}</td>
                           {r.cells.map((c, ci) => (
@@ -378,12 +408,12 @@ export function BookingView({
                     <tfoot>
                       <tr>
                         <td className="t-time">Total</td>
-                        {planGrid.totals.map((n, ti) => (
+                        {shownGrid.totals.map((n, ti) => (
                           <td key={ti} className="t-total">
                             {n || ''}
                           </td>
                         ))}
-                        <td className="t-count">{planGrid.totals.reduce((a, b) => a + b, 0)}</td>
+                        <td className="t-count">{shownGrid.totals.reduce((a, b) => a + b, 0)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -454,8 +484,14 @@ export function BookingView({
                   <span className="muted">Spots</span> {selected.timeCount}
                 </div>
                 <div>
-                  <span className="muted">Covers</span> {selected.firstDate ?? '—'} →{' '}
-                  {selected.lastDate ?? '—'}
+                  <span className="muted">Covers</span>{' '}
+                  {coversLabel(selected.firstDate, selected.lastDate)}
+                </div>
+                <div>
+                  <span className="muted">Starts</span> {fullDate(selected.firstDate)}
+                </div>
+                <div>
+                  <span className="muted">Ends</span> {fullDate(selected.lastDate)}
                 </div>
               </div>
               <div className="kick" style={{ marginTop: 4 }}>
@@ -487,21 +523,6 @@ export function BookingView({
                   Audio database — it stays loaded from then on).
                 </div>
               )}
-            </div>
-
-            <div className="insp-sec">
-              <div className="kick">Where it lands</div>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-                Booked elements play at the hours in their plan, alongside the{' '}
-                <button className="btn-link" onClick={onOpenGrid}>
-                  Grid
-                </button>
-                's clocks and promos, and are written into the day's{' '}
-                <button className="btn-link" onClick={onOpenLog}>
-                  Log
-                </button>{' '}
-                when you build it.
-              </div>
             </div>
 
             <div className="insp-foot">

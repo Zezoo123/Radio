@@ -1,6 +1,7 @@
 import { basename } from 'node:path'
 import {
   parseElementTemplate,
+  playedDayColumns,
   templateGrid,
   type ElementTemplate,
   type TemplateGrid
@@ -180,9 +181,9 @@ class Session {
 
   templateSummaries(): TemplateSummary[] {
     return this.st().templates.map(({ fileName, template }) => {
-      const cols = [...template.dayColumns].sort(
-        (a, b) => a.year - b.year || a.month - b.month || a.day - b.day
-      )
+      // Covers = the span the element actually plays, not the sheet's full
+      // column range (templates often pad a short campaign with empty months).
+      const cols = playedDayColumns(template)
       const iso = (c: { year: number; month: number; day: number }): string =>
         `${c.year}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`
       return {
