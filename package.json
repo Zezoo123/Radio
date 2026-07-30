@@ -15,7 +15,8 @@
     "build:dir": "electron-vite build && electron-builder --win --dir",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "screenshots": "electron-vite build && playwright test --config=scripts/screenshots/playwright.config.ts"
   },
   "dependencies": {
     "adhan": "^4.4.3",
@@ -24,6 +25,7 @@
     "mdb-reader": "^3.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
