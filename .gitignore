@@ -22,3 +22,6 @@ HANDOVER.md
 
 # Claude Code local session data (permissions, worktrees)
 .claude/
+
+# Local design mockups
+design/
