@@ -5,6 +5,9 @@
   "main": "./out/main/index.js",
   "author": "Zeyad Abdellatif Awadalla",
   "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "electron-vite dev",
