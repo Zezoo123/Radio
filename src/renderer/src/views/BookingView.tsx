@@ -213,9 +213,9 @@ export function BookingView({
               <thead>
                 <tr>
                   <th style={{ width: 130 }}>Code</th>
-                  <th>Group</th>
+                  <th>Client</th>
                   <th style={{ width: 120 }}>Category</th>
-                  <th style={{ width: 60 }}>Times</th>
+                  <th style={{ width: 60 }}>Spots</th>
                   <th style={{ width: 110 }}>Covers</th>
                   <th>Source file</th>
                 </tr>
@@ -403,10 +403,10 @@ export function BookingView({
               <div className="kick">This plan</div>
               <div style={{ fontSize: 13, lineHeight: 1.7 }}>
                 <div>
-                  <span className="muted">Group</span> <span dir="auto">{selected.group}</span>
+                  <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
                 </div>
                 <div>
-                  <span className="muted">Times</span> {selected.timeCount}
+                  <span className="muted">Spots</span> {selected.timeCount}
                 </div>
                 <div>
                   <span className="muted">Covers</span> {selected.firstDate ?? '—'} →{' '}
