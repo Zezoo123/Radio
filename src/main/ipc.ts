@@ -1,6 +1,6 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import iconv from 'iconv-lite'
 import { session } from './session'
 import { azanFormatStore } from './azanFormat'
@@ -410,6 +410,8 @@ export function registerIpc(): void {
   )
 
   // --- Simian audio database (Access .mdb): file-name → duration lookups -----
+  // The database is app-wide: its path persists in userData and reloads on
+  // startup, so LOG's Expected column and Booking's track table share it.
   let simianDb: { path: string; db: SimianDb } | null = null
   const simianSummary = (): { path: string; table: string; trackCount: number } | null =>
     simianDb && {
@@ -418,7 +420,27 @@ export function registerIpc(): void {
       trackCount: simianDb.db.tracks.size
     }
 
+  const simianPathFile = join(app.getPath('userData'), 'simian-db.json')
+  const rememberSimianPath = async (path: string): Promise<void> => {
+    try {
+      await writeFile(simianPathFile, JSON.stringify({ path }))
+    } catch {
+      /* non-fatal — the db still works for this session */
+    }
+  }
+  // Every simian handler awaits this, so a renderer asking early still sees
+  // the restored database instead of racing it.
+  const simianRestored = (async () => {
+    try {
+      const { path } = JSON.parse(await readFile(simianPathFile, 'utf8')) as { path?: string }
+      if (path) simianDb = { path, db: loadSimianDb(await readFile(path)) }
+    } catch {
+      /* nothing saved, or the .mdb moved — start without a database */
+    }
+  })()
+
   ipcMain.handle('simian:openDb', async () => {
+    await simianRestored
     const res = await dialog.showOpenDialog({
       title: 'Open Simian audio database',
       properties: ['openFile'],
@@ -427,13 +449,18 @@ export function registerIpc(): void {
     if (res.canceled || !res.filePaths[0]) return simianSummary()
     const path = res.filePaths[0]
     simianDb = { path, db: loadSimianDb(await readFile(path)) }
+    void rememberSimianPath(path)
     return simianSummary()
   })
 
-  ipcMain.handle('simian:getDb', () => simianSummary())
+  ipcMain.handle('simian:getDb', async () => {
+    await simianRestored
+    return simianSummary()
+  })
 
   // Batch lookup: names → seconds (missing/comment names simply come back 0).
-  ipcMain.handle('simian:durations', (_e, names: string[]) => {
+  ipcMain.handle('simian:durations', async (_e, names: string[]) => {
+    await simianRestored
     const out: Record<string, number> = {}
     if (!simianDb) return out
     for (const name of names) {
@@ -445,7 +472,8 @@ export function registerIpc(): void {
 
   // Batch lookup: names → duration + library description (names the DB doesn't
   // know are simply absent from the result).
-  ipcMain.handle('simian:tracks', (_e, names: string[]) => {
+  ipcMain.handle('simian:tracks', async (_e, names: string[]) => {
+    await simianRestored
     const out: Record<string, { duration?: number; description?: string }> = {}
     if (!simianDb) return out
     for (const name of names) {

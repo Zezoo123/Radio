@@ -26,6 +26,13 @@ function monthGroups(days: TemplateGrid['days']): { label: string; span: number 
   return groups
 }
 
+/** Seconds → `MM:SS` (empty when unknown). */
+function mmss(seconds?: number): string {
+  if (seconds == null) return ''
+  const s = Math.round(seconds)
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
+
 /** `2026-07-01`, `2026-12-31` → `Jul–Dec 26` (design-style covers label). */
 function coversLabel(first: string | null, last: string | null): string {
   if (!first || !last) return '—'
@@ -164,14 +171,52 @@ export function BookingView({
 
   const selected = sel !== null ? (templates[sel] ?? null) : null
 
-  // Track letters used anywhere in the plan (for the inspector chips).
+  // Tracks used anywhere in the plan. Letters play as `CODE-A`, `CODE-B`…;
+  // the special cell value `1` (or a plan with no letters at all) is the
+  // element playing as itself — the bare CODE, listed with code "1".
   const tracks = useMemo(() => {
-    if (!planGrid) return []
+    if (!selected) return []
     const letters = new Set<string>()
-    for (const r of planGrid.rows)
-      for (const c of r.cells) if (c) for (const ch of c) if (/[A-Za-z]/.test(ch)) letters.add(ch.toUpperCase())
-    return [...letters].sort()
-  }, [planGrid])
+    let self = false
+    if (planGrid)
+      for (const r of planGrid.rows)
+        for (const c of r.cells) {
+          if (!c) continue
+          for (const ch of c) {
+            if (/[A-Za-z]/.test(ch)) letters.add(ch.toUpperCase())
+            else if (ch === '1') self = true
+          }
+        }
+    const list = [...letters].sort().map((l) => ({ code: l, name: `${selected.code}-${l}` }))
+    if (self || list.length === 0) list.unshift({ code: '1', name: selected.code })
+    return list
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planGrid, selected?.code])
+
+  // Durations + descriptions from the app-wide Simian audio database (loads on
+  // startup once a path has been saved; LOG's Audio database panel sets it).
+  const [dbLoaded, setDbLoaded] = useState(false)
+  const [trackInfo, setTrackInfo] = useState<
+    Record<string, { duration?: number; description?: string }>
+  >({})
+
+  useEffect(() => {
+    window.api.getSimianDb().then((s) => setDbLoaded(Boolean(s)))
+  }, [])
+
+  useEffect(() => {
+    if (!dbLoaded || tracks.length === 0) {
+      setTrackInfo({})
+      return
+    }
+    let gone = false
+    window.api.simianTracks(tracks.map((t) => t.name)).then((r) => {
+      if (!gone) setTrackInfo(r)
+    })
+    return () => {
+      gone = true
+    }
+  }, [dbLoaded, tracks])
 
   return (
     <div className="bookwork">
@@ -413,19 +458,34 @@ export function BookingView({
                   {selected.lastDate ?? '—'}
                 </div>
               </div>
-              {tracks.length > 0 && (
-                <>
-                  <div className="kick" style={{ marginTop: 4 }}>
-                    Tracks in this plan
-                  </div>
-                  <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                    {tracks.map((letter) => (
-                      <span key={letter} className="chip readonly mono-sm">
-                        {letter} — {selected.code}-{letter}
-                      </span>
-                    ))}
-                  </div>
-                </>
+              <div className="kick" style={{ marginTop: 4 }}>
+                Tracks in this plan
+              </div>
+              <table className="tbl insp-tbl track-tbl">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Dur</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tracks.map((t) => (
+                    <tr key={t.code} title={t.name}>
+                      <td className="mono-sm">{t.code}</td>
+                      <td className="mono-sm">{mmss(trackInfo[t.name]?.duration)}</td>
+                      <td dir="auto" title={trackInfo[t.name]?.description ?? t.name}>
+                        {trackInfo[t.name]?.description ?? ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!dbLoaded && (
+                <div className="muted" style={{ fontSize: 12 }}>
+                  Duration and description fill in from the audio database (load it once in LOG →
+                  Audio database — it stays loaded from then on).
+                </div>
               )}
             </div>
 
