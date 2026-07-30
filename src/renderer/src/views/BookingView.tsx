@@ -171,6 +171,24 @@ export function BookingView({
 
   const selected = sel !== null ? (templates[sel] ?? null) : null
 
+  // Show only the span the element actually plays — the sheet may pad a short
+  // campaign with months of empty day columns on both sides. Empty days
+  // BETWEEN plays stay visible (real gaps in the campaign).
+  const shownGrid = useMemo(() => {
+    if (!planGrid) return null
+    const first = planGrid.totals.findIndex((n) => n > 0)
+    if (first === -1) return planGrid // nothing played — show the sheet as-is
+    let last = planGrid.totals.length - 1
+    while (last > first && planGrid.totals[last] === 0) last--
+    if (first === 0 && last === planGrid.totals.length - 1) return planGrid
+    return {
+      ...planGrid,
+      days: planGrid.days.slice(first, last + 1),
+      rows: planGrid.rows.map((r) => ({ ...r, cells: r.cells.slice(first, last + 1) })),
+      totals: planGrid.totals.slice(first, last + 1)
+    }
+  }, [planGrid])
+
   // Tracks used anywhere in the plan. Letters play as `CODE-A`, `CODE-B`…;
   // the special cell value `1` (or a plan with no letters at all) is the
   // element playing as itself — the bare CODE, listed with code "1".
@@ -338,13 +356,13 @@ export function BookingView({
                 )}
               </div>
 
-              {planMode === 'grid' && planGrid && (
+              {planMode === 'grid' && shownGrid && (
                 <div className="tpl-grid-scroll">
                   <table className="tgrid">
                     <thead>
                       <tr className="t-month-row">
                         <th className="t-time" />
-                        {monthGroups(planGrid.days).map((g) => (
+                        {monthGroups(shownGrid.days).map((g) => (
                           <th key={g.label} colSpan={g.span} className="t-month">
                             <span className="t-mlabel">{g.label}</span>
                           </th>
@@ -353,7 +371,7 @@ export function BookingView({
                       </tr>
                       <tr>
                         <th className="t-time">Time</th>
-                        {planGrid.days.map((d) => (
+                        {shownGrid.days.map((d) => (
                           <th key={d.iso} title={d.iso}>
                             {d.day}
                             <span className="t-wd">{d.weekday}</span>
@@ -363,7 +381,7 @@ export function BookingView({
                       </tr>
                     </thead>
                     <tbody>
-                      {planGrid.rows.map((r) => (
+                      {shownGrid.rows.map((r) => (
                         <tr key={r.time}>
                           <td className="t-time">{r.time.slice(0, 5)}</td>
                           {r.cells.map((c, ci) => (
@@ -378,12 +396,12 @@ export function BookingView({
                     <tfoot>
                       <tr>
                         <td className="t-time">Total</td>
-                        {planGrid.totals.map((n, ti) => (
+                        {shownGrid.totals.map((n, ti) => (
                           <td key={ti} className="t-total">
                             {n || ''}
                           </td>
                         ))}
-                        <td className="t-count">{planGrid.totals.reduce((a, b) => a + b, 0)}</td>
+                        <td className="t-count">{shownGrid.totals.reduce((a, b) => a + b, 0)}</td>
                       </tr>
                     </tfoot>
                   </table>
