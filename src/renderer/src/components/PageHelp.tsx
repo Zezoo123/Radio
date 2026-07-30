@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 
 /** A small "?" icon next to a page title that reveals the page description on hover/focus. */
-export default function PageHelp({ children }: { children: ReactNode }) {
+export default function PageHelp({ children }: { children: ReactNode }): JSX.Element {
   return (
     <span className="page-help">
       <button type="button" className="page-help-btn" aria-label="About this page">

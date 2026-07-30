@@ -12,7 +12,20 @@ interface Props {
   onOpenGrid: () => void
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+]
 
 /** Consecutive same-month day columns collapsed into one labeled span. */
 function monthGroups(days: TemplateGrid['days']): { label: string; span: number }[] {
@@ -66,12 +79,7 @@ function coversLabel(first: string | null, last: string | null): string {
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({
-  templates,
-  onTemplates,
-  onConfig,
-  onOpenGrid
-}: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
@@ -119,7 +127,6 @@ export function BookingView({
     return () => {
       gone = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel, templates])
 
   async function changePlanDate(date: string): Promise<void> {
@@ -267,7 +274,11 @@ export function BookingView({
             <button className="btn" title="Pick one or more element templates" onClick={addFiles}>
               + Add file
             </button>
-            <button className="btn" title="Every Excel template inside a directory" onClick={addFolder}>
+            <button
+              className="btn"
+              title="Every Excel template inside a directory"
+              onClick={addFolder}
+            >
               + Add folder
             </button>
             <button
@@ -319,7 +330,11 @@ export function BookingView({
                         Promos sheet · {promos.programCount} programs
                       </td>
                     </tr>
-                    <tr className="book-row" onClick={onOpenGrid} title="Placement is managed on the Grid tab">
+                    <tr
+                      className="book-row"
+                      onClick={onOpenGrid}
+                      title="Placement is managed on the Grid tab"
+                    >
                       <td className="mono-sm">PROMOS</td>
                       <td>{promos.programCount} programs</td>
                       <td>PROMO</td>

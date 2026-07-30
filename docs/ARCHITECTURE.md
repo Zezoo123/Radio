@@ -1,7 +1,7 @@
 # Code runthrough
 
 This is a guided tour of the Radio Scheduler codebase — enough to find your way around, change
-things safely, and understand *why* the pieces are shaped the way they are. Read the
+things safely, and understand _why_ the pieces are shaped the way they are. Read the
 [README](../README.md) first for what the app does from the user's side.
 
 ## The big picture
@@ -42,11 +42,11 @@ save**.
 
 ### Foundations
 
-| File | What it holds |
-|---|---|
+| File       | What it holds                                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `types.ts` | The shared vocabulary: `Cue` (`'+' \| '@' \| '#'`), `ScheduleEvent` (one log row), `Section` (a group of events under a header), `ScheduleDay` (everything one day emits), `CalendarDate`. |
-| `dates.ts` | `weekday()` (0 = Sunday … 6 = Saturday — used everywhere), `addDays`, `dateRange`. UTC-based to dodge timezone traps. |
-| `xlsx.ts` | Excel helpers on top of `exceljs`: `extractText` (rich text/formula-safe cell text) and merge-map utilities for sheets with merged headers. |
+| `dates.ts` | `weekday()` (0 = Sunday … 6 = Saturday — used everywhere), `addDays`, `dateRange`. UTC-based to dodge timezone traps.                                                                      |
+| `xlsx.ts`  | Excel helpers on top of `exceljs`: `extractText` (rich text/formula-safe cell text) and merge-map utilities for sheets with merged headers.                                                |
 
 ### Parsers (`core/parsers/`)
 
@@ -55,11 +55,11 @@ save**.
   calendar date into `ScheduleEvent`s: cell `A` → name `CODE-A`, cell `1` → the bare code.
 - **`promosFile.ts`** — the promos workbook (one row per program): airdays `S M T W T F S`
   (Sun→Sat), airtime From/To, promo file name, per-weekday promo counts. Airtime cells are Excel
-  *time serials*; they're read via `getUTCHours()` because exceljs maps serials onto fixed UTC
+  _time serials_; they're read via `getUTCHours()` because exceljs maps serials onto fixed UTC
   instants — local-time getters would drift by the machine's timezone (a real bug we hit).
 - **`bsiLog.ts`** — Simian's native `.bsi` program log, which is actually a **Microsoft Access
   (Jet) database** with a single `List` table (`Cue, Time, Name, Length, Category, Description,
-  …, AbsPosition`). Read with `mdb-reader`, ordered by `AbsPosition`, converted to the app's pipe
+…, AbsPosition`). Read with `mdb-reader`, ordered by `AbsPosition`, converted to the app's pipe
   lines with per-row durations. Text is stored in the Arabic codepage (Windows-1256) but decodes
   as Windows-1252 mojibake — `fixArabicText()` maps characters back to bytes and re-decodes.
 
@@ -87,7 +87,7 @@ golden test (below). **Do not hand-roll log lines elsewhere; go through `eventLi
 - `format/types.ts` — `HourFormat` (a clock), `WeekGrid` (7×24 assignment of clocks),
   `FormatSet` (everything the Formats tab owns), `DEFAULT_CATEGORIES`.
 - `format/expand.ts` — expands the grid for a weekday: assigned clocks fire in their hours,
-  the day's *default clock* fills the rest.
+  the day's _default clock_ fills the rest.
 - `format/tokens.ts` — date tokens (`[yymmdd]`, `[Day]`, `[DayNum]`, …).
 - `sequential/` — `{name}` tokens that rotate through `PREFIX-01…N` (or `-A…Z`) with a
   **persisted queue**: values pop one by one, the queue refills (shuffled if randomized) when
@@ -95,7 +95,7 @@ golden test (below). **Do not hand-roll log lines elsewhere; go through `eventLi
   saved after a successful export.
 - `format/resolveDay.ts` — ties it together for one date: expand → substitute `{sequential}`
   tokens in time order → fill date tokens (so a sequential prefix may itself contain date
-  tokens) → handle the next-day row. Returns the text *and* the advanced sequentials.
+  tokens) → handle the next-day row. Returns the text _and_ the advanced sequentials.
   **Statefulness rule:** previews resolve with a date-seeded RNG and never persist; exports use
   the live RNG and persist the advanced queues only after the file is actually written.
 
@@ -162,7 +162,7 @@ case-insensitive, extension-stripping, and dash/underscore tolerant — the sche
   (`skipped`, yellow), and the clock lands exactly on the `@`.
 - `#` (timed-next) fires at its scheduled time but lets the current item **finish** first, then
   jumps straight to itself, skipping the in-between rows.
-- A timed row *reached* before its time plays immediately like a `+` — no dead air, ever. The
+- A timed row _reached_ before its time plays immediately like a `+` — no dead air, ever. The
   scheduled time only pulls the playhead **forward**.
 - Timed rows in real logs are usually **bare markers** (a time, no audio); they fire all the
   same. Only the next timed row below the playhead is armed at any moment.
@@ -203,7 +203,7 @@ under several `TZ=` values; new fixtures go in `test/fixtures/`.
 - The preload builds as `index.mjs` — the main process loads that exact name; changing it black-
   screens the app.
 - Everything Simian is **CRLF**. Don't normalize, don't let editors "fix" the fixtures.
-- Excel *time* cells must be read via UTC getters (see `promosFile.ts`); Excel *date* headers via
+- Excel _time_ cells must be read via UTC getters (see `promosFile.ts`); Excel _date_ headers via
   cell text. Mixing these up produces silent off-by-timezone bugs.
 - `.bsi` and `audio.mdb` are Access databases — never write them in place. The Editor deliberately
   refuses to save over a `.bsi` (it saves a text log instead).

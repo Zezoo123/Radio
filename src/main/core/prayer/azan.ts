@@ -43,9 +43,9 @@ function formatInZone(date: Date, timeZone: string): string {
 
 export function azanTimes(date: CalendarDate, options: AzanOptions = CAIRO_EGYPTIAN): AzanTimes {
   const coords = new Coordinates(options.latitude, options.longitude)
-  const params = (CalculationMethod[options.method] as () => ConstructorParameters<
-    typeof PrayerTimes
-  >[2])()
+  const params = (
+    CalculationMethod[options.method] as () => ConstructorParameters<typeof PrayerTimes>[2]
+  )()
   const local = new Date(date.year, date.month - 1, date.day)
   const times = new PrayerTimes(coords, local, params)
 

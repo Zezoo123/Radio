@@ -45,9 +45,7 @@ export function normalizeAzanFormat(raw: unknown): AzanFormat {
       typeof o.azanCategory === 'string' && o.azanCategory
         ? migrateCategory(o.azanCategory)
         : 'FEA',
-    lines: Array.isArray(o.lines)
-      ? (o.lines.map(normalizeLine).filter(Boolean) as AzanLine[])
-      : []
+    lines: Array.isArray(o.lines) ? (o.lines.map(normalizeLine).filter(Boolean) as AzanLine[]) : []
   }
 }
 

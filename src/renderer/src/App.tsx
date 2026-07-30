@@ -147,7 +147,12 @@ export default function App(): JSX.Element {
   }, [settingsOpen])
 
   const today = new Date()
-    .toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+    .toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
     .replace(/,/g, '')
     .toUpperCase()
 
@@ -171,7 +176,10 @@ export default function App(): JSX.Element {
         ))}
         <div className="chrome">
           <div className="station-switch" title={`Station: ${station}`}>
-            <span className="station-dot" style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }} />
+            <span
+              className="station-dot"
+              style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }}
+            />
             <select
               className="station-select"
               value={station}
@@ -210,7 +218,10 @@ export default function App(): JSX.Element {
           />
         )}
         {section === 'grid' && (
-          <GridView onOpenLog={() => setSection('log')} onOpenSettings={() => setSettingsOpen(true)} />
+          <GridView
+            onOpenLog={() => setSection('log')}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         )}
         {/* The LOG workbench stays mounted so its unsaved document survives
             tab switches; only its visibility flips. */}
@@ -235,7 +246,11 @@ export default function App(): JSX.Element {
         >
           <div className="settings-drawer" role="dialog" aria-label="Settings">
             <div className="settings-drawer-head">
-              <button className="icon-btn" onClick={() => setSettingsOpen(false)} title="Close settings">
+              <button
+                className="icon-btn"
+                onClick={() => setSettingsOpen(false)}
+                title="Close settings"
+              >
                 ✕
               </button>
             </div>

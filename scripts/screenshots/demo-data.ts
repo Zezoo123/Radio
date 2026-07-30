@@ -47,8 +47,7 @@ export const DEMO_TEMPLATES: TemplateSpec[] = [
     group: 'Nile Cola',
     code: 'ADV-2704',
     times: ['07:20:02', '09:20:02', '12:20:02', '15:20:02', '18:20:02', '21:20:02'],
-    cell: (day, weekday, slot) =>
-      weekday === 5 && slot < 2 ? 'A B' : day % 2 === 0 ? 'A' : 'B'
+    cell: (day, weekday, slot) => (weekday === 5 && slot < 2 ? 'A B' : day % 2 === 0 ? 'A' : 'B')
   },
   {
     file: 'Cairo Motors.xlsx',
@@ -148,29 +147,78 @@ export function demoFormatSet(): unknown {
   const formats = [
     clock('clk-morning', 'Morning', '#e0a23c', [
       { minute: 0, second: 0, cue: '@', name: '' },
-      { minute: 0, second: 2, cue: '+', name: 'JIN-SUNRISE', category: 'AUDIO', description: 'Morning jingle' },
+      {
+        minute: 0,
+        second: 2,
+        cue: '+',
+        name: 'JIN-SUNRISE',
+        category: 'AUDIO',
+        description: 'Morning jingle'
+      },
       { minute: 20, second: 0, cue: '@', name: '' },
-      { minute: 20, second: 2, cue: '+', name: 'TRF-[yymmdd]', category: 'FEA', description: 'Traffic check' },
+      {
+        minute: 20,
+        second: 2,
+        cue: '+',
+        name: 'TRF-[yymmdd]',
+        category: 'FEA',
+        description: 'Traffic check'
+      },
       { minute: 40, second: 0, cue: '@', name: '' },
       { minute: 40, second: 2, cue: '+', name: 'HID-04', category: 'LI', description: 'Station ID' }
     ]),
     clock('clk-daytime', 'Daytime', '#4f8cff', [
       { minute: 0, second: 0, cue: '@', name: '' },
-      { minute: 0, second: 2, cue: '+', name: 'JIN-DAY', category: 'AUDIO', description: 'Daytime jingle' },
+      {
+        minute: 0,
+        second: 2,
+        cue: '+',
+        name: 'JIN-DAY',
+        category: 'AUDIO',
+        description: 'Daytime jingle'
+      },
       { minute: 30, second: 0, cue: '@', name: '' },
       { minute: 30, second: 2, cue: '+', name: 'HID-07', category: 'LI', description: 'Station ID' }
     ]),
     clock('clk-evening', 'Evening', '#c264e0', [
       { minute: 0, second: 0, cue: '@', name: '' },
-      { minute: 0, second: 2, cue: '+', name: 'JIN-NIGHT', category: 'AUDIO', description: 'Evening jingle' },
-      { minute: 15, second: 0, cue: '+', name: 'ENT-[yymmdd]', category: 'FEA', description: 'Entertainment news' },
+      {
+        minute: 0,
+        second: 2,
+        cue: '+',
+        name: 'JIN-NIGHT',
+        category: 'AUDIO',
+        description: 'Evening jingle'
+      },
+      {
+        minute: 15,
+        second: 0,
+        cue: '+',
+        name: 'ENT-[yymmdd]',
+        category: 'FEA',
+        description: 'Entertainment news'
+      },
       { minute: 45, second: 0, cue: '@', name: '' },
       { minute: 45, second: 2, cue: '+', name: 'HID-11', category: 'LI', description: 'Station ID' }
     ]),
     clock('clk-friday', 'Friday', '#49c281', [
       { minute: 0, second: 0, cue: '@', name: '' },
-      { minute: 0, second: 2, cue: '+', name: 'GOMAA-INTRO', category: 'AUDIO', description: 'Friday opener' },
-      { minute: 30, second: 0, cue: '+', name: 'DUA-[yymmdd]', category: 'FEA', description: 'Friday dua' }
+      {
+        minute: 0,
+        second: 2,
+        cue: '+',
+        name: 'GOMAA-INTRO',
+        category: 'AUDIO',
+        description: 'Friday opener'
+      },
+      {
+        minute: 30,
+        second: 0,
+        cue: '+',
+        name: 'DUA-[yymmdd]',
+        category: 'FEA',
+        description: 'Friday dua'
+      }
     ])
   ]
 
@@ -190,7 +238,14 @@ export function demoFormatSet(): unknown {
   const defaultClocks = [
     clock('clk-base', 'Base Hour', '#7d8aa0', [
       { minute: 0, second: 0, cue: '@', name: '' },
-      { minute: 0, second: 2, cue: '+', name: 'JIN-BASE', category: 'AUDIO', description: 'Hourly jingle' },
+      {
+        minute: 0,
+        second: 2,
+        cue: '+',
+        name: 'JIN-BASE',
+        category: 'AUDIO',
+        description: 'Hourly jingle'
+      },
       {
         hours: [23],
         minute: 59,
@@ -208,7 +263,21 @@ export function demoFormatSet(): unknown {
   return {
     formats,
     grid: { cells },
-    categories: ['AUDIO', 'COMMENT', 'ADV', 'FEA', 'LI', 'LI_C', 'PROMO', 'MACRO', 'SER', 'INTRO', 'OUTRO', 'SW', 'LOG'],
+    categories: [
+      'AUDIO',
+      'COMMENT',
+      'ADV',
+      'FEA',
+      'LI',
+      'LI_C',
+      'PROMO',
+      'MACRO',
+      'SER',
+      'INTRO',
+      'OUTRO',
+      'SW',
+      'LOG'
+    ],
     defaultClocks,
     dayDefaults: Array.from({ length: 7 }, () => 'clk-base')
   }

@@ -207,7 +207,9 @@ function chooseHours(
   const n = Math.min(count, allowed.length)
   if (n <= 0) return []
 
-  const rng = mulberry32((hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(salt, 0x9e3779b1)) >>> 0)
+  const rng = mulberry32(
+    (hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(salt, 0x9e3779b1)) >>> 0
+  )
   const picked = new Set<number>()
 
   // Seed the preferred hour first so it tends to win a slot when available —
@@ -288,7 +290,9 @@ export function autoHoursForDate(
  * the top-of-hour markers.
  */
 function minuteFor(entry: PromoEntry, date: CalendarDate, hour: number, breaks?: number[]): number {
-  const rng = mulberry32((hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(hour + 1, 2654435761)) >>> 0)
+  const rng = mulberry32(
+    (hashStr(entry.fileName) ^ dateSeed(date) ^ Math.imul(hour + 1, 2654435761)) >>> 0
+  )
   if (breaks && breaks.length > 0) return breaks[Math.floor(rng() * breaks.length)]
   return 1 + Math.floor(rng() * 58)
 }
@@ -346,7 +350,10 @@ export function placementsForDate(
       const count = e.promoCounts[wd] ?? 0
       const exFor = (d: number): number[] => exclusionsForWeekday(exclusions, e.fileName, d)
       const excluded = exFor(wd)
-      const allowed = allowedHoursForDate(e, date, [...excluded, ...stationBlockedForWeekday(global, wd)])
+      const allowed = allowedHoursForDate(e, date, [
+        ...excluded,
+        ...stationBlockedForWeekday(global, wd)
+      ])
       const override = overrides?.[e.fileName]?.[dateKey(date)]
       return {
         fileName: e.fileName,

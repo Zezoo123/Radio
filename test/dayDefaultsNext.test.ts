@@ -63,13 +63,20 @@ describe('default clocks (one clock applies to a whole day)', () => {
 })
 
 describe('[NEXT] token — load next day’s log', () => {
-  it("resolves date tokens for the next day and strips [NEXT]", () => {
+  it('resolves date tokens for the next day and strips [NEXT]', () => {
     const lastHour: HourFormat = {
       id: 'last',
       name: 'Last hour',
       color: '#fff',
       rows: [
-        { minute: 59, second: 59, cue: '+', name: '', category: 'LOG', description: '[MMDDYY]C1 [NEXT]' }
+        {
+          minute: 59,
+          second: 59,
+          cue: '+',
+          name: '',
+          category: 'LOG',
+          description: '[MMDDYY]C1 [NEXT]'
+        }
       ]
     }
     const set = emptyFormatSet()

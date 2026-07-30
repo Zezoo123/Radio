@@ -52,15 +52,7 @@ function rowStyle(
 
 /** Column layout: defaults with a roomy Description; user resizes persist. */
 type ColKey =
-  | 'grip'
-  | 'time'
-  | 'cue'
-  | 'expected'
-  | 'name'
-  | 'dur'
-  | 'category'
-  | 'description'
-  | 'act'
+  'grip' | 'time' | 'cue' | 'expected' | 'name' | 'dur' | 'category' | 'description' | 'act'
 const COLUMNS: { key: ColKey; label: string; width: number; fixed?: boolean }[] = [
   { key: 'grip', label: '', width: 26, fixed: true },
   { key: 'time', label: 'Time', width: 90 },
@@ -127,7 +119,10 @@ function expectedCell(s: SimRow | undefined): JSX.Element {
   if (!s) return <td className="expected-col" />
   if (s.status === 'skipped') {
     return (
-      <td className="expected-col st-skipped" title="Skipped — a timed event fires before it can play">
+      <td
+        className="expected-col st-skipped"
+        title="Skipped — a timed event fires before it can play"
+      >
         skipped
       </td>
     )
@@ -351,7 +346,6 @@ export function LogGrid({
     updateWindow()
     window.addEventListener('resize', updateWindow)
     return () => window.removeEventListener('resize', updateWindow)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows.length])
 
   const handlers = useMemo<RowHandlers>(() => {
@@ -448,7 +442,10 @@ export function LogGrid({
               c.fixed ? (
                 <th key={c.key} className={`${c.key}-col`} />
               ) : (
-                <th key={c.key} className={c.key === 'expected' || c.key === 'dur' ? `${c.key}-col` : ''}>
+                <th
+                  key={c.key}
+                  className={c.key === 'expected' || c.key === 'dur' ? `${c.key}-col` : ''}
+                >
                   {c.label}
                   <span
                     className="col-resize"

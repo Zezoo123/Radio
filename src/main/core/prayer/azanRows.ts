@@ -61,7 +61,13 @@ function toHMS(total: number): string {
 }
 
 /** A Simian row: `time|cue|name|category|description`. */
-function row(time: string, cue: string, name: string, category: string, description: string): string {
+function row(
+  time: string,
+  cue: string,
+  name: string,
+  category: string,
+  description: string
+): string {
   return `${time}|${cue}|${name}|${category}|${description}`
 }
 
@@ -75,7 +81,13 @@ export function buildAzanRows(
     const base = toSeconds(times[prayer])
     rows.push({
       t: base,
-      line: row(toHMS(base), '+', FILE_NAME[prayer], format.azanCategory, `AZAN ${ARABIC_LABEL[prayer]}`)
+      line: row(
+        toHMS(base),
+        '+',
+        FILE_NAME[prayer],
+        format.azanCategory,
+        `AZAN ${ARABIC_LABEL[prayer]}`
+      )
     })
     for (const ln of format.lines) {
       const t = base + ln.offset

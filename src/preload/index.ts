@@ -106,8 +106,7 @@ const api = {
     fileName: string,
     date: CalendarDate,
     times: string[]
-  ): Promise<PromoPlacement[]> =>
-    ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
+  ): Promise<PromoPlacement[]> => ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
   resetPromoTimes: (fileName: string, date: CalendarDate): Promise<PromoPlacement[]> =>
     ipcRenderer.invoke('promos:resetTimes', { fileName, date }),
   getPromoRules: (): Promise<PromoRules> => ipcRenderer.invoke('promos:getRules'),

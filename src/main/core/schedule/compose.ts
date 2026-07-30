@@ -63,7 +63,11 @@ export function composeRange(
 }
 
 /** Compose a range and serialize it to a Simian-importable string. */
-export function exportRange(start: CalendarDate, end: CalendarDate, opts: ComposeOptions): {
+export function exportRange(
+  start: CalendarDate,
+  end: CalendarDate,
+  opts: ComposeOptions
+): {
   text: string
   warnings: string[]
 } {

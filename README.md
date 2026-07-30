@@ -26,11 +26,11 @@ Every release carries two artifacts:
   this for a station PC that will run the app daily.
 - **`Radio Scheduler-<version>-portable.exe`** — a single self-contained executable, nothing
   installed. Pick this to try the app out, or to run it on a machine you can't install onto.
-  Both variants keep their data in the same place (see *Where data lives* below).
+  Both variants keep their data in the same place (see _Where data lives_ below).
 
 The build is currently **unsigned**, so the first launch trips Windows SmartScreen with an
 "unknown publisher" warning. Click **More info**, then **Run anyway** — it only asks once per
-machine. Some browsers also flag the download itself; choose *Keep* there first.
+machine. Some browsers also flag the download itself; choose _Keep_ there first.
 
 ## What it does, tab by tab
 
@@ -38,9 +38,10 @@ machine. Some browsers also flag the download itself; choose *Keep* there first.
 
 ![The BOOKING tab with four elements and the promos sheet in one table, and the selected element's plan grid below](docs/screenshots/booking.png)
 
-*Every booked element in one table; the selected element's full dates × hours plan stays in view.*
+_Every booked element in one table; the selected element's full dates × hours plan stays in view._
 
 Load the planning spreadsheets:
+
 - **Element templates** (Excel) — per sponsor/group tables that say exactly when each audio
   element (ads, features, commercial liners…) plays on each calendar day. A cell holds a track
   letter (`A` → file `ADV-1710-A`), several at once (`A B` — both tracks play), or `1` (play the
@@ -58,11 +59,12 @@ Load the planning spreadsheets:
 
 ![The GRID tab's week grid painted with four clocks, the clock library on the left and the hour inspector on the right](docs/screenshots/grid-clocks.png)
 
-*Clocks painted onto the 7×24 week; the hour inspector shows the covering clock's rows and the day's azan times.*
+_Clocks painted onto the 7×24 week; the hour inspector shows the covering clock's rows and the day's azan times._
 
 A Natural Grid–style **clock builder**:
-- Build reusable hour *clocks* (a list of rows with times, cues, names, categories).
-- Paint them onto a **7×24 week grid**; per-day *default clocks* fill every unpainted hour.
+
+- Build reusable hour _clocks_ (a list of rows with times, cues, names, categories).
+- Paint them onto a **7×24 week grid**; per-day _default clocks_ fill every unpainted hour.
 - Rows can carry **date tokens** (`[yymmdd]`, `[Day]`, …— with an optional day offset, so
   `[yymmdd-1]` names yesterday's episode), **`{sequential}` tokens** (rotating
   jingle/ID numbers with persisted no-repeat queues), and a **NEXT DAY LOG** row that makes
@@ -78,12 +80,13 @@ A Natural Grid–style **clock builder**:
 
 ![The GRID tab's promo layer: one program's weekly placements with blackout hours, excluded hours, and the station's blocked hours shown black](docs/screenshots/grid-promos.png)
 
-*One program's week — blackout, excluded and placed hours; station-blocked hours show black in every grid.*
+_One program's week — blackout, excluded and placed hours; station-blocked hours show black in every grid._
 
 Automatic distribution of program promos from the promos spreadsheet. For every program it reads
 the airdays, airtime, promo file name and a per-weekday promo count, then places the promos under
 the station's rules:
-- never during the program or for 2 hours after it ends (the *blackout*),
+
+- never during the program or for 2 hours after it ends (the _blackout_),
 - at most one per hour,
 - a different spread every day — never the same hours two days running — and different from the
   same weekday last week,
@@ -99,10 +102,11 @@ The weekly grid shows every program's placements; click hours to exclude them pe
 day preview shows the exact rows that will be exported.
 
 ### Log — build & export
+
 Compose any date range into a Simian program log: date headers, the Formats clock rows, hourly
 comment markers, the computed **AZAN** rows (5 daily prayers, Cairo timetable, format configurable
 in Settings), promos, and one section per element template. Preview it, export it to a `.txt` the
-station imports via *Simian → Tools → Program Options → Log Import* — or send it straight to the
+station imports via _Simian → Tools → Program Options → Log Import_ — or send it straight to the
 Editor. Logs are written as **ANSI (Windows-1256)** so Arabic survives Simian's import; opening a
 log auto-detects older UTF-8 files. Every date picker defaults to tomorrow (the day being
 scheduled) and the From/To range keeps itself valid.
@@ -111,9 +115,10 @@ scheduled) and the From/To range keeps itself valid.
 
 ![The log editor simulating a night's playout: red rows cut short by timed events, yellow rows that never air](docs/screenshots/editor-simulation.png)
 
-*The Expected column simulates the Simian deck: red = cut short by a timed row, yellow = never reached.*
+_The Expected column simulates the Simian deck: red = cut short by a timed row, yellow = never reached._
 
 A Simian-style log editor:
+
 - Opens exported `.txt` logs **and Simian's native `.bsi` logs** (they are Access databases —
   parsed directly, Arabic text re-decoded, durations read from the file). A text log's **Length
   column** (between Name and Category, Simian's own order) is read into **Dur**; logs without
@@ -139,7 +144,7 @@ A Simian-style log editor:
 
 ![The Settings drawer open on the Studio theme, showing the theme picker and per-category color controls](docs/screenshots/settings.png)
 
-*The Settings drawer on the Studio theme — themes, high contrast, and the category color maps.*
+_The Settings drawer on the Studio theme — themes, high contrast, and the category color maps._
 
 App-wide preferences (a right-side drawer, open from the gear in the tab bar): **theme**
 (Modernist — the default — plus Dark, Light, Minimal, Graphite, Studio, with high-contrast),
@@ -179,14 +184,14 @@ attaches both `.exe`s to a GitHub Release.
 Everything persists as JSON under Electron's `userData` directory
 (Windows: `%APPDATA%/radio-simian-scheduler/`):
 
-| File | Scope | Contents |
-|---|---|---|
-| `stations/<Station>/formats.json` | per station | clocks, default clocks, week grid |
-| `stations/<Station>/promos.json` | per station | imported promo set, hour exclusions, time overrides, station rules (blocked hours + breaks) |
-| `stations/<Station>/sequentials.json` | per station | sequential definitions + rotation queues |
-| `azan-format.json` | global | the AZAN row format |
-| `ui-settings.json` | global | category colors |
-| `simian-db.json` | global | remembered path of the loaded Simian `audio.mdb`, reloaded on startup |
+| File                                  | Scope       | Contents                                                                                    |
+| ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `stations/<Station>/formats.json`     | per station | clocks, default clocks, week grid                                                           |
+| `stations/<Station>/promos.json`      | per station | imported promo set, hour exclusions, time overrides, station rules (blocked hours + breaks) |
+| `stations/<Station>/sequentials.json` | per station | sequential definitions + rotation queues                                                    |
+| `azan-format.json`                    | global      | the AZAN row format                                                                         |
+| `ui-settings.json`                    | global      | category colors                                                                             |
+| `simian-db.json`                      | global      | remembered path of the loaded Simian `audio.mdb`, reloaded on startup                       |
 
 ## Reading the code
 

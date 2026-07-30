@@ -138,10 +138,8 @@ export function registerIpc(): void {
 
   ipcMain.handle('templates:grid', (_e, index: number) => session.templateGrid(index))
 
-  ipcMain.handle(
-    'templates:preview',
-    (_e, { index, start, end }: { index: number } & RangeArg) =>
-      session.previewTemplate(index, start, end)
+  ipcMain.handle('templates:preview', (_e, { index, start, end }: { index: number } & RangeArg) =>
+    session.previewTemplate(index, start, end)
   )
 
   ipcMain.handle('config:get', () => session.getConfig())
@@ -256,9 +254,7 @@ export function registerIpc(): void {
       let importedSequentials = 0
       const bundled = (raw as { sequentials?: unknown }).sequentials
       if (Array.isArray(bundled)) {
-        const incoming = bundled
-          .map(sanitizeSequential)
-          .filter((s): s is Sequential => s !== null)
+        const incoming = bundled.map(sanitizeSequential).filter((s): s is Sequential => s !== null)
         if (incoming.length > 0) {
           const existing = await sequentialStore.load()
           const merged = [
@@ -328,35 +324,38 @@ export function registerIpc(): void {
   // renderer — it is written verbatim so what you see is exactly what exports.
   // The sequential queues still advance either way, keeping {sequential}
   // rotation continuity across exports.
-  ipcMain.handle('schedule:export', async (_e, { start, end, text: edited }: RangeArg & { text?: string }) => {
-    // With clocks excluded, skip the Formats resolve so sequential queues
-    // don't advance for rows that never make it into the file.
-    const clocksOn = session.getConfig().includeClocks
-    const { byDate, sequentials } = clocksOn
-      ? await resolveFormatLines(start, end, true)
-      : { byDate: new Map<string, string[]>(), sequentials: null }
-    let text = edited
-    let warnings: string[] = []
-    if (text == null) {
-      const res = await session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
-      text = res.text
-      warnings = res.warnings
+  ipcMain.handle(
+    'schedule:export',
+    async (_e, { start, end, text: edited }: RangeArg & { text?: string }) => {
+      // With clocks excluded, skip the Formats resolve so sequential queues
+      // don't advance for rows that never make it into the file.
+      const clocksOn = session.getConfig().includeClocks
+      const { byDate, sequentials } = clocksOn
+        ? await resolveFormatLines(start, end, true)
+        : { byDate: new Map<string, string[]>(), sequentials: null }
+      let text = edited
+      let warnings: string[] = []
+      if (text == null) {
+        const res = await session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
+        text = res.text
+        warnings = res.warnings
+      }
+      const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
+        start.day
+      ).padStart(2, '0')}.txt`
+      const win = BrowserWindow.getFocusedWindow() ?? undefined
+      const res = await dialog.showSaveDialog(win!, {
+        title: 'Export log',
+        defaultPath: defaultName,
+        filters: [{ name: 'Text', extensions: ['txt'] }]
+      })
+      if (res.canceled || !res.filePath) return { saved: false, warnings }
+      await writeFile(res.filePath, encodeLogText(text))
+      // Persist the advanced sequential queues only once the file is written.
+      if (sequentials) await sequentialStore.save(sequentials)
+      return { saved: true, path: res.filePath, warnings }
     }
-    const defaultName = `log_${start.year}-${String(start.month).padStart(2, '0')}-${String(
-      start.day
-    ).padStart(2, '0')}.txt`
-    const win = BrowserWindow.getFocusedWindow() ?? undefined
-    const res = await dialog.showSaveDialog(win!, {
-      title: 'Export log',
-      defaultPath: defaultName,
-      filters: [{ name: 'Text', extensions: ['txt'] }]
-    })
-    if (res.canceled || !res.filePath) return { saved: false, warnings }
-    await writeFile(res.filePath, encodeLogText(text))
-    // Persist the advanced sequential queues only once the file is written.
-    if (sequentials) await sequentialStore.save(sequentials)
-    return { saved: true, path: res.filePath, warnings }
-  })
+  )
 
   // --- Log editor: open any exported log, edit in-app, save back as text -----
   // Opening still accepts native .bsi (read-only Access databases); saving is
@@ -390,24 +389,21 @@ export function registerIpc(): void {
     return { path, text: decodeLogText(buffer) }
   })
 
-  ipcMain.handle(
-    'log:save',
-    async (_e, { text, path }: { text: string; path?: string }) => {
-      if (path) {
-        await writeFile(path, encodeLogText(text))
-        return { saved: true, path }
-      }
-      const win = BrowserWindow.getFocusedWindow() ?? undefined
-      const res = await dialog.showSaveDialog(win!, {
-        title: 'Save log',
-        defaultPath: 'log.txt',
-        filters: [{ name: 'Text', extensions: ['txt'] }]
-      })
-      if (res.canceled || !res.filePath) return { saved: false }
-      await writeFile(res.filePath, encodeLogText(text))
-      return { saved: true, path: res.filePath }
+  ipcMain.handle('log:save', async (_e, { text, path }: { text: string; path?: string }) => {
+    if (path) {
+      await writeFile(path, encodeLogText(text))
+      return { saved: true, path }
     }
-  )
+    const win = BrowserWindow.getFocusedWindow() ?? undefined
+    const res = await dialog.showSaveDialog(win!, {
+      title: 'Save log',
+      defaultPath: 'log.txt',
+      filters: [{ name: 'Text', extensions: ['txt'] }]
+    })
+    if (res.canceled || !res.filePath) return { saved: false }
+    await writeFile(res.filePath, encodeLogText(text))
+    return { saved: true, path: res.filePath }
+  })
 
   // --- Simian audio database (Access .mdb): file-name → duration lookups -----
   // The database is app-wide: its path persists in userData and reloads on

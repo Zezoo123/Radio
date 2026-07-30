@@ -31,8 +31,7 @@ const NEXT_DAY_LOG = '__nextdaylog__'
 const LOG_DESCRIPTION = '[Day] [YYMMDD] Log'
 
 /** A row's hour selection, tolerating pre-migration data (legacy `hour`). */
-const rowHours = (row: FormatRow): number[] =>
-  row.hours ?? (row.hour != null ? [row.hour] : [])
+const rowHours = (row: FormatRow): number[] => row.hours ?? (row.hour != null ? [row.hour] : [])
 // Categories that carry no audio file/cart — the Name/cart cell is disabled for
 // these (MACRO commands live in Description; COMMENT rows are plain comments).
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
@@ -99,7 +98,7 @@ export function ClockEditor({
     selEnd.current = el.selectionEnd ?? selStart.current
   }
 
-  const fieldHandlers = (row: number, field: Field) => ({
+  const fieldHandlers = (row: number, field: Field): React.DOMAttributes<HTMLInputElement> => ({
     onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
       track(e, row, field)
       setActiveField(field)
@@ -210,50 +209,50 @@ export function ClockEditor({
   return (
     <div className={`clock-layout ${hideList ? 'solo' : ''}`}>
       {!hideList && (
-      <div className="clock-list">
-        <div className="card-head">
-          <h2>Clocks</h2>
-          <button className="btn" onClick={onAddFormat}>
-            + New
-          </button>
-        </div>
-        {formats.length === 0 && <p className="empty">No formats yet.</p>}
-        {formats.map((f) => (
-          <div key={f.id} className={`clock-item ${f.id === selectedId ? 'on' : ''}`}>
-            <button
-              className="clock-select"
-              onClick={() => {
-                onSelect(f.id)
-                setConfirmDeleteId(null)
-              }}
-            >
-              <span className="swatch" style={{ background: f.color }} />
-              <span className="clock-name">{f.name || '(unnamed)'}</span>
-              <span className="muted">{f.rows.length}</span>
+        <div className="clock-list">
+          <div className="card-head">
+            <h2>Clocks</h2>
+            <button className="btn" onClick={onAddFormat}>
+              + New
             </button>
-            {confirmDeleteId === f.id ? (
+          </div>
+          {formats.length === 0 && <p className="empty">No formats yet.</p>}
+          {formats.map((f) => (
+            <div key={f.id} className={`clock-item ${f.id === selectedId ? 'on' : ''}`}>
               <button
-                className="trash confirm"
-                title="Click again to delete"
+                className="clock-select"
                 onClick={() => {
-                  onDeleteFormat(f.id)
+                  onSelect(f.id)
                   setConfirmDeleteId(null)
                 }}
               >
-                Delete?
+                <span className="swatch" style={{ background: f.color }} />
+                <span className="clock-name">{f.name || '(unnamed)'}</span>
+                <span className="muted">{f.rows.length}</span>
               </button>
-            ) : (
-              <button
-                className="trash"
-                title="Delete clock"
-                onClick={() => setConfirmDeleteId(f.id)}
-              >
-                <TrashIcon />
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+              {confirmDeleteId === f.id ? (
+                <button
+                  className="trash confirm"
+                  title="Click again to delete"
+                  onClick={() => {
+                    onDeleteFormat(f.id)
+                    setConfirmDeleteId(null)
+                  }}
+                >
+                  Delete?
+                </button>
+              ) : (
+                <button
+                  className="trash"
+                  title="Delete clock"
+                  onClick={() => setConfirmDeleteId(f.id)}
+                >
+                  <TrashIcon />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="clock-edit">
@@ -297,154 +296,154 @@ export function ClockEditor({
                 {selected.rows.map((row, i) => {
                   const noName = NO_NAME_CATEGORIES.includes(row.category ?? '')
                   return (
-                  <tr key={i} className={row.logRow ? 'row-log' : ''}>
-                    {showHour && (
+                    <tr key={i} className={row.logRow ? 'row-log' : ''}>
+                      {showHour && (
+                        <td>
+                          <button
+                            className="btn hour-cell"
+                            disabled={row.logRow}
+                            title={
+                              row.logRow
+                                ? 'Fixed — the log row loads at 23:59:59'
+                                : 'Pick the hours this row fires at'
+                            }
+                            onClick={() => setHourPickRow(i)}
+                          >
+                            {hoursSummary(rowHours(row))}
+                          </button>
+                        </td>
+                      )}
                       <td>
-                        <button
-                          className="btn hour-cell"
-                          disabled={row.logRow}
-                          title={
-                            row.logRow
-                              ? 'Fixed — the log row loads at 23:59:59'
-                              : 'Pick the hours this row fires at'
-                          }
-                          onClick={() => setHourPickRow(i)}
-                        >
-                          {hoursSummary(rowHours(row))}
-                        </button>
-                      </td>
-                    )}
-                    <td>
-                      <input
-                        type="number"
-                        min={0}
-                        max={59}
-                        value={row.minute}
-                        disabled={row.logRow}
-                        {...nonTargetFocus}
-                        onChange={(e) => patchRow(i, { minute: clamp(+e.target.value) })}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        min={0}
-                        max={59}
-                        value={row.second}
-                        disabled={row.logRow}
-                        {...nonTargetFocus}
-                        onChange={(e) => patchRow(i, { second: clamp(+e.target.value) })}
-                      />
-                    </td>
-                    <td>
-                      <select
-                        value={row.cue}
-                        disabled={row.logRow}
-                        {...nonTargetFocus}
-                        onChange={(e) => patchRow(i, { cue: e.target.value as Cue })}
-                      >
-                        {CUES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        value={row.name}
-                        disabled={row.logRow || noName}
-                        placeholder={
-                          noName
-                            ? 'N/A'
-                            : row.logRow
-                              ? 'log file name (optional)'
-                              : ''
-                        }
-                        title={noName ? `${row.category} rows have no name/cart` : undefined}
-                        {...fieldHandlers(i, 'name')}
-                        onChange={(e) => patchRow(i, { name: e.target.value })}
-                      />
-                    </td>
-                    <td>
-                      {addingCatRow === i ? (
                         <input
-                          autoFocus
-                          placeholder="New category"
-                          value={newCat}
+                          type="number"
+                          min={0}
+                          max={59}
+                          value={row.minute}
+                          disabled={row.logRow}
                           {...nonTargetFocus}
-                          onChange={(e) => setNewCat(e.target.value)}
-                          onBlur={() => commitNewCategory(i)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') commitNewCategory(i)
-                            else if (e.key === 'Escape') {
-                              setAddingCatRow(null)
-                              setNewCat('')
-                            }
-                          }}
+                          onChange={(e) => patchRow(i, { minute: clamp(+e.target.value) })}
                         />
-                      ) : (
-                        <select
-                          value={row.logRow ? NEXT_DAY_LOG : row.category ?? ''}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          max={59}
+                          value={row.second}
+                          disabled={row.logRow}
                           {...nonTargetFocus}
-                          onChange={(e) => {
-                            const v = e.target.value
-                            if (v === ADD_CATEGORY) {
-                              setNewCat('')
-                              setAddingCatRow(i)
-                            } else if (v === NEXT_DAY_LOG) {
-                              configureLogRow(i)
-                            } else {
-                              // Switching away from NEXT DAY LOG unlocks the row.
-                              // MACRO/COMMENT carry no name/cart, so clear it.
-                              patchRow(i, {
-                                category: v || undefined,
-                                logRow: undefined,
-                                nextDay: undefined,
-                                ...(NO_NAME_CATEGORIES.includes(v) ? { name: '' } : {})
-                              })
-                            }
-                          }}
+                          onChange={(e) => patchRow(i, { second: clamp(+e.target.value) })}
+                        />
+                      </td>
+                      <td>
+                        <select
+                          value={row.cue}
+                          disabled={row.logRow}
+                          {...nonTargetFocus}
+                          onChange={(e) => patchRow(i, { cue: e.target.value as Cue })}
                         >
-                          <option value="">—</option>
-                          {row.category && !categories.includes(row.category) && (
-                            <option value={row.category}>{row.category}</option>
-                          )}
-                          {categories.map((c) => (
+                          {CUES.map((c) => (
                             <option key={c} value={c}>
                               {c}
                             </option>
                           ))}
-                          <option value={NEXT_DAY_LOG}>📅 NEXT DAY LOG</option>
-                          <option value={ADD_CATEGORY}>➕ Add new…</option>
                         </select>
-                      )}
-                    </td>
-                    <td>
-                      <input
-                        dir="auto"
-                        value={row.description ?? ''}
-                        disabled={row.logRow}
-                        title={row.logRow ? 'Auto-filled — resolves to the next day' : undefined}
-                        {...fieldHandlers(i, 'description')}
-                        onChange={(e) =>
-                          patchRow(i, { description: e.target.value || undefined })
-                        }
-                      />
-                    </td>
-                    <td className="cell-actions">
-                      <button
-                        className="btn-link"
-                        title="Duplicate this row (copy inserted below)"
-                        onClick={() => duplicateRow(i)}
-                      >
-                        ⧉
-                      </button>
-                      <button className="btn-link" title="Delete row" onClick={() => removeRow(i)}>
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <input
+                          value={row.name}
+                          disabled={row.logRow || noName}
+                          placeholder={
+                            noName ? 'N/A' : row.logRow ? 'log file name (optional)' : ''
+                          }
+                          title={noName ? `${row.category} rows have no name/cart` : undefined}
+                          {...fieldHandlers(i, 'name')}
+                          onChange={(e) => patchRow(i, { name: e.target.value })}
+                        />
+                      </td>
+                      <td>
+                        {addingCatRow === i ? (
+                          <input
+                            autoFocus
+                            placeholder="New category"
+                            value={newCat}
+                            {...nonTargetFocus}
+                            onChange={(e) => setNewCat(e.target.value)}
+                            onBlur={() => commitNewCategory(i)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') commitNewCategory(i)
+                              else if (e.key === 'Escape') {
+                                setAddingCatRow(null)
+                                setNewCat('')
+                              }
+                            }}
+                          />
+                        ) : (
+                          <select
+                            value={row.logRow ? NEXT_DAY_LOG : (row.category ?? '')}
+                            {...nonTargetFocus}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              if (v === ADD_CATEGORY) {
+                                setNewCat('')
+                                setAddingCatRow(i)
+                              } else if (v === NEXT_DAY_LOG) {
+                                configureLogRow(i)
+                              } else {
+                                // Switching away from NEXT DAY LOG unlocks the row.
+                                // MACRO/COMMENT carry no name/cart, so clear it.
+                                patchRow(i, {
+                                  category: v || undefined,
+                                  logRow: undefined,
+                                  nextDay: undefined,
+                                  ...(NO_NAME_CATEGORIES.includes(v) ? { name: '' } : {})
+                                })
+                              }
+                            }}
+                          >
+                            <option value="">—</option>
+                            {row.category && !categories.includes(row.category) && (
+                              <option value={row.category}>{row.category}</option>
+                            )}
+                            {categories.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                            <option value={NEXT_DAY_LOG}>📅 NEXT DAY LOG</option>
+                            <option value={ADD_CATEGORY}>➕ Add new…</option>
+                          </select>
+                        )}
+                      </td>
+                      <td>
+                        <input
+                          dir="auto"
+                          value={row.description ?? ''}
+                          disabled={row.logRow}
+                          title={row.logRow ? 'Auto-filled — resolves to the next day' : undefined}
+                          {...fieldHandlers(i, 'description')}
+                          onChange={(e) =>
+                            patchRow(i, { description: e.target.value || undefined })
+                          }
+                        />
+                      </td>
+                      <td className="cell-actions">
+                        <button
+                          className="btn-link"
+                          title="Duplicate this row (copy inserted below)"
+                          onClick={() => duplicateRow(i)}
+                        >
+                          ⧉
+                        </button>
+                        <button
+                          className="btn-link"
+                          title="Delete row"
+                          onClick={() => removeRow(i)}
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
                   )
                 })}
               </tbody>

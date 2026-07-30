@@ -46,7 +46,6 @@ export interface PromoSummary {
   programCount: number
 }
 
-
 export interface AppConfig {
   hourly: HourlyOptions
   /** Include the computed azan (per the global AZAN format) in the export. */
@@ -272,7 +271,13 @@ class Session {
 
   async removePromos(): Promise<PromoSummary | null> {
     const rules = (await this.ensurePromos()).rules
-    this.st().promos = { fileName: null, set: { entries: [] }, overrides: {}, exclusions: {}, rules }
+    this.st().promos = {
+      fileName: null,
+      set: { entries: [] },
+      overrides: {},
+      exclusions: {},
+      rules
+    }
     await promosStore.save(this.st().promos!)
     return this.promoSummary()
   }
@@ -292,7 +297,13 @@ class Session {
   /** Per-program placement for the whole week containing `anchor` (Sun..Sat). */
   async promoWeek(anchor: CalendarDate): Promise<PromoWeekRow[]> {
     const file = await this.ensurePromos()
-    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions, file.rules)
+    return placementsForWeek(
+      file.set,
+      weekStartFor(anchor),
+      file.overrides,
+      file.exclusions,
+      file.rules
+    )
   }
 
   /**
@@ -331,7 +342,13 @@ class Session {
     if (week.every((d) => d.length === 0)) delete file.exclusions[fileName]
     else file.exclusions[fileName] = week
     await promosStore.save(file)
-    return placementsForWeek(file.set, weekStartFor(anchor), file.overrides, file.exclusions, file.rules)
+    return placementsForWeek(
+      file.set,
+      weekStartFor(anchor),
+      file.overrides,
+      file.exclusions,
+      file.rules
+    )
   }
 
   /** Save (or clear, when `times` is empty) a manual time override. */
@@ -391,7 +408,9 @@ class Session {
   ): ComposeOptions {
     const st = this.st()
     const azanLinesForDate =
-      st.includeAzan && azanFormat ? (date: CalendarDate) => computeAzanLines(date, azanFormat) : undefined
+      st.includeAzan && azanFormat
+        ? (date: CalendarDate) => computeAzanLines(date, azanFormat)
+        : undefined
     return {
       templates: st.includeElements ? st.templates.map((t) => t.template) : [],
       azanLinesForDate,

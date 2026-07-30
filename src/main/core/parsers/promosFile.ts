@@ -96,7 +96,9 @@ export function parsePromosWorkbook(wb: ExcelJS.Workbook): PromoSet {
     const airStartHour = from ? from.hour : null
     const airEndHour = to ? to.hour : null
     const airWraps =
-      from != null && to != null && (to.hour < from.hour || (to.hour === from.hour && to.minute < from.minute))
+      from != null &&
+      to != null &&
+      (to.hour < from.hour || (to.hour === from.hour && to.minute < from.minute))
 
     entries.push({
       program,

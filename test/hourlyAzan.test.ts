@@ -6,11 +6,7 @@ import { composeDay } from '@core/schedule/compose'
 describe('hourly markers', () => {
   it('emits a comment row per hour with the hour in the time column', () => {
     const lines = hourlyMarkerLines({ enabled: true, startHour: 8, endHour: 10 })
-    expect(lines).toEqual([
-      '08:00:00|||COMMENT|8',
-      '09:00:00|||COMMENT|9',
-      '10:00:00|||COMMENT|10'
-    ])
+    expect(lines).toEqual(['08:00:00|||COMMENT|8', '09:00:00|||COMMENT|9', '10:00:00|||COMMENT|10'])
   })
 
   it('emits nothing when disabled', () => {
@@ -40,8 +36,17 @@ describe('azan rows (default format: deckfade 10s before, azan = FEA)', () => {
 
   it('honors a custom format: extra line after, custom azan category', () => {
     const rows = buildAzanRows(
-      { fajr: '05:00:00', dhuhr: '12:00:00', asr: '15:00:00', maghrib: '19:00:00', isha: '21:00:00' },
-      { azanCategory: 'SER', lines: [{ offset: 5, cue: '+', name: 'BED', category: 'AUDIO', description: 'after' }] }
+      {
+        fajr: '05:00:00',
+        dhuhr: '12:00:00',
+        asr: '15:00:00',
+        maghrib: '19:00:00',
+        isha: '21:00:00'
+      },
+      {
+        azanCategory: 'SER',
+        lines: [{ offset: 5, cue: '+', name: 'BED', category: 'AUDIO', description: 'after' }]
+      }
     )
     // Fajr: azan (SER) at 05:00:00, then the +5s line at 05:00:05.
     expect(rows[0]).toBe('05:00:00|+|AZ22-01RB|SER|AZAN فجر')

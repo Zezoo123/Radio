@@ -165,7 +165,12 @@ describe('element template parser', () => {
     const tpl = await parseElementTemplate(fixture('Karama.xlsx'))
     tpl.category = 'AUDIO'
     const line = serialize([
-      { year: 2026, month: 6, day: 1, sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })] }
+      {
+        year: 2026,
+        month: 6,
+        day: 1,
+        sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })]
+      }
     ])
     expect(line).toContain('08:20:01|+|ADS_1710-A|AUDIO|')
   })

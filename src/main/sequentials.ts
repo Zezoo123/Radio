@@ -6,7 +6,9 @@ import { stationFile, stationFileEnsured } from './station'
 class SequentialStore {
   async load(): Promise<Sequential[]> {
     try {
-      const list = JSON.parse(await readFile(stationFile('sequentials.json'), 'utf-8')) as Sequential[]
+      const list = JSON.parse(
+        await readFile(stationFile('sequentials.json'), 'utf-8')
+      ) as Sequential[]
       return Array.isArray(list) ? list.map(normalize) : []
     } catch (err) {
       // Only a missing file means "first run"; other errors must surface so
