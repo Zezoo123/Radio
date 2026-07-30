@@ -421,7 +421,10 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
       prev.map((r) =>
         r.fileName !== row.fileName
           ? r
-          : { ...r, days: r.days.map((d) => (d.weekday !== wd ? d : { ...d, excludedHours: hours })) }
+          : {
+              ...r,
+              days: r.days.map((d) => (d.weekday !== wd ? d : { ...d, excludedHours: hours }))
+            }
       )
     )
   }
@@ -543,7 +546,9 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
       .flatMap((r) => {
         const d = r.days.find((x) => x.weekday === wd)
         if (!d) return []
-        return d.times.filter((t) => +t.slice(0, 2) === hour).map((time) => ({ time, name: r.fileName }))
+        return d.times
+          .filter((t) => +t.slice(0, 2) === hour)
+          .map((time) => ({ time, name: r.fileName }))
       })
       .sort((a, b) => a.time.localeCompare(b.time))
 
@@ -562,7 +567,10 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
             </div>
             <div className="lib-list">
               {set.formats.map((f) => (
-                <div key={f.id} className={`lib-item ${!erasing && selectedId === f.id ? 'on' : ''}`}>
+                <div
+                  key={f.id}
+                  className={`lib-item ${!erasing && selectedId === f.id ? 'on' : ''}`}
+                >
                   <button
                     className="lib-main"
                     title="Select as paint brush"
@@ -599,7 +607,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                       Delete?
                     </button>
                   ) : (
-                    <button className="btn-link" title="Delete clock" onClick={() => setConfirmDeleteId(f.id)}>
+                    <button
+                      className="btn-link"
+                      title="Delete clock"
+                      onClick={() => setConfirmDeleteId(f.id)}
+                    >
                       ✕
                     </button>
                   )}
@@ -617,13 +629,19 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
             </button>
 
             <div style={{ marginTop: 6 }}>
-              <div className="kick" title="A default clock fills every hour of a day; pick one per day in the DEF row">
+              <div
+                className="kick"
+                title="A default clock fills every hour of a day; pick one per day in the DEF row"
+              >
                 Day defaults
               </div>
             </div>
             <div className="lib-list">
               {(set.defaultClocks ?? []).map((c) => (
-                <div key={c.id} className={`lib-item ${editingDefaults && selectedDefaultId === c.id ? 'on' : ''}`}>
+                <div
+                  key={c.id}
+                  className={`lib-item ${editingDefaults && selectedDefaultId === c.id ? 'on' : ''}`}
+                >
                   <button
                     className="lib-main"
                     title="Edit this default clock"
@@ -648,7 +666,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                       Delete?
                     </button>
                   ) : (
-                    <button className="btn-link" title="Delete default clock" onClick={() => setConfirmDeleteId(c.id)}>
+                    <button
+                      className="btn-link"
+                      title="Delete default clock"
+                      onClick={() => setConfirmDeleteId(c.id)}
+                    >
                       ✕
                     </button>
                   )}
@@ -663,7 +685,9 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
           <>
             <div>
               <div className="kick">Promos file</div>
-              <div className="side-num">{entries.length ? `${entries.length} programs` : 'none'}</div>
+              <div className="side-num">
+                {entries.length ? `${entries.length} programs` : 'none'}
+              </div>
               {summary?.fileName && <div className="muted mono-sm">{summary.fileName}</div>}
             </div>
             <div className="row">
@@ -683,8 +707,15 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                 </button>
               </div>
               {entries.map((e) => (
-                <div key={e.fileName} className={`lib-item ${selProgram === e.fileName ? 'on' : ''}`}>
-                  <button className="lib-main" onClick={() => setSelProgram(e.fileName)} title={e.fileName}>
+                <div
+                  key={e.fileName}
+                  className={`lib-item ${selProgram === e.fileName ? 'on' : ''}`}
+                >
+                  <button
+                    className="lib-main"
+                    onClick={() => setSelProgram(e.fileName)}
+                    title={e.fileName}
+                  >
                     <span className="lib-name" dir="auto">
                       {e.program}
                     </span>
@@ -693,7 +724,9 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                         ✗
                       </span>
                     )}
-                    <span className="muted mono-sm">{e.promoCounts.reduce((a, b) => a + b, 0)}/wk</span>
+                    <span className="muted mono-sm">
+                      {e.promoCounts.reduce((a, b) => a + b, 0)}/wk
+                    </span>
                   </button>
                 </div>
               ))}
@@ -705,7 +738,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                 {rules.breaks.map((m) => (
                   <span key={m} className="pill break-pill">
                     :{pad2(m)}
-                    <button className="btn-link" title="Remove this break" onClick={() => removeBreak(m)}>
+                    <button
+                      className="btn-link"
+                      title="Remove this break"
+                      onClick={() => removeBreak(m)}
+                    >
                       ✕
                     </button>
                   </span>
@@ -736,7 +773,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
           <div className="side-foot">
             <div className="kick">Format set</div>
             <div className="row">
-              <button className="btn" title="Save this whole setup to a file" onClick={doSaveFormatFile}>
+              <button
+                className="btn"
+                title="Save this whole setup to a file"
+                onClick={doSaveFormatFile}
+              >
                 Save set…
               </button>
               <button className="btn" title="Load a saved format file" onClick={doLoadFormatFile}>
@@ -749,7 +790,13 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
               <button
                 className="btn"
                 disabled={!date}
-                title={date ? WEEKDAY_FULL[new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay()] : ''}
+                title={
+                  date
+                    ? WEEKDAY_FULL[
+                        new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay()
+                      ]
+                    : ''
+                }
                 onClick={doExportForDate}
               >
                 Export day…
@@ -758,7 +805,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                 Week…
               </button>
             </div>
-            {status && <div className="muted" style={{ fontSize: 12 }}>{status}</div>}
+            {status && (
+              <div className="muted" style={{ fontSize: 12 }}>
+                {status}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -768,13 +819,22 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
         <div className="work-main">
           <div className="work-head">
             <div className="seg">
-              <button className={`seg-btn ${layer === 'clocks' ? 'on' : ''}`} onClick={() => setLayer('clocks')}>
+              <button
+                className={`seg-btn ${layer === 'clocks' ? 'on' : ''}`}
+                onClick={() => setLayer('clocks')}
+              >
                 Clocks
               </button>
-              <button className={`seg-btn ${layer === 'promos' ? 'on' : ''}`} onClick={() => setLayer('promos')}>
+              <button
+                className={`seg-btn ${layer === 'promos' ? 'on' : ''}`}
+                onClick={() => setLayer('promos')}
+              >
                 Promos
               </button>
-              <button className={`seg-btn ${layer === 'blocked' ? 'on' : ''}`} onClick={() => setLayer('blocked')}>
+              <button
+                className={`seg-btn ${layer === 'blocked' ? 'on' : ''}`}
+                onClick={() => setLayer('blocked')}
+              >
                 Blocked hours
               </button>
             </div>
@@ -798,7 +858,10 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                   </tr>
                   {layer === 'clocks' && (
                     <tr className="default-row">
-                      <th className="hour-label" title="Default clock applied to every hour of the day">
+                      <th
+                        className="hour-label"
+                        title="Default clock applied to every hour of the day"
+                      >
                         DEF
                       </th>
                       {WEEKDAY_LABELS.map((_, wd) => (
@@ -884,132 +947,143 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
       {/* ---- Right: per-hour inspector (hidden while editing a clock so the
            row editor gets the full width) ---- */}
       {mode === 'grid' && (
-      <div className="work-insp">
-        {!sel ? (
-          <p className="empty">Click an hour in the grid to inspect it.</p>
-        ) : (
-          <>
-            <div>
-              <div className="kick">Selected hour</div>
-              <div className="insp-title">
-                {WEEKDAY_LABELS[sel.wd].toUpperCase()} {pad2(sel.hour)}:00
+        <div className="work-insp">
+          {!sel ? (
+            <p className="empty">Click an hour in the grid to inspect it.</p>
+          ) : (
+            <>
+              <div>
+                <div className="kick">Selected hour</div>
+                <div className="insp-title">
+                  {WEEKDAY_LABELS[sel.wd].toUpperCase()} {pad2(sel.hour)}:00
+                </div>
               </div>
-            </div>
 
-            <div className="insp-sec">
-              <div className="kick">
-                Clock — {paintedClock ? paintedClock.name : dayDefaultClock ? `${dayDefaultClock.name} (default)` : 'none'}
-              </div>
-              {inspClock && inspRows.length > 0 ? (
-                <table className="tbl insp-tbl mono-sm">
-                  <thead>
-                    <tr>
-                      <th>Min</th>
-                      <th>Sec</th>
-                      <th>Cue</th>
-                      <th>Name</th>
-                      <th>Cat</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inspRows.map((r, i) => (
-                      <tr key={i}>
-                        <td>{pad2(r.minute)}</td>
-                        <td>{pad2(r.second)}</td>
-                        <td>{r.cue}</td>
-                        <td dir="auto">{r.name || '—'}</td>
-                        <td>{r.category ?? ''}</td>
+              <div className="insp-sec">
+                <div className="kick">
+                  Clock —{' '}
+                  {paintedClock
+                    ? paintedClock.name
+                    : dayDefaultClock
+                      ? `${dayDefaultClock.name} (default)`
+                      : 'none'}
+                </div>
+                {inspClock && inspRows.length > 0 ? (
+                  <table className="tbl insp-tbl mono-sm">
+                    <thead>
+                      <tr>
+                        <th>Min</th>
+                        <th>Sec</th>
+                        <th>Cue</th>
+                        <th>Name</th>
+                        <th>Cat</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  {inspClock ? 'No rows fire at this hour.' : 'No clock covers this hour.'}
-                </p>
-              )}
-              {inspClock && (
-                <button
-                  className="btn"
-                  onClick={() => {
-                    if (paintedClock) {
-                      setSelectedId(paintedClock.id)
-                      setMode('clock')
-                    } else if (dayDefaultClock) {
-                      setSelectedDefaultId(dayDefaultClock.id)
-                      setMode('default')
-                    }
-                  }}
-                >
-                  Edit clock rows
-                </button>
-              )}
-            </div>
+                    </thead>
+                    <tbody>
+                      {inspRows.map((r, i) => (
+                        <tr key={i}>
+                          <td>{pad2(r.minute)}</td>
+                          <td>{pad2(r.second)}</td>
+                          <td>{r.cue}</td>
+                          <td dir="auto">{r.name || '—'}</td>
+                          <td>{r.category ?? ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="muted" style={{ margin: 0 }}>
+                    {inspClock ? 'No rows fire at this hour.' : 'No clock covers this hour.'}
+                  </p>
+                )}
+                {inspClock && (
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      if (paintedClock) {
+                        setSelectedId(paintedClock.id)
+                        setMode('clock')
+                      } else if (dayDefaultClock) {
+                        setSelectedDefaultId(dayDefaultClock.id)
+                        setMode('default')
+                      }
+                    }}
+                  >
+                    Edit clock rows
+                  </button>
+                )}
+              </div>
 
-            <div className="insp-sec">
-              <div className="kick">Promos this hour — {placementsAt(sel.wd, sel.hour).length}</div>
-              {entries.length === 0 ? (
-                <p className="muted" style={{ margin: 0 }}>
-                  No promos file loaded.
-                </p>
-              ) : (
-                <>
+              <div className="insp-sec">
+                <div className="kick">
+                  Promos this hour — {placementsAt(sel.wd, sel.hour).length}
+                </div>
+                {entries.length === 0 ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    No promos file loaded.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mono-sm insp-lines">
+                      {placementsAt(sel.wd, sel.hour).map((p, i) => (
+                        <div key={i}>
+                          {p.time} {p.name}
+                        </div>
+                      ))}
+                      {placementsAt(sel.wd, sel.hour).length === 0 && (
+                        <span className="muted">none</span>
+                      )}
+                    </div>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {isBlocked(sel.wd, sel.hour)
+                        ? 'This hour is blocked for all promos.'
+                        : rules.breaks.length
+                          ? `Breaks ${rules.breaks.map((m) => ':' + pad2(m)).join(' ')}`
+                          : 'No breaks set — promos get a random minute.'}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="insp-sec">
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <span className="kick">Azan — {WEEKDAY_FULL[sel.wd]}</span>
+                  <button
+                    className={`chip ${config?.includeAzan ? 'on' : ''}`}
+                    title="Include the 5 daily azan rows in exported logs"
+                    onClick={async () => {
+                      if (config) setConfig(await window.api.setIncludeAzan(!config.includeAzan))
+                    }}
+                  >
+                    {config?.includeAzan ? '✓ ON' : 'OFF'}
+                  </button>
+                </div>
+                {azan && (
                   <div className="mono-sm insp-lines">
-                    {placementsAt(sel.wd, sel.hour).map((p, i) => (
-                      <div key={i}>
-                        {p.time} {p.name}
+                    {PRAYERS.map((p) => (
+                      <div key={p.key}>
+                        {azan[p.key].slice(0, 5)} {p.label}
                       </div>
                     ))}
-                    {placementsAt(sel.wd, sel.hour).length === 0 && <span className="muted">none</span>}
                   </div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {isBlocked(sel.wd, sel.hour)
-                      ? 'This hour is blocked for all promos.'
-                      : rules.breaks.length
-                        ? `Breaks ${rules.breaks.map((m) => ':' + pad2(m)).join(' ')}`
-                        : 'No breaks set — promos get a random minute.'}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="insp-sec">
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="kick">
-                  Azan — {WEEKDAY_FULL[sel.wd]}
-                </span>
+                )}
                 <button
-                  className={`chip ${config?.includeAzan ? 'on' : ''}`}
-                  title="Include the 5 daily azan rows in exported logs"
-                  onClick={async () => {
-                    if (config) setConfig(await window.api.setIncludeAzan(!config.includeAzan))
-                  }}
+                  className="btn"
+                  title="The azan format is edited in Settings"
+                  onClick={onOpenSettings}
                 >
-                  {config?.includeAzan ? '✓ ON' : 'OFF'}
+                  Edit azan format
                 </button>
               </div>
-              {azan && (
-                <div className="mono-sm insp-lines">
-                  {PRAYERS.map((p) => (
-                    <div key={p.key}>
-                      {azan[p.key].slice(0, 5)} {p.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <button className="btn" title="The azan format is edited in Settings" onClick={onOpenSettings}>
-                Edit azan format
-              </button>
-            </div>
 
-            <div className="insp-foot">
-              <button className="btn primary" onClick={onOpenLog}>
-                Open in LOG →
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+              <div className="insp-foot">
+                <button className="btn primary" onClick={onOpenLog}>
+                  Open in LOG →
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       )}
     </div>
   )

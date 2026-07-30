@@ -102,7 +102,14 @@ export function rowToLine(row: LogRow, duration?: number): string {
   // Section headers are decorative pipe art and stay verbatim.
   if (duration != null && rowKind(row) !== 'section') {
     const [time, cue, name, category, description] = row.fields
-    return [time, cue, name, duration > 0 ? formatDuration(duration) : '', category, description].join('|')
+    return [
+      time,
+      cue,
+      name,
+      duration > 0 ? formatDuration(duration) : '',
+      category,
+      description
+    ].join('|')
   }
   // Emit at least the original field count, extended if a later field now has
   // content. A category added to a bare 3-field event also brings the (empty)
@@ -120,9 +127,7 @@ export function rowToLine(row: LogRow, duration?: number): string {
 
 /** `durationOf` (when given) writes each event row's Dur back as the Length column. */
 export function serializeRows(rows: LogRow[], durationOf?: (row: LogRow) => number): string {
-  return rows.length
-    ? rows.map((r) => rowToLine(r, durationOf?.(r))).join(LINE_SEP) + LINE_SEP
-    : ''
+  return rows.length ? rows.map((r) => rowToLine(r, durationOf?.(r))).join(LINE_SEP) + LINE_SEP : ''
 }
 
 /** Style class for a row: date rules/comments, section headers, or events. */

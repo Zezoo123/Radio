@@ -10,6 +10,7 @@ workflow into three sections — everything about a task on one screen, with the
 data front and center.
 
 ### The new shell
+
 - **Three top tabs replace the sidebar**: **BOOKING** (audio elements),
   **GRID** (clocks · promos · azan) and **LOG** (build · edit · export).
   Station switcher, date and Settings (now a right-side drawer) live in the
@@ -20,6 +21,7 @@ data front and center.
   Settings.
 
 ### BOOKING (was Import)
+
 - One table of every booked element — code, group, category, times, covers,
   source file — with direct **Add file / Add folder / Promos sheet** buttons.
 - Selecting an element keeps its **whole plan in view**: the dates × hours
@@ -28,6 +30,7 @@ data front and center.
   letters, and links to where the element lands (Grid → Log).
 
 ### GRID (was Formats + Promos, plus Azan from Settings)
+
 - **One 24×7 week grid with three layers**: CLOCKS (paint clocks onto hours,
   with a per-day default row), PROMOS (per-program placements, blackouts and
   drag-to-exclude hours — or aggregate counts across programs), and BLOCKED
@@ -41,6 +44,7 @@ data front and center.
   grid lines are the structure and only the focused cell lights up.
 
 ### LOG (was Export + Editor)
+
 - **Build from Grid** composes a date range (clocks + booked elements +
   promos + azan) and loads it straight into the editable log grid — no more
   preview/hand-off two-step. **Export range…** still writes multi-day batches
@@ -57,6 +61,7 @@ data front and center.
 ## 0.7.1 — 2026-07-28
 
 ### Promos
+
 - **Blocked hours are now picked per day per hour** on the same 7×24 week table
   as the promo placement grids (blocked cells show black everywhere). An hour
   header toggles that hour across the week, a day name toggles the whole day,
@@ -67,6 +72,7 @@ data front and center.
   Edits apply instantly and save once on release.
 
 ### Formats
+
 - **Sort by time** button on every clock (regular and default): reorders the
   rows by Min:Sec. Equal times keep their order; NEXT DAY LOG stays last.
 - **Date tokens accept a day offset**: `[yymmdd-1]` fills in the day before
@@ -75,6 +81,7 @@ data front and center.
   that bakes the offset into every preset and its live example.
 
 ### Editor
+
 - **The duration column round-trips.** Opening a text log that carries a
   Length column — between Name and Category (Simian's own order) or trailing —
   reads it into the **Dur** column; logs without one open with durations at
@@ -87,6 +94,7 @@ data front and center.
   can never hold anything but a valid time.
 
 ### Settings
+
 - **App-wide opacity controls** for the category colors: one Highlight
   opacity (default 35%) and one Text opacity (default 100%) applied to every
   category — colors stay stored as plain `#rrggbb`.

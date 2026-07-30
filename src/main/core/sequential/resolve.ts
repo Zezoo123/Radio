@@ -36,7 +36,8 @@ export interface SequentialResolver {
  */
 export function makeResolver(sequentials: Sequential[], rng: Rng): SequentialResolver {
   const work = new Map<string, { seq: Sequential; queue: string[]; last?: string }>()
-  for (const seq of sequentials) work.set(seq.name, { seq, queue: seq.queue.slice(), last: seq.last })
+  for (const seq of sequentials)
+    work.set(seq.name, { seq, queue: seq.queue.slice(), last: seq.last })
 
   return {
     pop(name: string): string | null {
@@ -66,6 +67,9 @@ export function makeResolver(sequentials: Sequential[], rng: Rng): SequentialRes
 }
 
 /** Replace `{name}` tokens in text via pop(); unknown names are left as-is. */
-export function substituteSequentialTokens(text: string, pop: (name: string) => string | null): string {
+export function substituteSequentialTokens(
+  text: string,
+  pop: (name: string) => string | null
+): string {
   return text.replace(TOKEN_RE, (match, name: string) => pop(name) ?? match)
 }

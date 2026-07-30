@@ -8,9 +8,9 @@ const CRLF = '\r\n'
 const LINES = [
   '|||COMMENT|' + '-'.repeat(84),
   '|||COMMENT|--------------------=§§    07   -   06   -   2026   §§=--------------------',
-  '||||| ' + '-'.repeat(34) + ' '.repeat(23) + 'ADS_1710  Baheya',
+  '||||| ' + '-'.repeat(34) + ' '.repeat(23) + 'ADS_1710  Karama',
   '08:20:01|+|ADS_1710_A',
-  '10:14:00|+|HP25-LazizWeSay2|PROMO|ميرا العمرى',
+  '10:14:00|+|HP25-AhwaSobh2|PROMO|نورا صبري',
   '09:00:00|||COMMENT|9',
   '05:05:00|@|DECKFADE CURRENT|ATHAN'
 ]
@@ -104,7 +104,7 @@ describe('export log rows', () => {
   })
 
   it('leaves section headers verbatim even when saving with durations', () => {
-    const line = '||||| ' + '-'.repeat(34) + ' '.repeat(23) + 'ADS_1710  Baheya'
+    const line = '||||| ' + '-'.repeat(34) + ' '.repeat(23) + 'ADS_1710  Karama'
     const rows = parseLogText(line + CRLF)
     expect(serializeRows(rows, () => 0)).toBe(line + CRLF)
     expect(rowKind(rows[0])).toBe('section')

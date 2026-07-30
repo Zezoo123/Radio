@@ -47,9 +47,9 @@ export function sanitizeRules(raw: Partial<PromoRules> | undefined): StationRule
 /** Sanitize a persisted int list: whole numbers within [0, max], deduped, sorted. */
 function intList(raw: unknown, max: number): number[] {
   if (!Array.isArray(raw)) return []
-  return [...new Set(raw.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= max))].sort(
-    (a, b) => a - b
-  )
+  return [
+    ...new Set(raw.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= max))
+  ].sort((a, b) => a - b)
 }
 
 /**
@@ -77,7 +77,9 @@ function normalizeExclusions(raw: unknown): PromoExclusions {
 class PromosStore {
   async load(): Promise<PromosFile> {
     try {
-      const raw = JSON.parse(await readFile(stationFile('promos.json'), 'utf-8')) as Partial<PromosFile>
+      const raw = JSON.parse(
+        await readFile(stationFile('promos.json'), 'utf-8')
+      ) as Partial<PromosFile>
       return {
         fileName: raw.fileName ?? null,
         set: raw.set?.entries ? raw.set : { entries: [] },

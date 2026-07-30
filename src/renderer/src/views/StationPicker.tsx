@@ -22,8 +22,8 @@ export function StationPicker({ stations, current, onPick }: Props): JSX.Element
         <h1>
           Choose a station
           <PageHelp>
-            Each station keeps its own formats, promos and imports. You can switch any time from
-            the sidebar.
+            Each station keeps its own formats, promos and imports. You can switch any time from the
+            sidebar.
           </PageHelp>
         </h1>
         <div className="station-grid">

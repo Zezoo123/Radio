@@ -74,7 +74,13 @@ describe('normalizeFormatSet (format file import)', () => {
             { hour: 23, minute: 59, second: 59, cue: '+', name: 'LOG' },
             { hours: [9, 7, 7, 30, -1, 2.5], minute: 0, second: 0, cue: '+', name: 'JUNKY' },
             { hours: [], minute: 0, second: 0, cue: '+', name: 'EMPTY' },
-            { hours: Array.from({ length: 24 }, (_, h) => h), minute: 0, second: 0, cue: '+', name: 'FULL' }
+            {
+              hours: Array.from({ length: 24 }, (_, h) => h),
+              minute: 0,
+              second: 0,
+              cue: '+',
+              name: 'FULL'
+            }
           ]
         }
       ]

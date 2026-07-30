@@ -81,7 +81,10 @@ export function SettingsView({
     if (!format) return
     update({
       ...format,
-      lines: [...format.lines, { offset: 0, cue: '+', name: '', category: 'AUDIO', description: '' }]
+      lines: [
+        ...format.lines,
+        { offset: 0, cue: '+', name: '', category: 'AUDIO', description: '' }
+      ]
     })
   }
 
@@ -133,8 +136,8 @@ export function SettingsView({
       <section className="card">
         <h2>Category colors</h2>
         <p className="muted">
-          Give a Simian category a highlight and/or a text color and every row of that category
-          is recolored across the app (the log Editor). Applies everywhere, on every station.
+          Give a Simian category a highlight and/or a text color and every row of that category is
+          recolored across the app (the log Editor). Applies everywhere, on every station.
           Interrupted (red) and skipped (yellow) rows keep their warning text color.
         </p>
         <div className="row" style={{ marginBottom: 10 }}>
@@ -180,9 +183,7 @@ export function SettingsView({
                   <input
                     type="color"
                     value={color ?? '#666666'}
-                    title={
-                      color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`
-                    }
+                    title={color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`}
                     onChange={(e) => setColor('categoryColors', cat, e.target.value)}
                   />
                   {color && (

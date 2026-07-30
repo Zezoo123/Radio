@@ -56,10 +56,7 @@ export function LogView({
   }, [active])
 
   const ready =
-    hasFormats ||
-    templates.length > 0 ||
-    Boolean(config?.includeAzan) ||
-    Boolean(config?.hasPromos)
+    hasFormats || templates.length > 0 || Boolean(config?.includeAzan) || Boolean(config?.hasPromos)
   const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
 
   async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
@@ -115,7 +112,9 @@ export function LogView({
   async function fillDurations(rs: LogRow[]): Promise<void> {
     const names = [
       ...new Set(
-        rs.filter((r) => rowKind(r) === 'event' && r.fields[2].trim()).map((r) => r.fields[2].trim())
+        rs
+          .filter((r) => rowKind(r) === 'event' && r.fields[2].trim())
+          .map((r) => r.fields[2].trim())
       )
     ]
     if (names.length === 0) return
@@ -139,7 +138,9 @@ export function LogView({
   async function fillFromDb(): Promise<void> {
     const names = [
       ...new Set(
-        rows.filter((r) => rowKind(r) === 'event' && r.fields[2].trim()).map((r) => r.fields[2].trim())
+        rows
+          .filter((r) => rowKind(r) === 'event' && r.fields[2].trim())
+          .map((r) => r.fields[2].trim())
       )
     ]
     if (names.length === 0) return
@@ -267,8 +268,7 @@ export function LogView({
 
   const fileName = path?.split(/[\\/]/).pop()
   const dbName = db?.path.split(/[\\/]/).pop()
-  const rangeLabel =
-    start === end ? prettyDate(start) : `${prettyDate(start)} → ${prettyDate(end)}`
+  const rangeLabel = start === end ? prettyDate(start) : `${prettyDate(start)} → ${prettyDate(end)}`
 
   return (
     <div className={`logwork ${full ? 'full' : ''}`}>
@@ -290,7 +290,11 @@ export function LogView({
               >
                 ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
               </button>
-              <button className="chip" disabled={rows.length === 0} onClick={() => setReplaceOpen(true)}>
+              <button
+                className="chip"
+                disabled={rows.length === 0}
+                onClick={() => setReplaceOpen(true)}
+              >
                 SEARCH &amp; REPLACE…
               </button>
               <button
@@ -306,134 +310,153 @@ export function LogView({
             </div>
           </div>
         ) : (
-        <>
-        <div className="work-head">
-          <div>
-            <div className="kick">Log for</div>
-            <div className="insp-title">{rangeLabel}</div>
-          </div>
-          <label className="kick">
-            From <input type="date" value={start} onChange={(e) => changeStart(e.target.value)} />
-          </label>
-          <label className="kick">
-            To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
-          </label>
-          <div className="row" style={{ marginLeft: 'auto' }}>
-            <button className="btn" onClick={openLog}>
-              Open .bsi / .txt…
-            </button>
-            <button
-              className="btn"
-              disabled={!ready}
-              title="Compose the range from the Grid (clocks + booked elements + promos + azan) and load it here for editing"
-              onClick={buildFromGrid}
-            >
-              Build from Grid
-            </button>
-            <button
-              className="btn primary"
-              disabled={!ready}
-              title="Write the composed schedule for the whole range straight to log files (editor edits are not included — use Save for those)"
-              onClick={doExport}
-            >
-              Export range…
-            </button>
-          </div>
-        </div>
+          <>
+            <div className="work-head">
+              <div>
+                <div className="kick">Log for</div>
+                <div className="insp-title">{rangeLabel}</div>
+              </div>
+              <label className="kick">
+                From{' '}
+                <input type="date" value={start} onChange={(e) => changeStart(e.target.value)} />
+              </label>
+              <label className="kick">
+                To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
+              </label>
+              <div className="row" style={{ marginLeft: 'auto' }}>
+                <button className="btn" onClick={openLog}>
+                  Open .bsi / .txt…
+                </button>
+                <button
+                  className="btn"
+                  disabled={!ready}
+                  title="Compose the range from the Grid (clocks + booked elements + promos + azan) and load it here for editing"
+                  onClick={buildFromGrid}
+                >
+                  Build from Grid
+                </button>
+                <button
+                  className="btn primary"
+                  disabled={!ready}
+                  title="Write the composed schedule for the whole range straight to log files (editor edits are not included — use Save for those)"
+                  onClick={doExport}
+                >
+                  Export range…
+                </button>
+              </div>
+            </div>
 
-        <div className="chips-row">
-          <span className="kick">Includes</span>
-          <button
-            className={`chip ${config?.includeClocks ?? true ? 'on' : ''}`}
-            title="Include the Grid's clock rows (formats week grid)"
-            onClick={async () =>
-              onConfig(await window.api.setIncludeClocks(!(config?.includeClocks ?? true)))
-            }
-          >
-            {(config?.includeClocks ?? true) ? '✓ ' : ''}CLOCKS
-          </button>
-          <button
-            className={`chip ${config?.includeElements ?? true ? 'on' : ''}`}
-            title="Include the booked audio elements (Booking tab)"
-            onClick={async () =>
-              onConfig(await window.api.setIncludeElements(!(config?.includeElements ?? true)))
-            }
-          >
-            {(config?.includeElements ?? true) ? '✓ ' : ''}
-            {templates.length} AUDIO ELEMENTS
-          </button>
-          <button
-            className={`chip ${config?.hasPromos && (config?.includePromos ?? true) ? 'on' : ''}`}
-            disabled={!config?.hasPromos}
-            title={config?.hasPromos ? 'Include the scheduled promos' : 'No promos file loaded (Grid → Promos)'}
-            onClick={async () =>
-              onConfig(await window.api.setIncludePromos(!(config?.includePromos ?? true)))
-            }
-          >
-            {config?.hasPromos && (config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
-          </button>
-          <button
-            className={`chip ${config?.includeAzan ? 'on' : ''}`}
-            title="Include the 5 daily azan rows"
-            onClick={async () => onConfig(await window.api.setIncludeAzan(!config?.includeAzan))}
-          >
-            {config?.includeAzan ? '✓ ' : ''}AZAN
-          </button>
-          <button
-            className={`chip ${hourly.enabled ? 'on' : ''}`}
-            onClick={() => updateHourly({ enabled: !hourly.enabled })}
-          >
-            {hourly.enabled ? '✓ ' : ''}HOURLY MARKERS {pad2(hourly.startHour)}–{pad2(hourly.endHour)}
-          </button>
-          {hourly.enabled && (
-            <>
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={hourly.startHour}
-                onChange={(e) => updateHourly({ startHour: +e.target.value })}
-                style={{ width: 52 }}
-              />
-              <input
-                type="number"
-                min={0}
-                max={23}
-                value={hourly.endHour}
-                onChange={(e) => updateHourly({ endHour: +e.target.value })}
-                style={{ width: 52 }}
-              />
-            </>
-          )}
-          <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
-            <label
-              className="kick"
-              title="The clock the Expected column starts counting from — leave 00:00:00 unless the log starts mid-day"
-            >
-              Start <TimeField value={simStart} onCommit={(v) => { setSimStart(v); refreshSim() }} />
-            </label>
-            <button className="chip" disabled={rows.length === 0} onClick={() => setReplaceOpen(true)}>
-              SEARCH &amp; REPLACE…
-            </button>
-            <button
-              className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
-              disabled={rows.length === 0}
-              title="Recompute the Expected column from the current order, cues and durations"
-              onClick={refreshSim}
-            >
-              ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
-            </button>
-            <button
-              className="chip"
-              disabled={rows.length === 0}
-              title="Show only the log grid, full screen (Esc exits)"
-              onClick={() => setFull(true)}
-            >
-              ⛶ FULL SCREEN
-            </button>
-          </div>
-        </div>
-        </>
+            <div className="chips-row">
+              <span className="kick">Includes</span>
+              <button
+                className={`chip ${(config?.includeClocks ?? true) ? 'on' : ''}`}
+                title="Include the Grid's clock rows (formats week grid)"
+                onClick={async () =>
+                  onConfig(await window.api.setIncludeClocks(!(config?.includeClocks ?? true)))
+                }
+              >
+                {(config?.includeClocks ?? true) ? '✓ ' : ''}CLOCKS
+              </button>
+              <button
+                className={`chip ${(config?.includeElements ?? true) ? 'on' : ''}`}
+                title="Include the booked audio elements (Booking tab)"
+                onClick={async () =>
+                  onConfig(await window.api.setIncludeElements(!(config?.includeElements ?? true)))
+                }
+              >
+                {(config?.includeElements ?? true) ? '✓ ' : ''}
+                {templates.length} AUDIO ELEMENTS
+              </button>
+              <button
+                className={`chip ${config?.hasPromos && (config?.includePromos ?? true) ? 'on' : ''}`}
+                disabled={!config?.hasPromos}
+                title={
+                  config?.hasPromos
+                    ? 'Include the scheduled promos'
+                    : 'No promos file loaded (Grid → Promos)'
+                }
+                onClick={async () =>
+                  onConfig(await window.api.setIncludePromos(!(config?.includePromos ?? true)))
+                }
+              >
+                {config?.hasPromos && (config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
+              </button>
+              <button
+                className={`chip ${config?.includeAzan ? 'on' : ''}`}
+                title="Include the 5 daily azan rows"
+                onClick={async () =>
+                  onConfig(await window.api.setIncludeAzan(!config?.includeAzan))
+                }
+              >
+                {config?.includeAzan ? '✓ ' : ''}AZAN
+              </button>
+              <button
+                className={`chip ${hourly.enabled ? 'on' : ''}`}
+                onClick={() => updateHourly({ enabled: !hourly.enabled })}
+              >
+                {hourly.enabled ? '✓ ' : ''}HOURLY MARKERS {pad2(hourly.startHour)}–
+                {pad2(hourly.endHour)}
+              </button>
+              {hourly.enabled && (
+                <>
+                  <input
+                    type="number"
+                    min={0}
+                    max={23}
+                    value={hourly.startHour}
+                    onChange={(e) => updateHourly({ startHour: +e.target.value })}
+                    style={{ width: 52 }}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={23}
+                    value={hourly.endHour}
+                    onChange={(e) => updateHourly({ endHour: +e.target.value })}
+                    style={{ width: 52 }}
+                  />
+                </>
+              )}
+              <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
+                <label
+                  className="kick"
+                  title="The clock the Expected column starts counting from — leave 00:00:00 unless the log starts mid-day"
+                >
+                  Start{' '}
+                  <TimeField
+                    value={simStart}
+                    onCommit={(v) => {
+                      setSimStart(v)
+                      refreshSim()
+                    }}
+                  />
+                </label>
+                <button
+                  className="chip"
+                  disabled={rows.length === 0}
+                  onClick={() => setReplaceOpen(true)}
+                >
+                  SEARCH &amp; REPLACE…
+                </button>
+                <button
+                  className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
+                  disabled={rows.length === 0}
+                  title="Recompute the Expected column from the current order, cues and durations"
+                  onClick={refreshSim}
+                >
+                  ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
+                </button>
+                <button
+                  className="chip"
+                  disabled={rows.length === 0}
+                  title="Show only the log grid, full screen (Esc exits)"
+                  onClick={() => setFull(true)}
+                >
+                  ⛶ FULL SCREEN
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         <div className="work-body">
@@ -458,100 +481,100 @@ export function LogView({
       </div>
 
       {!full && (
-      <div className="work-insp">
-        <div>
-          <div className="kick">Log</div>
-          <div className="insp-title">{rows.length} rows</div>
-          <div className="muted" style={{ fontSize: 12 }} title={path ?? undefined}>
-            {rows.length > 0 ? (fileName ?? '(unsaved log)') : 'nothing open'}
-            {dirty ? ' — unsaved changes' : ''}
-          </div>
-          {status && (
-            <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-              {status}
+        <div className="work-insp">
+          <div>
+            <div className="kick">Log</div>
+            <div className="insp-title">{rows.length} rows</div>
+            <div className="muted" style={{ fontSize: 12 }} title={path ?? undefined}>
+              {rows.length > 0 ? (fileName ?? '(unsaved log)') : 'nothing open'}
+              {dirty ? ' — unsaved changes' : ''}
             </div>
-          )}
-        </div>
-
-        {warnings.length > 0 && (
-          <div className="attn">
-            <div className="attn-title">NEEDS ATTENTION · {warnings.length}</div>
-            {warnings.map((w, i) => (
-              <div key={i} className="attn-line">
-                {w}
+            {status && (
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                {status}
               </div>
-            ))}
-          </div>
-        )}
-
-        <div className="insp-sec">
-          <div className="kick">Audio database</div>
-          <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-            {db ? (
-              <span title={db.path}>
-                {dbName} — {db.trackCount} tracks (table “{db.table}”). Durations and descriptions
-                are real, so Expected simulates the deck.
-              </span>
-            ) : (
-              'No audio database loaded — durations default to 0, so Expected assumes instant rows.'
             )}
           </div>
-          <div className="row">
-            <button className="btn" onClick={openDb}>
-              {db ? 'Replace DB…' : 'Load Simian DB…'}
-            </button>
+
+          {warnings.length > 0 && (
+            <div className="attn">
+              <div className="attn-title">NEEDS ATTENTION · {warnings.length}</div>
+              {warnings.map((w, i) => (
+                <div key={i} className="attn-line">
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="insp-sec">
+            <div className="kick">Audio database</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+              {db ? (
+                <span title={db.path}>
+                  {dbName} — {db.trackCount} tracks (table “{db.table}”). Durations and descriptions
+                  are real, so Expected simulates the deck.
+                </span>
+              ) : (
+                'No audio database loaded — durations default to 0, so Expected assumes instant rows.'
+              )}
+            </div>
+            <div className="row">
+              <button className="btn" onClick={openDb}>
+                {db ? 'Replace DB…' : 'Load Simian DB…'}
+              </button>
+              {db && rows.length > 0 && (
+                <button className="btn-link" onClick={() => fillDurations(rows)}>
+                  refresh durations
+                </button>
+              )}
+            </div>
             {db && rows.length > 0 && (
-              <button className="btn-link" onClick={() => fillDurations(rows)}>
-                refresh durations
+              <button
+                className="btn"
+                title="Fill Duration and overwrite Description from the audio database for every row whose file name it knows"
+                onClick={fillFromDb}
+              >
+                Update Dur &amp; Desc from DB
               </button>
             )}
           </div>
-          {db && rows.length > 0 && (
-            <button
-              className="btn"
-              title="Fill Duration and overwrite Description from the audio database for every row whose file name it knows"
-              onClick={fillFromDb}
-            >
-              Update Dur &amp; Desc from DB
-            </button>
-          )}
-        </div>
 
-        <div className="insp-sec">
-          <div className="kick">Expected legend</div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
-            <div>
-              <span style={{ fontWeight: 800, color: 'var(--danger)' }}>red</span> — cut short by a
-              timed row
-            </div>
-            <div>
-              <span style={{ fontWeight: 800, color: 'var(--warn)' }}>skipped</span> — never
-              reached
-            </div>
-            <div>
-              <span style={{ fontWeight: 800 }}>@ # +</span> — timed · timed-next · sequential
+          <div className="insp-sec">
+            <div className="kick">Expected legend</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+              <div>
+                <span style={{ fontWeight: 800, color: 'var(--danger)' }}>red</span> — cut short by
+                a timed row
+              </div>
+              <div>
+                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>skipped</span> — never
+                reached
+              </div>
+              <div>
+                <span style={{ fontWeight: 800 }}>@ # +</span> — timed · timed-next · sequential
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="insp-foot">
-          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-            Logs are written as ANSI (Windows-1256) for Simian → Tools → Log Import.
-          </div>
-          <div className="row">
-            <button
-              className="btn primary"
-              disabled={rows.length === 0 || (!dirty && Boolean(path))}
-              onClick={() => save(false)}
-            >
-              Save log
-            </button>
-            <button className="btn" disabled={rows.length === 0} onClick={() => save(true)}>
-              Save as…
-            </button>
+          <div className="insp-foot">
+            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+              Logs are written as ANSI (Windows-1256) for Simian → Tools → Log Import.
+            </div>
+            <div className="row">
+              <button
+                className="btn primary"
+                disabled={rows.length === 0 || (!dirty && Boolean(path))}
+                onClick={() => save(false)}
+              >
+                Save log
+              </button>
+              <button className="btn" disabled={rows.length === 0} onClick={() => save(true)}>
+                Save as…
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       <ReplaceDialog
@@ -574,7 +597,12 @@ function prettyDate(iso: string): string {
   const d = toCalendarDate(iso)
   if (!d) return iso
   return new Date(Date.UTC(d.year, d.month - 1, d.day))
-    .toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
+    .toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    })
     .toUpperCase()
 }
 

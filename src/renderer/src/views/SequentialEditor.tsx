@@ -17,7 +17,13 @@ interface Props {
   onClose: () => void
 }
 
-const BLANK = { name: '', mode: 'numerical' as SequentialMode, start: '0', end: '9', randomize: false }
+const BLANK = {
+  name: '',
+  mode: 'numerical' as SequentialMode,
+  start: '0',
+  end: '9',
+  randomize: false
+}
 
 export function SequentialEditor({
   open,
@@ -64,7 +70,8 @@ export function SequentialEditor({
   // Show the values with date tokens resolved for today, so the auto-populated
   // date is visible (export uses the chosen export date).
   const values = sequentialValues(draft).map((v) => substituteDateTokens(v, today()))
-  const sample = values.length > 6 ? [...values.slice(0, 5), '…', values[values.length - 1]] : values
+  const sample =
+    values.length > 6 ? [...values.slice(0, 5), '…', values[values.length - 1]] : values
 
   async function save(): Promise<void> {
     if (!draft.name) return

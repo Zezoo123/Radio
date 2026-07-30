@@ -62,14 +62,7 @@ describe('week grid → day rows', () => {
   it('expands every assigned hour, time-sorted across the day', () => {
     const events = dayRows(setWith(), 1)
     const times = events.map((e) => e.time)
-    expect(times).toEqual([
-      '08:00:00',
-      '08:00:30',
-      '08:20:00',
-      '09:00:00',
-      '09:00:30',
-      '09:20:00'
-    ])
+    expect(times).toEqual(['08:00:00', '08:00:30', '08:20:00', '09:00:00', '09:00:30', '09:20:00'])
   })
 
   it('serializes a day skeleton with CRLF and trailing newline', () => {

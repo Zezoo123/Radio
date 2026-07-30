@@ -106,8 +106,7 @@ const api = {
     fileName: string,
     date: CalendarDate,
     times: string[]
-  ): Promise<PromoPlacement[]> =>
-    ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
+  ): Promise<PromoPlacement[]> => ipcRenderer.invoke('promos:setTimes', { fileName, date, times }),
   resetPromoTimes: (fileName: string, date: CalendarDate): Promise<PromoPlacement[]> =>
     ipcRenderer.invoke('promos:resetTimes', { fileName, date }),
   getPromoRules: (): Promise<PromoRules> => ipcRenderer.invoke('promos:getRules'),
@@ -156,6 +155,13 @@ const api = {
   openLog: (): Promise<OpenLogResult | null> => ipcRenderer.invoke('log:open'),
   saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('log:save', { text, path }),
+
+  /** Fires once a new version has been downloaded and is ready to install. */
+  onUpdateDownloaded: (cb: (version: string) => void): void => {
+    ipcRenderer.on('update:downloaded', (_e, version: string) => cb(version))
+  },
+  /** Restart the app and install the downloaded update. */
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
 
   openSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:openDb'),
   getSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:getDb'),

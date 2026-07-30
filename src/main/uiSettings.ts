@@ -41,9 +41,7 @@ function normalizeColorMap(raw: unknown): Record<string, string> {
 }
 
 function normalizePct(raw: unknown, fallback: number): number {
-  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 && raw <= 100
-    ? raw
-    : fallback
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 && raw <= 100 ? raw : fallback
 }
 
 export function normalizeUiSettings(raw: unknown): UiSettings {

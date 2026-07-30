@@ -62,6 +62,12 @@ export default function App(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
   const [station, setStation] = useState<string | null>(null)
+  // Set once a new version has downloaded; shows the restart chip in the bar.
+  const [updateReady, setUpdateReady] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.api.onUpdateDownloaded(setUpdateReady)
+  }, [])
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
   const [uiSettings, setUiSettings] = useState<UiSettings>({
     categoryColors: {},
@@ -147,7 +153,12 @@ export default function App(): JSX.Element {
   }, [settingsOpen])
 
   const today = new Date()
-    .toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+    .toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
     .replace(/,/g, '')
     .toUpperCase()
 
@@ -171,7 +182,10 @@ export default function App(): JSX.Element {
         ))}
         <div className="chrome">
           <div className="station-switch" title={`Station: ${station}`}>
-            <span className="station-dot" style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }} />
+            <span
+              className="station-dot"
+              style={{ background: STATION_COLOR[station] ?? 'var(--accent)' }}
+            />
             <select
               className="station-select"
               value={station}
@@ -186,6 +200,15 @@ export default function App(): JSX.Element {
           </div>
           <span className="chrome-date">{today}</span>
           <span className="chrome-note">{templates.length} booked</span>
+          {updateReady && (
+            <button
+              className="chip on"
+              title={`Version ${updateReady} downloaded — restart the app to install (or it installs on next quit)`}
+              onClick={() => window.api.installUpdate()}
+            >
+              ⟳ UPDATE READY
+            </button>
+          )}
           <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Settings">
             {GEAR_ICON}
           </button>
@@ -210,7 +233,10 @@ export default function App(): JSX.Element {
           />
         )}
         {section === 'grid' && (
-          <GridView onOpenLog={() => setSection('log')} onOpenSettings={() => setSettingsOpen(true)} />
+          <GridView
+            onOpenLog={() => setSection('log')}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         )}
         {/* The LOG workbench stays mounted so its unsaved document survives
             tab switches; only its visibility flips. */}
@@ -235,7 +261,11 @@ export default function App(): JSX.Element {
         >
           <div className="settings-drawer" role="dialog" aria-label="Settings">
             <div className="settings-drawer-head">
-              <button className="icon-btn" onClick={() => setSettingsOpen(false)} title="Close settings">
+              <button
+                className="icon-btn"
+                onClick={() => setSettingsOpen(false)}
+                title="Close settings"
+              >
                 ✕
               </button>
             </div>

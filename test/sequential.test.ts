@@ -23,11 +23,7 @@ function seq(over: Partial<Sequential> = {}): Sequential {
 describe('sequential values', () => {
   it('numerical values are zero-padded with the - separator', () => {
     expect(sequentialValues(seq({ start: '0', end: '2' }))).toEqual(['JNG-00', 'JNG-01', 'JNG-02'])
-    expect(sequentialValues(seq({ start: '8', end: '10' }))).toEqual([
-      'JNG-08',
-      'JNG-09',
-      'JNG-10'
-    ])
+    expect(sequentialValues(seq({ start: '8', end: '10' }))).toEqual(['JNG-08', 'JNG-09', 'JNG-10'])
   })
 
   it('alphabetical values are single letters', () => {
@@ -120,7 +116,10 @@ describe('rotation continues across exports (persisted queue)', () => {
     const exportOnce = (): string[] => {
       const res = resolveForDate(set, { year: 2026, month: 6, day: 18 }, [s], mulberry32(1))
       s = res.sequentials[0] // persist advanced queue for next time
-      return res.text.trim().split('\r\n').map((l) => l.split('|')[2])
+      return res.text
+        .trim()
+        .split('\r\n')
+        .map((l) => l.split('|')[2])
     }
 
     expect(exportOnce()).toEqual(['JNG-00', 'JNG-01']) // queue now [JNG-02]

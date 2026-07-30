@@ -46,10 +46,10 @@ describe('promos parser', () => {
     expect(entries.map((e) => e.fileName)).not.toContain('FileName')
   })
 
-  it('parses the first program (يا لذيذ يا سايق) correctly', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2')
-    expect(e.program).toBe('يا لذيذ يا سايق')
-    expect(e.presenter).toBe('ميرا العمرى')
+  it('parses the first program (قهوة الصبح) correctly', async () => {
+    const e = byFile(await load(), 'HP25-AhwaSobh2')
+    expect(e.program).toBe('قهوة الصبح')
+    expect(e.presenter).toBe('نورا صبري')
     // Stored serials are 0.3333 / 0.4167 ⇒ 08:00 / 10:00 (timezone-independent).
     expect(e.airStartHour).toBe(8)
     expect(e.airEndHour).toBe(10)
@@ -65,7 +65,7 @@ describe('promos parser', () => {
   it('reads airtimes by UTC hour, immune to the local timezone', async () => {
     // Artistic: serials 0.8333 / 0.9167 ⇒ 20:00 / 22:00 (not the 22:05 the Cairo
     // LMT offset would render via getHours).
-    const e = byFile(await load(), 'HP25-Artistic')
+    const e = byFile(await load(), 'HP25-Canvas')
     expect(e.airStart).toBe('20:00')
     expect(e.airEnd).toBe('22:00')
     expect(e.airWraps).toBe(false)
@@ -74,7 +74,7 @@ describe('promos parser', () => {
 
 describe('promos blackout window (airtime + 2h)', () => {
   it('blocks the airtime through two hours after the end on airdays', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2') // 08:00–10:00 airday
+    const e = byFile(await load(), 'HP25-AhwaSobh2') // 08:00–10:00 airday
     expect(weekday(SUN)).toBe(0)
     const blocked = blockedHoursForDate(e, SUN)
     expect([...blocked].sort((a, b) => a - b)).toEqual([8, 9, 10, 11, 12])
@@ -84,7 +84,7 @@ describe('promos blackout window (airtime + 2h)', () => {
   })
 
   it('does not block on a day the program is off air', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2')
+    const e = byFile(await load(), 'HP25-AhwaSobh2')
     const FRI: CalendarDate = { year: 2026, month: 6, day: 12 }
     expect(e.airDays[weekday(FRI)]).toBe(false)
     expect(blockedHoursForDate(e, FRI).size).toBe(0)
@@ -117,7 +117,7 @@ describe('promos blackout window (airtime + 2h)', () => {
 
 describe('promos distribution rules', () => {
   it('places exactly the requested count, at most one per hour', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2')
+    const e = byFile(await load(), 'HP25-AhwaSobh2')
     const hours = autoHoursForDate(e, SUN)
     expect(hours).toHaveLength(5) // count for Sunday
     expect(new Set(hours).size).toBe(hours.length) // distinct ⇒ ≤1/hour
@@ -125,12 +125,12 @@ describe('promos distribution rules', () => {
   })
 
   it('is deterministic for a given program + date', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2')
+    const e = byFile(await load(), 'HP25-AhwaSobh2')
     expect(autoTimesForDate(e, SUN)).toEqual(autoTimesForDate(e, SUN))
   })
 
   it('differs from the previous day, next day, and the same weekday next week', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2')
+    const e = byFile(await load(), 'HP25-AhwaSobh2')
     const today = autoHoursForDate(e, SUN).join(',')
     expect(today).not.toBe(autoHoursForDate(e, MON).join(','))
     expect(today).not.toBe(autoHoursForDate(e, { year: 2026, month: 6, day: 6 }).join(','))
@@ -140,10 +140,10 @@ describe('promos distribution rules', () => {
   it('emits PROMO rows with the presenter as description', async () => {
     const set = { entries: await load() }
     const { events } = promoEventsForDate(set, SUN)
-    const laziz = events.find((ev) => ev.name === 'HP25-LazizWeSay2')!
-    expect(laziz.cue).toBe('+')
-    expect(laziz.category).toBe('PROMO')
-    expect(laziz.description).toBe('ميرا العمرى')
+    const ahwa = events.find((ev) => ev.name === 'HP25-AhwaSobh2')!
+    expect(ahwa.cue).toBe('+')
+    expect(ahwa.category).toBe('PROMO')
+    expect(ahwa.description).toBe('نورا صبري')
   })
 })
 
@@ -178,10 +178,10 @@ describe('promoEventsForDate sort option', () => {
 describe('recorded flag is ignored for promos', () => {
   it('includes a promo in the export even when its program is not recorded', async () => {
     const set = { entries: await load() }
-    // Laziz (Sun count 5) has Recorded = No, but its promo must still air.
-    expect(byFile(set.entries, 'HP25-LazizWeSay2').recorded).toBe(false)
+    // Ahwa (Sun count 5) has Recorded = No, but its promo must still air.
+    expect(byFile(set.entries, 'HP25-AhwaSobh2').recorded).toBe(false)
     const { events, warnings } = promoEventsForDate(set, SUN)
-    expect(events.filter((e) => e.name === 'HP25-LazizWeSay2')).toHaveLength(5)
+    expect(events.filter((e) => e.name === 'HP25-AhwaSobh2')).toHaveLength(5)
     expect(warnings.some((w) => w.toLowerCase().includes('recorded'))).toBe(false)
   })
 })
@@ -195,19 +195,19 @@ describe('serialized output', () => {
       {
         ...SUN,
         promoLines,
-        sections: [{ code: 'ADS_1710', group: 'Baheya', events: [] }]
+        sections: [{ code: 'ADS_1710', group: 'Karama', events: [] }]
       }
     ])
     // Row shape (Arabic presenter preserved).
-    expect(text).toMatch(/\d{2}:\d{2}:\d{2}\|\+\|HP25-LazizWeSay2\|PROMO\|ميرا العمرى/)
+    expect(text).toMatch(/\d{2}:\d{2}:\d{2}\|\+\|HP25-AhwaSobh2\|PROMO\|نورا صبري/)
     // Promo block precedes the element section header.
-    expect(text.indexOf('HP25-LazizWeSay2')).toBeLessThan(text.indexOf('ADS_1710'))
+    expect(text.indexOf('HP25-AhwaSobh2')).toBeLessThan(text.indexOf('ADS_1710'))
   })
 })
 
 describe('manual hour exclusions', () => {
   it('drops excluded hours from the allowed range and never schedules them', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2') // blackout 8–12 on Sunday
+    const e = byFile(await load(), 'HP25-AhwaSobh2') // blackout 8–12 on Sunday
     const excluded = [0, 1, 2, 20, 21, 22, 23]
     const allowed = allowedHoursForDate(e, SUN, excluded)
     for (const h of excluded) expect(allowed).not.toContain(h)
@@ -220,15 +220,15 @@ describe('manual hour exclusions', () => {
     const set = { entries: await load() }
     const blockSun = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
     // Exclude those hours on Sunday (weekday 0) only.
-    const exclusions: PromoExclusions = { 'HP25-LazizWeSay2': wkExcl(0, blockSun) }
+    const exclusions: PromoExclusions = { 'HP25-AhwaSobh2': wkExcl(0, blockSun) }
     const sun = promoEventsForDate(set, SUN, { exclusions })
-      .events.filter((ev) => ev.name === 'HP25-LazizWeSay2')
+      .events.filter((ev) => ev.name === 'HP25-AhwaSobh2')
       .map((ev) => parseInt(ev.time.slice(0, 2), 10))
     for (const h of sun) expect(blockSun).not.toContain(h)
 
     // Monday (weekday 1) is untouched, so it may still use those hours.
     const monHours = promoEventsForDate(set, MON, { exclusions })
-      .events.filter((ev) => ev.name === 'HP25-LazizWeSay2')
+      .events.filter((ev) => ev.name === 'HP25-AhwaSobh2')
       .map((ev) => parseInt(ev.time.slice(0, 2), 10))
     expect(monHours.some((h) => blockSun.includes(h))).toBe(true)
   })
@@ -238,26 +238,26 @@ describe('weekly placement', () => {
   it('returns 7 days per program with per-weekday exclusions applied', async () => {
     const set = { entries: await load() }
     const weekStart = weekStartFor(SUN)
-    const exclusions: PromoExclusions = { 'HP25-LazizWeSay2': wkExcl(0, [13, 14, 15]) }
+    const exclusions: PromoExclusions = { 'HP25-AhwaSobh2': wkExcl(0, [13, 14, 15]) }
     const rows = placementsForWeek(set, weekStart, undefined, exclusions)
-    const laziz = rows.find((r) => r.fileName === 'HP25-LazizWeSay2')!
-    expect(laziz.days).toHaveLength(7)
-    expect(laziz.days.map((d) => d.weekday)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    const ahwa = rows.find((r) => r.fileName === 'HP25-AhwaSobh2')!
+    expect(ahwa.days).toHaveLength(7)
+    expect(ahwa.days.map((d) => d.weekday)).toEqual([0, 1, 2, 3, 4, 5, 6])
     // Sunday carries the exclusion; the placed times avoid 13–15.
-    const sun = laziz.days[0]
+    const sun = ahwa.days[0]
     expect(sun.excludedHours).toEqual([13, 14, 15])
     for (const t of sun.times) expect([13, 14, 15]).not.toContain(parseInt(t.slice(0, 2), 10))
     // Monday has no exclusion.
-    expect(laziz.days[1].excludedHours).toEqual([])
+    expect(ahwa.days[1].excludedHours).toEqual([])
   })
 })
 
 describe('time overrides', () => {
   it('replace the auto schedule when present', async () => {
     const set = { entries: await load() }
-    const overrides = { 'HP25-LazizWeSay2': { '2026-06-07': ['06:30:00', '20:15:00'] } }
+    const overrides = { 'HP25-AhwaSobh2': { '2026-06-07': ['06:30:00', '20:15:00'] } }
     const events = promoEventsForDate(set, SUN, { overrides }).events.filter(
-      (e) => e.name === 'HP25-LazizWeSay2'
+      (e) => e.name === 'HP25-AhwaSobh2'
     )
     expect(events.map((e) => e.time)).toEqual(['06:30:00', '20:15:00'])
   })
@@ -345,7 +345,7 @@ describe('station rules: blocked hours + break minutes', () => {
 
 describe('no identical hour set on consecutive days', () => {
   it('differs from the previous day across a whole month', async () => {
-    const e = byFile(await load(), 'HP25-LazizWeSay2') // 5 promos every day
+    const e = byFile(await load(), 'HP25-AhwaSobh2') // 5 promos every day
     let prev = ''
     for (let day = 1; day <= 30; day++) {
       const hours = autoHoursForDate(e, { year: 2026, month: 6, day }).join(',')

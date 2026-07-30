@@ -55,9 +55,7 @@ export function parseDurationValue(value: unknown): number | null {
  */
 export function lookupTrack<T>(map: Map<string, T>, name: string): T | null {
   const key = normalizeName(name)
-  return (
-    map.get(key) ?? map.get(key.replace(/_/g, '-')) ?? map.get(key.replace(/-/g, '_')) ?? null
-  )
+  return map.get(key) ?? map.get(key.replace(/_/g, '-')) ?? map.get(key.replace(/-/g, '_')) ?? null
 }
 
 /** Duration in seconds for a cart name. */
@@ -79,8 +77,7 @@ export function pickColumns(
   if (!name || !duration) return null
   // Description is optional — never steal the name/duration column for it.
   const rest = columns.filter((c) => c !== name && c !== duration)
-  const description =
-    rest.find((c) => DESC_COLS.test(c)) ?? rest.find((c) => /desc|title/i.test(c))
+  const description = rest.find((c) => DESC_COLS.test(c)) ?? rest.find((c) => /desc|title/i.test(c))
   return { name, duration, description }
 }
 

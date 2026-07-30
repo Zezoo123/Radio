@@ -25,7 +25,7 @@ import { extractText } from '../xlsx'
 export interface PromoEntry {
   program: string
   presenter: string
-  /** Promo audio file name, e.g. `HP25-LazizWeSay2`. Unique → used as the id. */
+  /** Promo audio file name, e.g. `HP25-AhwaSobh2`. Unique → used as the id. */
   fileName: string
   durationSec: number
   recorded: boolean
@@ -96,7 +96,9 @@ export function parsePromosWorkbook(wb: ExcelJS.Workbook): PromoSet {
     const airStartHour = from ? from.hour : null
     const airEndHour = to ? to.hour : null
     const airWraps =
-      from != null && to != null && (to.hour < from.hour || (to.hour === from.hour && to.minute < from.minute))
+      from != null &&
+      to != null &&
+      (to.hour < from.hour || (to.hour === from.hour && to.minute < from.minute))
 
     entries.push({
       program,

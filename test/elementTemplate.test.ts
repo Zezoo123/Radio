@@ -17,9 +17,9 @@ import type { ScheduleDay } from '@core/types'
 const fixture = (name: string): string => resolve(__dirname, 'fixtures', name)
 
 describe('element template parser', () => {
-  it('reads group, code and day columns from Baheya.xlsx', async () => {
-    const tpl = await parseElementTemplate(fixture('Baheya.xlsx'))
-    expect(tpl.group).toBe('Baheya')
+  it('reads group, code and day columns from Karama.xlsx', async () => {
+    const tpl = await parseElementTemplate(fixture('Karama.xlsx'))
+    expect(tpl.group).toBe('Karama')
     expect(tpl.code).toBe('ADS_1710')
     expect(tpl.dayColumns).toHaveLength(30) // June has 30 days
     expect(tpl.timeRows.map((r) => r.time)).toEqual([
@@ -31,7 +31,7 @@ describe('element template parser', () => {
   })
 
   it('builds underscore file names and skips blank days', async () => {
-    const tpl = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const tpl = await parseElementTemplate(fixture('Karama.xlsx'))
 
     // Day 1 (Mon): all four times play track A.
     const d1 = eventsForDate(tpl, { year: 2026, month: 6, day: 1 })
@@ -162,18 +162,23 @@ describe('element template parser', () => {
   })
 
   it('emits the template category on every event (Simian Category column)', async () => {
-    const tpl = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const tpl = await parseElementTemplate(fixture('Karama.xlsx'))
     tpl.category = 'AUDIO'
     const line = serialize([
-      { year: 2026, month: 6, day: 1, sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })] }
+      {
+        year: 2026,
+        month: 6,
+        day: 1,
+        sections: [sectionForDate(tpl, { year: 2026, month: 6, day: 1 })]
+      }
     ])
     expect(line).toContain('08:20:01|+|ADS_1710-A|AUDIO|')
   })
 })
 
-describe('Simian export — Baheya golden file', () => {
+describe('Simian export — Karama golden file', () => {
   it('reproduces the full month byte-for-byte (underscore convention)', async () => {
-    const tpl = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const tpl = await parseElementTemplate(fixture('Karama.xlsx'))
 
     const days: ScheduleDay[] = dateRange(
       { year: 2026, month: 6, day: 1 },
@@ -181,7 +186,7 @@ describe('Simian export — Baheya golden file', () => {
     ).map((date) => ({ ...date, sections: [sectionForDate(tpl, date)] }))
 
     const output = serialize(days)
-    const expected = readFileSync(fixture('Baheya.expected.txt'), 'utf-8')
+    const expected = readFileSync(fixture('Karama.expected.txt'), 'utf-8')
 
     expect(output).toBe(expected)
   })

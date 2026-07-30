@@ -22,3 +22,10 @@ HANDOVER.md
 
 # Claude Code local session data (permissions, worktrees)
 .claude/
+
+# Local design mockups
+design/
+
+# Playwright screenshot-run artifacts
+test-results/
+.eslintcache
