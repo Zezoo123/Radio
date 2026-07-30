@@ -16,13 +16,13 @@ describe('bsi log helpers', () => {
 
   it('re-decodes cp1252 mojibake as Arabic and leaves ASCII alone', () => {
     expect(fixArabicText('ÑÇãì ÌãÇá')).toBe('رامى جمال')
-    expect(fixArabicText('PROMO - NOON TUNES')).toBe('PROMO - NOON TUNES')
-    expect(fixArabicText('HP25-LazizWeSay2')).toBe('HP25-LazizWeSay2')
+    expect(fixArabicText('PROMO - MIDDAY MIX')).toBe('PROMO - MIDDAY MIX')
+    expect(fixArabicText('HP25-AhwaSobh2')).toBe('HP25-AhwaSobh2')
   })
 
   it('fixMisdecodedText never touches text that is already real Arabic', () => {
     // The audio-DB description reported as rubbish by the station.
-    expect(fixMisdecodedText('íÇ áÐíÐ íÇ ÓÇíÞ - ãíÑÇ ÇáÚÇãÑì')).toBe('يا لذيذ يا سايق - ميرا العامرى')
+    expect(fixMisdecodedText('ÞåæÉ ÇáÕÈÍ - äæÑÇ ÕÈÑí')).toBe('قهوة الصبح - نورا صبري')
     expect(fixMisdecodedText('رامى جمال')).toBe('رامى جمال') // correct already — unchanged
     expect(fixMisdecodedText('ADS-1705-B')).toBe('ADS-1705-B')
   })

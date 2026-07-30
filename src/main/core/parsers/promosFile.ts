@@ -25,7 +25,7 @@ import { extractText } from '../xlsx'
 export interface PromoEntry {
   program: string
   presenter: string
-  /** Promo audio file name, e.g. `HP25-LazizWeSay2`. Unique → used as the id. */
+  /** Promo audio file name, e.g. `HP25-AhwaSobh2`. Unique → used as the id. */
   fileName: string
   durationSec: number
   recorded: boolean

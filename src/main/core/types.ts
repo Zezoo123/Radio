@@ -23,7 +23,7 @@ export interface ScheduleEvent {
 export interface Section {
   /** Element/group code, e.g. `ADS_1710`. */
   code: string
-  /** Human label, e.g. `Baheya`. */
+  /** Human label, e.g. `Karama`. */
   group: string
   events: ScheduleEvent[]
 }

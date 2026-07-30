@@ -174,11 +174,12 @@ badge) because a timeline-shifting edit would otherwise repaint every following 
 
 `npm test` runs vitest over `test/` (~96 tests). The load-bearing ones:
 
-- **The golden test** (`elementTemplate.test.ts` + `test/fixtures/Baheya.expected.txt`): a real
-  month of a real sponsor's schedule must serialize **byte-for-byte**. `.gitattributes` protects
-  the fixture's CRLF. If this breaks, the station's import breaks — treat it as sacred.
+- **The golden test** (`elementTemplate.test.ts` + `test/fixtures/Karama.expected.txt`): a full
+  month of a sponsor schedule (real structure, fictional names) must serialize **byte-for-byte**.
+  `.gitattributes` protects the fixture's CRLF. If this breaks, the station's import breaks —
+  treat it as sacred.
 - `promos.test.ts` — blackout windows, ≤1/hour, counts, day-to-day/week-over-week variation,
-  determinism, exclusions (against the real promos sheet in `fixtures/Promos.xlsx`).
+  determinism, exclusions (against the full-shape promos sheet in `fixtures/Promos.xlsx`).
 - `runtime.test.ts` — the playout simulation rules, cue by cue.
 - `logRows.test.ts` — Editor round-trip safety (section headers, bare rows, verbatim lines).
 - `simianDb.adhoc.test.ts` — **self-skipping local integration tests** that run against the real

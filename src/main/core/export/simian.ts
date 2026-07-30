@@ -20,7 +20,7 @@ const DATE_SIDE_DASHES = 20
 const SECTION_DASHES = 34
 const SECTION_SPACES = 23
 const SECTION_MARKER = '||||| '
-/** Two spaces between code and group label (matches the Baheya samples). */
+/** Two spaces between code and group label (matches the Karama samples). */
 const SECTION_CODE_GAP = '  '
 
 const pad2 = (n: number): string => String(n).padStart(2, '0')

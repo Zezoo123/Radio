@@ -177,7 +177,7 @@ describe('playout simulation', () => {
 
 describe('Simian DB helpers', () => {
   it('normalizes cart names for lookup', () => {
-    expect(normalizeName(' hp25-Laziz.wav ')).toBe('HP25-LAZIZ')
+    expect(normalizeName(' hp25-Ahwa.wav ')).toBe('HP25-AHWA')
     expect(normalizeName('ADS_1710_A')).toBe('ADS_1710_A')
   })
 

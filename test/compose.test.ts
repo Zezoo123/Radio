@@ -9,9 +9,9 @@ const SUNDAY = { year: 2026, month: 6, day: 7 }
 
 describe('compose — section-grouped day', () => {
   it('builds one section per element template', async () => {
-    const baheya = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const karama = await parseElementTemplate(fixture('Karama.xlsx'))
 
-    const { days } = composeDay(SUNDAY, { templates: [baheya] })
+    const { days } = composeDay(SUNDAY, { templates: [karama] })
 
     const day = days[0]
     expect(day.sections).toHaveLength(1)
@@ -20,16 +20,16 @@ describe('compose — section-grouped day', () => {
   })
 
   it('exports a date range with one date header per day', async () => {
-    const baheya = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const karama = await parseElementTemplate(fixture('Karama.xlsx'))
     const { text } = exportRange(
       { year: 2026, month: 6, day: 1 },
       { year: 2026, month: 6, day: 3 },
-      { templates: [baheya] }
+      { templates: [karama] }
     )
-    // three date headers, three Baheya section headers
+    // three date headers, three Karama section headers
     const dateHeaders = [1, 2, 3].map((d) => dateHeaderLine(2026, 6, d))
     for (const h of dateHeaders) expect(text).toContain(h)
-    const sectionCount = text.split(sectionHeaderLine('ADS_1710', 'Baheya')).length - 1
+    const sectionCount = text.split(sectionHeaderLine('ADS_1710', 'Karama')).length - 1
     expect(sectionCount).toBe(3)
     expect(text.endsWith('\r\n')).toBe(true)
   })
@@ -44,9 +44,9 @@ describe('compose — section-grouped day', () => {
   })
 
   it('emits formatLinesForDate clock rows right after the date header', async () => {
-    const baheya = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const karama = await parseElementTemplate(fixture('Karama.xlsx'))
     const { text } = exportRange(SUNDAY, SUNDAY, {
-      templates: [baheya],
+      templates: [karama],
       formatLinesForDate: () => ['06:00:00|+|STATION_ID', '06:00:05|@|TOH_ID']
     })
     const lines = text.split('\r\n')
@@ -59,11 +59,11 @@ describe('compose — section-grouped day', () => {
   })
 
   it('composeRange covers every day inclusive', async () => {
-    const baheya = await parseElementTemplate(fixture('Baheya.xlsx'))
+    const karama = await parseElementTemplate(fixture('Karama.xlsx'))
     const { days } = composeRange(
       { year: 2026, month: 6, day: 1 },
       { year: 2026, month: 6, day: 30 },
-      { templates: [baheya] }
+      { templates: [karama] }
     )
     expect(days).toHaveLength(30)
   })
