@@ -62,6 +62,12 @@ export default function App(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
   const [station, setStation] = useState<string | null>(null)
+  // Set once a new version has downloaded; shows the restart chip in the bar.
+  const [updateReady, setUpdateReady] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.api.onUpdateDownloaded(setUpdateReady)
+  }, [])
   // App-wide per-category row colors (persisted in Settings, used by the Editor).
   const [uiSettings, setUiSettings] = useState<UiSettings>({
     categoryColors: {},
@@ -194,6 +200,15 @@ export default function App(): JSX.Element {
           </div>
           <span className="chrome-date">{today}</span>
           <span className="chrome-note">{templates.length} booked</span>
+          {updateReady && (
+            <button
+              className="chip on"
+              title={`Version ${updateReady} downloaded — restart the app to install (or it installs on next quit)`}
+              onClick={() => window.api.installUpdate()}
+            >
+              ⟳ UPDATE READY
+            </button>
+          )}
           <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Settings">
             {GEAR_ICON}
           </button>

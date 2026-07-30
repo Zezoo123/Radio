@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "adhan": "^4.4.3",
+    "electron-updater": "^6.8.9",
     "exceljs": "^4.4.0",
     "iconv-lite": "^0.7.3",
     "mdb-reader": "^3.2.0"

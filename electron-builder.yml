@@ -22,6 +22,14 @@ files:
 
 asar: true
 
+# electron-updater checks GitHub Releases for newer versions; this also makes
+# the builder emit latest.yml + .blockmap next to the installers (the release
+# workflow attaches them — the updater reads latest.yml to find new builds).
+publish:
+  provider: github
+  owner: Zezoo123
+  repo: Radio
+
 win:
   target:
     - target: nsis

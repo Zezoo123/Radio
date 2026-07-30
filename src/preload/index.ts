@@ -156,6 +156,13 @@ const api = {
   saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('log:save', { text, path }),
 
+  /** Fires once a new version has been downloaded and is ready to install. */
+  onUpdateDownloaded: (cb: (version: string) => void): void => {
+    ipcRenderer.on('update:downloaded', (_e, version: string) => cb(version))
+  },
+  /** Restart the app and install the downloaded update. */
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
+
   openSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:openDb'),
   getSimianDb: (): Promise<SimianDbSummary | null> => ipcRenderer.invoke('simian:getDb'),
   simianDurations: (names: string[]): Promise<Record<string, number>> =>
