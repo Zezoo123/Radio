@@ -758,6 +758,26 @@ body {
   width: 100%;
 }
 
+/* Tracks-in-plan table: code + duration stay minimal, description gets the
+   rest of the width (ellipsized — the full text sits in the tooltip). */
+.track-tbl {
+  width: 100%;
+  table-layout: fixed;
+}
+.track-tbl th:nth-child(1),
+.track-tbl td:nth-child(1) {
+  width: 44px;
+}
+.track-tbl th:nth-child(2),
+.track-tbl td:nth-child(2) {
+  width: 52px;
+}
+.track-tbl td:nth-child(3) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The inspector's warning card — loud on purpose. */
 .attn {
   background: var(--accent);
