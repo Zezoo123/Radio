@@ -98,6 +98,23 @@ describe('element template parser', () => {
     ])
   })
 
+  it('keeps multi-character track tokens whole (`F01 F02` → CODE-F01, CODE-F02)', () => {
+    const tpl: ElementTemplate = {
+      group: 'FEA 306',
+      code: 'RH260630',
+      dayColumns: [{ col: 2, day: 30, month: 6, year: 2026 }],
+      timeRows: [
+        { time: '08:20:00', tracks: new Map([[2, 'F01 F02']]) },
+        { time: '09:20:00', tracks: new Map([[2, '1']]) }
+      ]
+    }
+    const events = eventsForDate(tpl, { year: 2026, month: 6, day: 30 })
+    expect(events.map((e) => e.name)).toEqual(['RH260630-F01', 'RH260630-F02', 'RH260630'])
+    // The grid reports the real tokens — never single characters — so the
+    // Booking tracks panel can build correct file names from them.
+    expect(templateGrid(tpl).tracks).toEqual(['1', 'F01', 'F02'])
+  })
+
   it('condenses the grid by hour: sorted letters per cell, play counts', () => {
     const tpl: ElementTemplate = {
       group: 'Promo',
