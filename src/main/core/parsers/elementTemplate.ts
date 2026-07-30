@@ -205,6 +205,13 @@ export interface TemplateGrid {
   rows: { time: string; cells: (string | null)[]; count: number }[]
   /** Plays per day (aligned with `days`). */
   totals: number[]
+  /**
+   * Every distinct track token used anywhere in the plan, sorted — real token
+   * strings (`A`, `F01`, …), with the `1` sentinel included when the bare code
+   * plays. Tracks can be multi-character, so consumers must never derive this
+   * from the display cells.
+   */
+  tracks: string[]
 }
 
 /** `['1','1']` → `2` · `['A','A','A','B','B']` → `3A 2B` · `['1','A']` → `1 A`. */
@@ -276,5 +283,11 @@ export function templateGrid(tpl: ElementTemplate): TemplateGrid {
       const count = slots.reduce((sum, tokens) => sum + tokens.length, 0)
       return { time: `${hour}:00`, cells, count }
     })
-  return { code: tpl.code, group: tpl.group, days, rows, totals }
+  const trackSet = new Set<string>()
+  for (const row of tpl.timeRows) {
+    for (const raw of row.tracks.values()) for (const t of trackTokens(raw)) trackSet.add(t)
+  }
+  const tracks = [...trackSet].sort((a, b) => a.localeCompare(b))
+
+  return { code: tpl.code, group: tpl.group, days, rows, totals, tracks }
 }

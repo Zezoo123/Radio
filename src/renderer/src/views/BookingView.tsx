@@ -208,24 +208,18 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
     }
   }, [planGrid])
 
-  // Tracks used anywhere in the plan. Letters play as `CODE-A`, `CODE-B`…;
-  // the special cell value `1` (or a plan with no letters at all) is the
-  // element playing as itself — the bare CODE, listed with code "1".
+  // Tracks used anywhere in the plan, from the parser's real token list —
+  // tokens can be multi-character (`F01`), so they are never derived from the
+  // condensed display cells. A token plays as `CODE-<TRACK>`; the `1` sentinel
+  // (or a plan with no tokens at all) is the element playing as itself — the
+  // bare CODE, listed with code "1".
   const tracks = useMemo(() => {
     if (!selected) return []
-    const letters = new Set<string>()
-    let self = false
-    if (planGrid)
-      for (const r of planGrid.rows)
-        for (const c of r.cells) {
-          if (!c) continue
-          for (const ch of c) {
-            if (/[A-Za-z]/.test(ch)) letters.add(ch.toUpperCase())
-            else if (ch === '1') self = true
-          }
-        }
-    const list = [...letters].sort().map((l) => ({ code: l, name: `${selected.code}-${l}` }))
-    if (self || list.length === 0) list.unshift({ code: '1', name: selected.code })
+    const tokens = planGrid?.tracks ?? []
+    const list = tokens
+      .filter((t) => t !== '1')
+      .map((t) => ({ code: t, name: `${selected.code}-${t}` }))
+    if (tokens.includes('1') || list.length === 0) list.unshift({ code: '1', name: selected.code })
     return list
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planGrid, selected?.code])
