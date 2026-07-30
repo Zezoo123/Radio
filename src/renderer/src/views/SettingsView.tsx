@@ -4,6 +4,7 @@ import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
+import { UI_SCALES } from '../App'
 import { withOpacity } from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
@@ -20,6 +21,9 @@ interface Props {
   onTheme: (theme: ThemeId) => void
   highContrast: boolean
   onHighContrast: (on: boolean) => void
+  /** Whole-UI scale in percent (80–130), applied as Chromium zoom by App. */
+  uiScale: number
+  onUiScale: (pct: number) => void
 }
 
 /** Global Settings: appearance, the AZAN format, and category color maps. */
@@ -29,7 +33,9 @@ export function SettingsView({
   theme,
   onTheme,
   highContrast,
-  onHighContrast
+  onHighContrast,
+  uiScale,
+  onUiScale
 }: Props): JSX.Element {
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
@@ -131,6 +137,26 @@ export function SettingsView({
           />
           High contrast
         </label>
+        <div style={{ marginTop: 14 }}>
+          <div className="kick">Interface size</div>
+          <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
+            <div className="seg">
+              {UI_SCALES.map((pct) => (
+                <button
+                  key={pct}
+                  className={`seg-btn ${uiScale === pct ? 'on' : ''}`}
+                  title={pct === 100 ? 'Normal size' : `Everything at ${pct}% size`}
+                  onClick={() => onUiScale(pct)}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+            <span className="muted" style={{ fontSize: 12 }}>
+              Scales the whole app — text, tables and grids. Applies immediately and persists.
+            </span>
+          </div>
+        </div>
       </section>
 
       <section className="card">

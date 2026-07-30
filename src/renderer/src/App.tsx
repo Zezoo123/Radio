@@ -20,6 +20,9 @@ function applyOpacityMap(map: Record<string, string>, pct: number): Record<strin
 type Section = 'booking' | 'grid' | 'log'
 type Contrast = 'normal' | 'high'
 
+/** The Interface-size steps offered in Settings (percent of normal). */
+export const UI_SCALES = [80, 90, 100, 110, 120, 130]
+
 const TABS: { id: Section; label: string; sub: string }[] = [
   { id: 'booking', label: 'BOOKING', sub: 'AUDIO ELEMENTS' },
   { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
@@ -59,6 +62,11 @@ export default function App(): JSX.Element {
     return THEME_IDS.includes(saved) ? saved : 'modernist'
   })
   const [contrast, setContrast] = useState<Contrast>(() => readPref('ui.contrast', 'normal'))
+  // Whole-UI scale in percent (Chromium zoom). Persisted like the theme.
+  const [uiScale, setUiScale] = useState<number>(() => {
+    const saved = parseInt(readPref('ui.scale', '100'), 10)
+    return UI_SCALES.includes(saved) ? saved : 100
+  })
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
   const [station, setStation] = useState<string | null>(null)
@@ -141,6 +149,16 @@ export default function App(): JSX.Element {
       /* storage unavailable — keep the in-memory choice */
     }
   }, [theme, contrast])
+
+  // Apply + persist the interface scale (Chromium zoom on this window).
+  useEffect(() => {
+    window.api.setZoom(uiScale / 100)
+    try {
+      localStorage.setItem('ui.scale', String(uiScale))
+    } catch {
+      /* storage unavailable — keep the in-memory choice */
+    }
+  }, [uiScale])
 
   // The settings drawer closes on Escape like any dialog.
   useEffect(() => {
@@ -276,6 +294,8 @@ export default function App(): JSX.Element {
               onTheme={setTheme}
               highContrast={contrast === 'high'}
               onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
+              uiScale={uiScale}
+              onUiScale={setUiScale}
             />
           </div>
         </div>
