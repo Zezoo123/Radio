@@ -2,7 +2,7 @@
 
 [![Build Windows](https://github.com/Zezoo123/Radio/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Zezoo123/Radio/actions/workflows/build-windows.yml)
 [![Latest release](https://img.shields.io/github/v/release/Zezoo123/Radio)](https://github.com/Zezoo123/Radio/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](package.json)
+[![License: source-available](https://img.shields.io/badge/license-source--available-blue.svg)](LICENSE)
 
 ![The LOG tab showing a composed broadcast day: hourly comment markers, the five daily azan rows wrapped in deckfade macros, and per-sponsor section headers with their audio element rows](docs/screenshots/hero-log.png)
 

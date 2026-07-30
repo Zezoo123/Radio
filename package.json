@@ -4,7 +4,7 @@
   "description": "Desktop app that builds daily radio playout logs (programs, audio elements, AZAN, hourly markers) for import into BSI Simian Pro.",
   "main": "./out/main/index.js",
   "author": "Zeyad Abdellatif Awadalla",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "electron-vite dev",
