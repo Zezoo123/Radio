@@ -28,3 +28,4 @@ design/
 
 # Playwright screenshot-run artifacts
 test-results/
+.eslintcache

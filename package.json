@@ -17,6 +17,8 @@
     "build:win": "electron-vite build && electron-builder --win",
     "build:dir": "electron-vite build && electron-builder --win --dir",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --cache .",
+    "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
     "screenshots": "electron-vite build && playwright test --config=scripts/screenshots/playwright.config.ts"
@@ -28,6 +30,8 @@
     "mdb-reader": "^3.2.0"
   },
   "devDependencies": {
+    "@electron-toolkit/eslint-config-prettier": "^3.0.0",
+    "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@playwright/test": "^1.62.0",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
@@ -36,6 +40,10 @@
     "electron": "^33.3.1",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.7.3",
