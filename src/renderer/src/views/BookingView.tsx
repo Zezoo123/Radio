@@ -8,8 +8,8 @@ interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
   onConfig: (c: AppConfig) => void
+  /** Jump to the Grid tab (the promos-sheet row lives there). */
   onOpenGrid: () => void
-  onOpenLog: () => void
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -24,6 +24,19 @@ function monthGroups(days: TemplateGrid['days']): { label: string; span: number 
     else groups.push({ label, span: 1 })
   }
   return groups
+}
+
+/** `2026-07-01` → `Wed 01 Jul 2026` (the day it starts/ends, for the inspector). */
+function fullDate(iso: string | null): string {
+  const d = iso ? toCalendarDate(iso) : null
+  if (!d) return '—'
+  return new Date(Date.UTC(d.year, d.month - 1, d.day)).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC'
+  })
 }
 
 /** Seconds → `MM:SS` (empty when unknown). */
@@ -57,8 +70,7 @@ export function BookingView({
   templates,
   onTemplates,
   onConfig,
-  onOpenGrid,
-  onOpenLog
+  onOpenGrid
 }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
@@ -472,8 +484,14 @@ export function BookingView({
                   <span className="muted">Spots</span> {selected.timeCount}
                 </div>
                 <div>
-                  <span className="muted">Covers</span> {selected.firstDate ?? '—'} →{' '}
-                  {selected.lastDate ?? '—'}
+                  <span className="muted">Covers</span>{' '}
+                  {coversLabel(selected.firstDate, selected.lastDate)}
+                </div>
+                <div>
+                  <span className="muted">Starts</span> {fullDate(selected.firstDate)}
+                </div>
+                <div>
+                  <span className="muted">Ends</span> {fullDate(selected.lastDate)}
                 </div>
               </div>
               <div className="kick" style={{ marginTop: 4 }}>
@@ -505,21 +523,6 @@ export function BookingView({
                   Audio database — it stays loaded from then on).
                 </div>
               )}
-            </div>
-
-            <div className="insp-sec">
-              <div className="kick">Where it lands</div>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-                Booked elements play at the hours in their plan, alongside the{' '}
-                <button className="btn-link" onClick={onOpenGrid}>
-                  Grid
-                </button>
-                's clocks and promos, and are written into the day's{' '}
-                <button className="btn-link" onClick={onOpenLog}>
-                  Log
-                </button>{' '}
-                when you build it.
-              </div>
             </div>
 
             <div className="insp-foot">

@@ -207,7 +207,6 @@ export default function App(): JSX.Element {
             onTemplates={setTemplates}
             onConfig={setConfig}
             onOpenGrid={() => setSection('grid')}
-            onOpenLog={() => setSection('log')}
           />
         )}
         {section === 'grid' && (
