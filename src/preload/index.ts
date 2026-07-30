@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../main/session'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { AzanFormat } from '../main/core/prayer/azanRows'
@@ -155,6 +155,9 @@ const api = {
   openLog: (): Promise<OpenLogResult | null> => ipcRenderer.invoke('log:open'),
   saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('log:save', { text, path }),
+
+  /** Scale the whole UI (1 = 100%). Chromium zoom, so everything scales. */
+  setZoom: (factor: number): void => webFrame.setZoomFactor(factor),
 
   /** Fires once a new version has been downloaded and is ready to install. */
   onUpdateDownloaded: (cb: (version: string) => void): void => {
