@@ -24,7 +24,7 @@ type Contrast = 'normal' | 'high'
 export const UI_SCALES = [80, 90, 100, 110, 120, 130]
 
 const TABS: { id: Section; label: string; sub: string }[] = [
-  { id: 'booking', label: 'BOOKING', sub: 'AUDIO ELEMENTS' },
+  { id: 'booking', label: 'BOOKING', sub: 'BOOKING ELEMENTS' },
   { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
   { id: 'log', label: 'LOG', sub: 'BUILD · EDIT · EXPORT' }
 ]

@@ -359,13 +359,13 @@ export function LogView({
               </button>
               <button
                 className={`chip ${(config?.includeElements ?? true) ? 'on' : ''}`}
-                title="Include the booked audio elements (Booking tab)"
+                title="Include the Booking elements (Booking tab)"
                 onClick={async () =>
                   onConfig(await window.api.setIncludeElements(!(config?.includeElements ?? true)))
                 }
               >
                 {(config?.includeElements ?? true) ? '✓ ' : ''}
-                {templates.length} AUDIO ELEMENTS
+                {templates.length} BOOKING ELEMENTS
               </button>
               <button
                 className={`chip ${config?.hasPromos && (config?.includePromos ?? true) ? 'on' : ''}`}
@@ -464,7 +464,7 @@ export function LogView({
             <p className="empty">
               {ready
                 ? 'No log open. Build the range from the Grid, or open a .bsi/.txt log.'
-                : 'Nothing to build yet — paint clocks on the Grid or book audio elements first (or turn on AZAN).'}
+                : 'Nothing to build yet — paint clocks on the Grid or add Booking elements first (or turn on AZAN).'}
             </p>
           ) : (
             <LogGrid

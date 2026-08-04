@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/Zezoo123/Radio)](https://github.com/Zezoo123/Radio/releases)
 [![License: source-available](https://img.shields.io/badge/license-source--available-blue.svg)](LICENSE)
 
-![The LOG tab showing a composed broadcast day: hourly comment markers, the five daily azan rows wrapped in deckfade macros, and per-sponsor section headers with their audio element rows](docs/screenshots/hero-log.png)
+![The LOG tab showing a composed broadcast day: hourly comment markers, the five daily azan rows wrapped in deckfade macros, and per-sponsor section headers with their Booking element rows](docs/screenshots/hero-log.png)
 
 A desktop app (Electron + React + TypeScript) that runs the day-to-day playout scheduling of a
 group of Egyptian radio stations and speaks the native formats of **BSI Simian Pro** — the playout
@@ -42,11 +42,11 @@ _Every booked element in one table; the selected element's full dates × hours p
 
 Load the planning spreadsheets:
 
-- **Element templates** (Excel) — per sponsor/group tables that say exactly when each audio
+- **Element templates** (Excel) — per sponsor/group tables that say exactly when each Booking
   element (ads, features, commercial liners…) plays on each calendar day. A cell holds a track
   letter (`A` → file `ADV-1710-A`), several at once (`A B` — both tracks play), or `1` (play the
   bare code once).
-- Import files one by one, or point **Add → Audio folder** at a directory and every template in
+- Import files one by one, or point **+ Add folder** at a directory and every template in
   it comes in — files that aren't templates are skipped and reported, never fatal.
 - The element **code is editable in place**; exported file names derive from it, so a rename
   reaches every preview and export instantly.

@@ -75,7 +75,7 @@ function coversLabel(first: string | null, last: string | null): string {
 }
 
 /**
- * The BOOKING workbench: every imported audio element in one table, the
+ * The BOOKING workbench: every imported Booking element in one table, the
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
