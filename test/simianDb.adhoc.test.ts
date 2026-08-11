@@ -1,13 +1,39 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { loadSimianDb, lookupDuration, lookupTrack } from '../src/main/core/simianDb'
+import {
+  DESCRIPTION_INDENT,
+  loadSimianDb,
+  lookupDuration,
+  lookupTrack,
+  pickColumns
+} from '../src/main/core/simianDb'
 import { isBsiBuffer, parseBsiLog } from '../src/main/core/parsers/bsiLog'
 import { parseLogText, serializeRows } from '../src/renderer/src/lib/logRows'
 
 // Integration checks against the user's real Simian files. They live in
 // Dropbox (not committed), so these suites self-skip where they're absent.
-const DB_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/Radio Scheduler/audio.mdb'
+const DB_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/Radio Scheduler/Others/audio.mdb'
 const BSI_PATH = '/Users/zezo/Library/CloudStorage/Dropbox/Zeyad/Radio Scheduler/LOG/H260701.bsi'
+
+describe('pickColumns', () => {
+  it('detects the optional Advertiser column without stealing the others', () => {
+    expect(pickColumns(['Index', 'FileName', 'Description', 'Advertiser', 'Length'])).toEqual({
+      name: 'FileName',
+      duration: 'Length',
+      description: 'Description',
+      advertiser: 'Advertiser'
+    })
+  })
+
+  it('still works when the table has no advertiser column', () => {
+    expect(pickColumns(['FileName', 'Length', 'Description'])).toEqual({
+      name: 'FileName',
+      duration: 'Length',
+      description: 'Description',
+      advertiser: undefined
+    })
+  })
+})
 
 describe.skipIf(!existsSync(DB_PATH))('Simian audio.mdb (local integration)', () => {
   it('loads the audio table and finds the station carts', () => {
@@ -31,6 +57,17 @@ describe.skipIf(!existsSync(DB_PATH))('Simian audio.mdb (local integration)', ()
     const desc = lookupTrack(db.descriptions, 'ADS_1705_B')
     expect(typeof desc).toBe('string')
     expect((desc as string).length).toBeGreaterThan(0)
+  })
+
+  it('composes descriptions as Advertiser + indent + Description', () => {
+    const db = loadSimianDb(readFileSync(DB_PATH))
+    // Nearly every Audio1 row carries an Advertiser (artist/client), so the
+    // bulk of the library text must be the two-part composed form.
+    const all = [...db.descriptions.values()]
+    const composed = all.filter((d) => d.includes(DESCRIPTION_INDENT))
+    expect(composed.length).toBeGreaterThan(all.length / 2)
+    // Each composed value starts with the advertiser, not the indent.
+    expect(composed.every((d) => !d.startsWith(DESCRIPTION_INDENT))).toBe(true)
   })
 
   it('descriptions come out as real Arabic, not cp1252 mojibake', () => {

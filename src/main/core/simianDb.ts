@@ -14,11 +14,19 @@ import { fixMisdecodedText } from './encoding'
 export interface SimianDb {
   /** UPPERCASED file name (no extension) → duration in seconds. */
   tracks: Map<string, number>
-  /** UPPERCASED file name (no extension) → library description, when the table has one. */
+  /**
+   * UPPERCASED file name (no extension) → library text, when the table has it:
+   * `Advertiser` + indent + `Description` (either half alone when the other is
+   * empty). The advertiser is the artist for songs and the client for ads, so
+   * showing both makes the Description column self-explanatory.
+   */
   descriptions: Map<string, string>
   /** Table the durations came from (for the UI/debugging). */
   table: string
 }
+
+/** Separates Advertiser from Description in the composed library text. */
+export const DESCRIPTION_INDENT = '    '
 
 const AUDIO_EXT = /\.(wav|mp3|mp2|ogg|flac|m4a|aif+f?)$/i
 
@@ -66,19 +74,21 @@ export function lookupDuration(tracks: Map<string, number>, name: string): numbe
 const NAME_COLS = /^(file_?name|name|cart|cart_?name|audio_?file)$/i
 const DUR_COLS = /^(length|duration|run_?time|len|total_?length|play_?length)$/i
 const DESC_COLS = /^(description|desc|title|comment|notes?)$/i
+const ADV_COLS = /^advertiser$/i
 
 /** Score a table's columns: which look like the file name and the duration? */
 export function pickColumns(
   columns: string[]
-): { name: string; duration: string; description?: string } | null {
+): { name: string; duration: string; description?: string; advertiser?: string } | null {
   const name = columns.find((c) => NAME_COLS.test(c)) ?? columns.find((c) => /file/i.test(c))
   const duration =
     columns.find((c) => DUR_COLS.test(c)) ?? columns.find((c) => /length|duration/i.test(c))
   if (!name || !duration) return null
-  // Description is optional — never steal the name/duration column for it.
+  // Description/advertiser are optional — never steal the name/duration column.
   const rest = columns.filter((c) => c !== name && c !== duration)
   const description = rest.find((c) => DESC_COLS.test(c)) ?? rest.find((c) => /desc|title/i.test(c))
-  return { name, duration, description }
+  const advertiser = rest.filter((c) => c !== description).find((c) => ADV_COLS.test(c))
+  return { name, duration, description, advertiser }
 }
 
 /** Load the audio database from an .mdb file's contents. */
@@ -111,12 +121,15 @@ export function loadSimianDb(buffer: Buffer): SimianDb {
       // reader mis-decodes as CP1252 — same fix as the .bsi log parser.
       const key = normalizeName(fixMisdecodedText(rawName))
       tracks.set(key, duration)
-      if (cols.description != null) {
-        const desc = row[cols.description]
-        if (typeof desc === 'string' && desc.trim()) {
-          descriptions.set(key, fixMisdecodedText(desc.trim()))
-        }
+      const text = (col: string | undefined): string => {
+        const v = col != null ? row[col] : null
+        return typeof v === 'string' && v.trim() ? fixMisdecodedText(v.trim()) : ''
       }
+      const advertiser = text(cols.advertiser)
+      const desc = text(cols.description)
+      const combined =
+        advertiser && desc ? advertiser + DESCRIPTION_INDENT + desc : advertiser || desc
+      if (combined) descriptions.set(key, combined)
     }
     if (tracks.size > 0) return { tracks, descriptions, table: tableName }
   }
