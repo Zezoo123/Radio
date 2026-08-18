@@ -3,6 +3,18 @@
 All notable changes to the Radio Scheduler, newest first. Windows builds for
 every version are on the [Releases page](https://github.com/Zezoo123/Radio/releases).
 
+## Unreleased
+
+### LOG
+
+- **A rebuilt log is editable straight away.** The "discard unsaved changes?"
+  question before a rebuild (or before opening another log) is now an in-app
+  dialog. The native `window.confirm()` it replaces breaks input focus in
+  Electron ([electron#41603](https://github.com/electron/electron/issues/41603)):
+  after dismissing it, no grid cell would take the caret until a file dialog —
+  in practice, Save — cycled the window's focus, so a log built from the Grid
+  felt read-only until saved.
+
 ## 1.0.0 — 2026-07-30
 
 **The Modernist redesign.** The whole app is reorganized around the operator's
