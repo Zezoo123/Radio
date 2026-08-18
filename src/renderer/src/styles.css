@@ -742,6 +742,29 @@ body {
   padding-top: 16px;
   border-bottom: none;
 }
+/* Source-file states: missing = the referenced spreadsheet can't be read;
+   changed = it was edited on disk since the last import (re-read automatically). */
+.book-row.missing td {
+  color: var(--muted);
+}
+.src-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+  vertical-align: 1px;
+}
+.src-tag.missing {
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+.src-tag.changed {
+  color: var(--warn);
+  border: 1px solid var(--warn);
+}
 .plan-block {
   margin-top: 18px;
   border-top: 2px solid var(--rule-strong);

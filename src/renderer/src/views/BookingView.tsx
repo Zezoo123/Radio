@@ -104,7 +104,7 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
 
   // (Re)load the selected element's plan grid + text preview.
   useEffect(() => {
-    if (sel === null || !templates[sel]) {
+    if (sel === null || !templates[sel] || templates[sel].status === 'missing') {
       setPlanGrid(null)
       setPlanText('')
       return
@@ -170,6 +170,11 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
 
   async function removeElement(index: number): Promise<void> {
     onTemplates(await window.api.removeTemplate(index))
+  }
+
+  /** Pick a new source file for a missing row — the code/category edits are kept. */
+  async function relinkElement(index: number): Promise<void> {
+    onTemplates(await window.api.relinkTemplate(index))
   }
 
   // --- Edit code / category ---------------------------------------------------
@@ -304,17 +309,30 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
                 {templates.map((t, i) => (
                   <tr
                     key={`${t.code}-${i}`}
-                    className={`book-row ${sel === i ? 'sel' : ''}`}
+                    className={`book-row ${sel === i ? 'sel' : ''} ${
+                      t.status === 'missing' ? 'missing' : ''
+                    }`}
                     onClick={() => setSel(i)}
                   >
                     <td className="mono-sm" style={{ fontWeight: 700 }}>
-                      {t.code}
+                      {t.code || '—'}
                     </td>
-                    <td dir="auto">{t.group}</td>
+                    <td dir="auto">{t.group || '—'}</td>
                     <td>{t.category || '—'}</td>
-                    <td>{t.timeCount}</td>
+                    <td>{t.status === 'missing' ? '—' : t.timeCount}</td>
                     <td className="muted">{coversLabel(t.firstDate, t.lastDate)}</td>
-                    <td className="muted">{t.fileName}</td>
+                    <td className="muted" title={t.path}>
+                      {t.fileName}
+                      {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
+                      {t.status === 'changed' && (
+                        <span
+                          className="src-tag changed"
+                          title="The spreadsheet changed on disk since the last import — its current contents were re-read automatically"
+                        >
+                          UPDATED
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {promos && (
@@ -342,7 +360,7 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
             </table>
           )}
 
-          {selected && (
+          {selected && selected.status !== 'missing' && (
             <div className="plan-block">
               <div className="row" style={{ alignItems: 'baseline', gap: 14 }}>
                 <span className="plan-title">{selected.code} — plan</span>
@@ -446,6 +464,44 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
       <div className="work-insp">
         {!selected ? (
           <p className="empty">Select an element to inspect it.</p>
+        ) : selected.status === 'missing' ? (
+          <>
+            <div>
+              <div className="kick">Selected element</div>
+              <div className="insp-title">{selected.code || selected.fileName}</div>
+            </div>
+            <div className="insp-sec">
+              <div className="kick">Source file missing</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                <span className="mono-sm" title={selected.path}>
+                  {selected.fileName}
+                </span>{' '}
+                can’t be read right now — moved, renamed, or not synced yet. Its plan is left out of
+                previews and exports until it’s back; your edits (name, category) are kept.
+              </div>
+              <div className="muted mono-sm" style={{ fontSize: 11, wordBreak: 'break-all' }}>
+                {selected.path}
+              </div>
+            </div>
+            <div className="insp-foot">
+              <div className="row">
+                <button
+                  className="btn primary"
+                  onClick={() => sel !== null && relinkElement(sel)}
+                  title="Pick the spreadsheet's new location — your edits are kept"
+                >
+                  Re-link…
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => sel !== null && removeElement(sel)}
+                  title="Forget this element and its edits (no file is touched)"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
           <>
             <div>

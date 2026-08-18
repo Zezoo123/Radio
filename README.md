@@ -186,6 +186,8 @@ Everything persists as JSON under Electron's `userData` directory
 
 | File                                  | Scope       | Contents                                                                                    |
 | ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `stations/<Station>/bookings.json`    | per station | references to the imported Booking templates (path + file stats + code/category edits) — the spreadsheets themselves stay the source of truth and are re-parsed on launch |
+| `stations/<Station>/config.json`      | per station | the LOG include toggles (clocks, elements, promos, azan, hourly markers)                    |
 | `stations/<Station>/formats.json`     | per station | clocks, default clocks, week grid                                                           |
 | `stations/<Station>/promos.json`      | per station | imported promo set, hour exclusions, time overrides, station rules (blocked hours + breaks) |
 | `stations/<Station>/sequentials.json` | per station | sequential definitions + rotation queues                                                    |

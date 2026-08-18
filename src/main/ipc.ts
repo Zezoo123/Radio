@@ -126,6 +126,18 @@ export function registerIpc(): void {
   ipcMain.handle('templates:remove', (_e, index: number) => session.removeTemplate(index))
   ipcMain.handle('templates:list', () => session.templateSummaries())
 
+  // Re-link a template whose source file went missing (moved / renamed /
+  // Dropbox not synced): pick the file again, overrides are kept.
+  ipcMain.handle('templates:relink', async (_e, index: number) => {
+    const res = await dialog.showOpenDialog({
+      title: 'Re-link element template',
+      properties: ['openFile'],
+      filters: [XLSX_FILTER]
+    })
+    if (res.canceled || !res.filePaths[0]) return session.templateSummaries()
+    return session.relinkTemplate(index, res.filePaths[0])
+  })
+
   ipcMain.handle(
     'templates:setCategory',
     (_e, { index, category }: { index: number; category: string }) =>
@@ -315,7 +327,7 @@ export function registerIpc(): void {
   ipcMain.handle('schedule:preview', async (_e, { start, end }: RangeArg) => {
     // Skip the whole Formats resolve when clocks are excluded (composeOptions
     // would drop the lines anyway; this also spares the disk reads).
-    if (!session.getConfig().includeClocks) return session.preview(start, end)
+    if (!(await session.getConfig()).includeClocks) return session.preview(start, end)
     const { byDate } = await resolveFormatLines(start, end, false)
     return session.preview(start, end, (d) => byDate.get(dateKey(d)) ?? [])
   })
@@ -329,7 +341,7 @@ export function registerIpc(): void {
     async (_e, { start, end, text: edited }: RangeArg & { text?: string }) => {
       // With clocks excluded, skip the Formats resolve so sequential queues
       // don't advance for rows that never make it into the file.
-      const clocksOn = session.getConfig().includeClocks
+      const clocksOn = (await session.getConfig()).includeClocks
       const { byDate, sequentials } = clocksOn
         ? await resolveFormatLines(start, end, true)
         : { byDate: new Map<string, string[]>(), sequentials: null }
