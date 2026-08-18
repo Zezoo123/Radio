@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { AppConfig, TemplateSummary } from '../../../main/session'
+import type { AppConfig, MusicSummary, TemplateSummary } from '../../../main/session'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
+import { MusicImportDialog } from './MusicImportDialog'
 import { ReplaceDialog } from './ReplaceDialog'
 import { toCalendarDate } from '../App'
 import { tomorrowISO } from '../lib/dates'
@@ -55,8 +56,33 @@ export function LogView({
     if (active) window.api.hasFormats().then(setHasFormats)
   }, [active])
 
+  // ---- Music Log import ------------------------------------------------------
+  const [music, setMusic] = useState<MusicSummary | null>(null)
+  const [musicDialogOpen, setMusicDialogOpen] = useState(false)
+  useEffect(() => {
+    if (active) window.api.getMusicLog().then(setMusic)
+  }, [active])
+
+  async function importMusicLog(): Promise<void> {
+    const summary = await window.api.openMusicLog()
+    setMusic(summary)
+    if (summary) {
+      onConfig(await window.api.getConfig())
+      setStatus(`Imported ${summary.fileName} — ${summary.eventCount} music rows`)
+    }
+  }
+
+  async function removeMusicLog(): Promise<void> {
+    setMusic(await window.api.removeMusicLog())
+    onConfig(await window.api.getConfig())
+  }
+
   const ready =
-    hasFormats || templates.length > 0 || Boolean(config?.includeAzan) || Boolean(config?.hasPromos)
+    hasFormats ||
+    templates.length > 0 ||
+    Boolean(config?.includeAzan) ||
+    Boolean(config?.hasPromos) ||
+    Boolean(config?.hasMusic)
   // ---- Editor document (from the old Editor tab) -----------------------------
   const [rows, setRows] = useState<LogRow[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -324,7 +350,7 @@ export function LogView({
                 <button
                   className="btn"
                   disabled={!ready}
-                  title="Compose the range from the Grid (clocks + booked elements + promos + azan) and load it here for editing"
+                  title="Compose the range from the Grid (clocks + booked elements + promos + azan + music log) and load it here for editing"
                   onClick={buildFromGrid}
                 >
                   Build from Grid
@@ -374,6 +400,20 @@ export function LogView({
                 }
               >
                 {config?.hasPromos && (config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
+              </button>
+              <button
+                className={`chip ${config?.hasMusic && (config?.includeMusic ?? true) ? 'on' : ''}`}
+                disabled={!config?.hasMusic}
+                title={
+                  config?.hasMusic
+                    ? 'Include the imported Music Log (repeats on every day of the range)'
+                    : 'No music log imported (Music log panel →)'
+                }
+                onClick={async () =>
+                  onConfig(await window.api.setIncludeMusic(!(config?.includeMusic ?? true)))
+                }
+              >
+                {config?.hasMusic && (config?.includeMusic ?? true) ? '✓ ' : ''}MUSIC LOG
               </button>
               <button
                 className={`chip ${config?.includeAzan ? 'on' : ''}`}
@@ -508,6 +548,37 @@ export function LogView({
           </div>
 
           <div className="insp-sec">
+            <div className="kick">Music log</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+              {music ? (
+                <span>
+                  {music.fileName} — {music.eventCount} music rows, {music.commentCount} markers.
+                  Included as its own layer on every day of the built range.
+                </span>
+              ) : (
+                'No music log imported. Import the fixed-width log your music scheduler writes for Simian.'
+              )}
+            </div>
+            <div className="row">
+              <button className="btn" onClick={importMusicLog}>
+                {music ? 'Replace…' : 'Import Music Log…'}
+              </button>
+              <button
+                className="btn-link"
+                title="Field positions (START/LENGTH), like Simian's Log Import settings"
+                onClick={() => setMusicDialogOpen(true)}
+              >
+                import settings
+              </button>
+              {music && (
+                <button className="btn-link" onClick={removeMusicLog}>
+                  remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="insp-sec">
             <div className="kick">Expected legend</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
               <div>
@@ -543,6 +614,13 @@ export function LogView({
           </div>
         </div>
       )}
+
+      <MusicImportDialog
+        open={musicDialogOpen}
+        musicFileName={music?.fileName ?? null}
+        onSaved={() => window.api.getMusicLog().then(setMusic)}
+        onClose={() => setMusicDialogOpen(false)}
+      />
 
       <ReplaceDialog
         open={replaceOpen}
