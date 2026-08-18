@@ -838,13 +838,11 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                 Blocked hours
               </button>
             </div>
-            <span className="kick">{LAYER_HINTS[layer]}</span>
-            {promosLayer && (
-              <label className="kick" style={{ marginLeft: 'auto' }}>
-                Week of{' '}
-                <input type="date" value={anchor} onChange={(e) => setAnchor(e.target.value)} />
-              </label>
-            )}
+            <span className="kick hint">{LAYER_HINTS[layer]}</span>
+            <label className="kick" style={{ marginLeft: 'auto' }}>
+              Week of{' '}
+              <input type="date" value={anchor} onChange={(e) => setAnchor(e.target.value)} />
+            </label>
           </div>
           <div className="work-body">
             <div className={`week-grid ${painting ? 'painting' : ''}`}>
@@ -856,33 +854,33 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                       <th key={d}>{d}</th>
                     ))}
                   </tr>
-                  {layer === 'clocks' && (
-                    <tr className="default-row">
-                      <th
-                        className="hour-label"
-                        title="Default clock applied to every hour of the day"
-                      >
-                        DEF
+                  {/* Rendered on every layer so switching layers never changes
+                       the table's height — rows would jump otherwise. */}
+                  <tr className="default-row">
+                    <th
+                      className="hour-label"
+                      title="Default clock applied to every hour of the day"
+                    >
+                      DEF
+                    </th>
+                    {WEEKDAY_LABELS.map((_, wd) => (
+                      <th key={wd}>
+                        <select
+                          value={(set.dayDefaults ?? [])[wd] ?? ''}
+                          onChange={(e) => setDayDefault(wd, e.target.value || null)}
+                          disabled={(set.defaultClocks ?? []).length === 0}
+                          title="Default clock for this day"
+                        >
+                          <option value="">none</option>
+                          {(set.defaultClocks ?? []).map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name || '(unnamed)'}
+                            </option>
+                          ))}
+                        </select>
                       </th>
-                      {WEEKDAY_LABELS.map((_, wd) => (
-                        <th key={wd}>
-                          <select
-                            value={(set.dayDefaults ?? [])[wd] ?? ''}
-                            onChange={(e) => setDayDefault(wd, e.target.value || null)}
-                            disabled={(set.defaultClocks ?? []).length === 0}
-                            title="Default clock for this day"
-                          >
-                            <option value="">none</option>
-                            {(set.defaultClocks ?? []).map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name || '(unnamed)'}
-                              </option>
-                            ))}
-                          </select>
-                        </th>
-                      ))}
-                    </tr>
-                  )}
+                    ))}
+                  </tr>
                 </thead>
                 <tbody>
                   {HOURS.map((hour) => (
