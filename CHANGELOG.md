@@ -3,10 +3,25 @@
 All notable changes to the Radio Scheduler, newest first. Windows builds for
 every version are on the [Releases page](https://github.com/Zezoo123/Radio/releases).
 
-## Unreleased
+## 1.1.0 — 2026-08-19
+
+**The station's request wave.** Nine asks from the operators, delivered in one
+release — plus everything that landed since 1.0.0.
 
 ### LOG
 
+- **Log checks run with the time calculation.** The ↻ pass now also lists, by
+  row number: rows with an empty cue, a comment sitting right before a MACRO,
+  a comment as the first line of the log, and more than one timed row (`@`/`#`)
+  sharing the same second.
+- **Commercial breaks play in priority order.** Within each break (the injected
+  items around a break minute — `:10 :30 :50`-style), rows are sequenced
+  Commercial Liner → ADV → FEA → PROMO, forced through the seconds field so the
+  minute never changes.
+- **Music Log import.** The fixed-width file the music scheduler writes is now
+  its own layer in the composed day. Its import settings mirror Simian's Log
+  Import dialog — per-field START column + LENGTH with a **Test** table that
+  parses the first lines live — and the `:)` hour markers become comment rows.
 - **A rebuilt log is editable straight away.** The "discard unsaved changes?"
   question before a rebuild (or before opening another log) is now an in-app
   dialog. The native `window.confirm()` it replaces breaks input focus in
@@ -14,6 +29,54 @@ every version are on the [Releases page](https://github.com/Zezoo123/Radio/relea
   after dismissing it, no grid cell would take the caret until a file dialog —
   in practice, Save — cycled the window's focus, so a log built from the Grid
   felt read-only until saved.
+- **Skipped rows read clean.** The Expected column leaves skipped rows empty
+  (no "skipped" text), and neither skipped nor interrupted rows fade any more —
+  only the color signals the status.
+- **Keyboard shortcuts across the workbench** — open, save, build, duplicate
+  row, delete row, search & replace, refresh expected — with the shortcut shown
+  in each button's tooltip.
+- **Descriptions from the audio database now carry the Advertiser** — composed
+  as `Advertiser    Description`, so songs show their artist and ads their
+  client in "update Dur & Desc" and the Booking tracks panel.
+- The open button is simply **Open…**, and the hourly-markers chip left the
+  include row.
+
+### BOOKING
+
+- **Imports survive a restart.** Booked templates persist *by reference* — the
+  spreadsheet's path plus your in-app edits (code, category), never a copy of
+  its data — and re-parse from the source file on launch, so edits made outside
+  the app are picked up automatically. A moved or unsynced file shows as
+  **missing** with Re-link/Remove instead of disappearing; an externally edited
+  one is flagged and re-read. The LOG include-toggles persist per station too.
+- **Clearer table language**: Group → **Client**, Times → **Spots**, Code →
+  **Name**; "audio elements" are now **Booking elements** throughout.
+- **The plan grid and Covers trim to the played range** — no more months of
+  empty padding columns from the spreadsheet.
+- **The Tracks panel reads real track tokens** — multi-character tokens like
+  `F01` list correctly instead of splitting into letters.
+- The promos-sheet row moved out of the Booking table (it lives on the Grid).
+
+### GRID
+
+- **The promos week table holds its geometry** — switching layers or programs
+  no longer resizes columns or jumps rows.
+
+### Settings & app-wide
+
+- **App font option** — pick the interface font and size, with the operators'
+  `MS Sans Serif` bold 8 as a one-click preset.
+- **Interface size** — scale the whole UI 80–130%.
+- **App-wide Simian audio database** — loaded once, remembered by path, reused
+  by LOG and Booking alike.
+
+### Under the hood
+
+- **Auto-update from GitHub Releases** — the app checks for new versions and
+  updates itself (with a boot fix for the updater's CJS interop).
+- CI runs typecheck + tests on every push and PR; ESLint + Prettier across the
+  repo; Node 22 pinned; app icon embedded; fixtures anonymized; README rebuilt
+  with screenshots and a Download section; source-available license.
 
 ## 1.0.0 — 2026-07-30
 
