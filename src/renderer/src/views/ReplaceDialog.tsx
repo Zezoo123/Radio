@@ -60,6 +60,16 @@ export function ReplaceDialog({ open, rows, onApply, onClose }: Props): JSX.Elem
     }
   }, [open])
 
+  // Escape closes the dialog, like every overlay in the app.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   const scope = SCOPES.find((s) => s.key === scopeKey) ?? SCOPES[0]
 
   // The live match count rescans every cell; on multi-thousand-row logs doing

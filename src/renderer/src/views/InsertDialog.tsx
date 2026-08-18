@@ -33,6 +33,17 @@ export function InsertDialog({ open, targetLabel, onPick, onClose }: Props): JSX
     if (open) window.api.listSequentials().then(setSequentials)
   }, [open])
 
+  // Escape closes this dialog — unless the sequential editor is stacked on
+  // top, in which case that dialog takes the keypress and closes itself.
+  useEffect(() => {
+    if (!open || editorOpen) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, editorOpen, onClose])
+
   if (!open) return null
 
   const disabled = !targetLabel

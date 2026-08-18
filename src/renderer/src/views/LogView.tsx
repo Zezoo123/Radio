@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AppConfig, MusicSummary, TemplateSummary } from '../../../main/session'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
 import { checkLog } from '../lib/logCheck'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
+import { isMod, overlayOpen } from '../lib/shortcuts'
 import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
 import { MusicImportDialog } from './MusicImportDialog'
 import { ReplaceDialog } from './ReplaceDialog'
@@ -98,7 +99,8 @@ export function LogView({
   useEffect(() => {
     if (!full) return
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setFull(false)
+      // A dialog on top gets Escape first (it closes itself); the next press exits.
+      if (e.key === 'Escape' && !overlayOpen()) setFull(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -290,6 +292,66 @@ export function LogView({
     setStatus(`Saved to ${res.path}`)
   }
 
+  // ---- Keyboard shortcuts ---------------------------------------------------
+  // One window listener while the LOG tab is showing. It reads the current
+  // actions/state through this ref (same pattern as LogGrid's `live`), so the
+  // listener itself only re-registers when the tab's visibility flips.
+  const shortcut = useRef({
+    openLog,
+    buildFromGrid,
+    save,
+    refreshSim,
+    openReplace: () => setReplaceOpen(true),
+    canBuild: ready,
+    // Mirrors the Save buttons' disabled condition.
+    canSave: rows.length > 0 && (dirty || !path),
+    hasRows: rows.length > 0
+  })
+  shortcut.current = {
+    openLog,
+    buildFromGrid,
+    save,
+    refreshSim,
+    openReplace: () => setReplaceOpen(true),
+    canBuild: ready,
+    canSave: rows.length > 0 && (dirty || !path),
+    hasRows: rows.length > 0
+  }
+
+  useEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent): void => {
+      const s = shortcut.current
+      if (e.repeat) return
+      if (e.key === 'F5' && !isMod(e) && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        if (s.hasRows && !overlayOpen()) s.refreshSim()
+        return
+      }
+      if (!isMod(e) || e.altKey || e.shiftKey) return
+      switch (e.key.toLowerCase()) {
+        case 'o':
+          e.preventDefault()
+          if (!overlayOpen()) void s.openLog()
+          break
+        case 's':
+          e.preventDefault()
+          if (s.canSave && !overlayOpen()) void s.save(false)
+          break
+        case 'b':
+          e.preventDefault()
+          if (s.canBuild && !overlayOpen()) void s.buildFromGrid()
+          break
+        case 'f':
+          e.preventDefault()
+          if (s.hasRows && !overlayOpen()) s.openReplace()
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active])
+
   const fileName = path?.split(/[\\/]/).pop()
   const dbName = db?.path.split(/[\\/]/).pop()
   const rangeLabel = start === end ? prettyDate(start) : `${prettyDate(start)} → ${prettyDate(end)}`
@@ -309,7 +371,7 @@ export function LogView({
               <button
                 className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                 disabled={rows.length === 0}
-                title="Recompute the Expected column and re-run the log check"
+                title="Recompute the Expected column and re-run the log check (F5)"
                 onClick={refreshSim}
               >
                 ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -317,6 +379,7 @@ export function LogView({
               <button
                 className="chip"
                 disabled={rows.length === 0}
+                title="Find and replace across the log (Ctrl+F)"
                 onClick={() => setReplaceOpen(true)}
               >
                 SEARCH &amp; REPLACE…
@@ -324,6 +387,7 @@ export function LogView({
               <button
                 className="btn primary"
                 disabled={rows.length === 0 || (!dirty && Boolean(path))}
+                title="Save the log (Ctrl+S)"
                 onClick={() => save(false)}
               >
                 Save
@@ -348,13 +412,17 @@ export function LogView({
                 To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
               </label>
               <div className="row" style={{ marginLeft: 'auto' }}>
-                <button className="btn" title="Open a .bsi or .txt log file" onClick={openLog}>
+                <button
+                  className="btn"
+                  title="Open a .bsi or .txt log file (Ctrl+O)"
+                  onClick={openLog}
+                >
                   Open…
                 </button>
                 <button
                   className="btn"
                   disabled={!ready}
-                  title="Compose the range from the Grid (clocks + booked elements + promos + azan + music log) and load it here for editing"
+                  title="Compose the range from the Grid (clocks + booked elements + promos + azan + music log) and load it here for editing (Ctrl+B)"
                   onClick={buildFromGrid}
                 >
                   Build from Grid
@@ -445,6 +513,7 @@ export function LogView({
                 <button
                   className="chip"
                   disabled={rows.length === 0}
+                  title="Find and replace across the log (Ctrl+F)"
                   onClick={() => setReplaceOpen(true)}
                 >
                   SEARCH &amp; REPLACE…
@@ -452,7 +521,7 @@ export function LogView({
                 <button
                   className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                   disabled={rows.length === 0}
-                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check"
+                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check (F5)"
                   onClick={refreshSim}
                 >
                   ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -479,6 +548,7 @@ export function LogView({
             </p>
           ) : (
             <LogGrid
+              active={active}
               rows={rows}
               onRows={updateRows}
               sim={sim}
@@ -630,6 +700,7 @@ export function LogView({
               <button
                 className="btn primary"
                 disabled={rows.length === 0 || (!dirty && Boolean(path))}
+                title="Save the log (Ctrl+S)"
                 onClick={() => save(false)}
               >
                 Save log

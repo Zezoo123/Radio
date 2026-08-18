@@ -50,6 +50,16 @@ export function MusicImportDialog({
     })
   }, [open, musicFileName])
 
+  // Escape closes the dialog, like every overlay in the app.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   if (!open || !settings) return null
 
   function setPos(key: keyof MusicImportSettings, patch: Partial<FieldPos>): void {
