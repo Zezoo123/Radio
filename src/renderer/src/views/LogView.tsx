@@ -548,8 +548,8 @@ export function LogView({
                 a timed row
               </div>
               <div>
-                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>skipped</span> — never
-                reached
+                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>yellow</span> — never
+                reached (Expected left empty)
               </div>
               <div>
                 <span style={{ fontWeight: 800 }}>@ # +</span> — timed · timed-next · sequential
