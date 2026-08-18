@@ -15,10 +15,10 @@ unit-testable with vitest — no app boot, no mocking.
 ┌────────────────────────────── main process ─────────────────────────────┐
 │  index.ts      window creation, app lifecycle                           │
 │  ipc.ts        every ipcMain.handle() — ~44 channels, thin glue         │
-│  session.ts    in-memory state per station (imports, toggles)           │
+│  session.ts    per-station state (imports by reference, toggles)        │
 │  station.ts    active station + per-station data dirs                   │
-│  formats.ts / promos.ts / sequentials.ts /                              │
-│  azanFormat.ts / uiSettings.ts        JSON persistence stores           │
+│  formats.ts / promos.ts / sequentials.ts / bookings.ts /               │
+│  stationConfig.ts / azanFormat.ts / uiSettings.ts   JSON stores         │
 │                                                                         │
 │  core/         PURE domain logic (no Electron) ◄── vitest tests run     │
 │                                                    against this         │
@@ -129,14 +129,19 @@ case-insensitive, extension-stripping, and dash/underscore tolerant — the sche
 
 - **`station.ts`** — the fixed station list and the active-station pointer. Per-station files
   live under `userData/stations/<Station>/`; global settings sit at the `userData` root.
-- **`session.ts`** — in-memory, per-station state: loaded templates, the promos file, the
-  imported music log, the include-azan/promos/music toggles, hourly-marker options. `composeOptions()` is where all the
-  layers meet before `exportRange()`.
+- **`session.ts`** — per-station state: loaded templates, the promos file, the imported music
+  log, the include-azan/promos/music toggles, hourly-marker options. `composeOptions()` is where
+  all the layers meet before `exportRange()`. Booking imports persist **by reference**
+  (`bookings.json` stores each template's path + file stats + the user's code/category edits —
+  never parsed data) and are re-parsed from their spreadsheets on first access after launch, so
+  external edits are picked up automatically; a file that can't be read shows as a `missing` row
+  (with Re-link / Remove) and keeps its edits. The LOG toggles persist in `config.json` via
+  `stationConfig.ts`.
 - **`ipc.ts`** — every `ipcMain.handle`. Handlers are deliberately thin: dialogs + a session or
   store call. Channel naming is `module:action` (`templates:add`, `promos:week`,
   `schedule:export`, `log:open`, `simian:durations`, …).
-- **Stores** (`formats.ts`, `promos.ts`, `sequentials.ts`, `azanFormat.ts`, `musicImport.ts`,
-  `uiSettings.ts`) —
+- **Stores** (`formats.ts`, `promos.ts`, `sequentials.ts`, `bookings.ts`, `stationConfig.ts`,
+  `azanFormat.ts`, `musicImport.ts`, `uiSettings.ts`) —
   one tiny class each: `load()` (normalize-or-default, migration lives here — e.g. the ADS→ADV
   category rename) and `save()`.
 - **`../preload/index.ts`** — the whole renderer↔main surface as one typed object exposed as

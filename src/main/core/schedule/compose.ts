@@ -3,6 +3,7 @@ import { dateRange } from '../dates'
 import { serialize } from '../export/simian'
 import { sectionForDate, type ElementTemplate } from '../parsers/elementTemplate'
 import { hourlyMarkerLines, DEFAULT_HOURLY, type HourlyOptions } from './hourly'
+import { sequenceBreaks } from './breaks'
 
 /**
  * Assembles the section-grouped day(s) the station exports to Simian: per-day
@@ -50,7 +51,19 @@ function composeOneDay(date: CalendarDate, opts: ComposeOptions): ScheduleDay {
   const promoLines = opts.promoLinesForDate?.(date)
   const musicLines = opts.musicLinesForDate?.(date)
 
-  return { ...date, formatLines, hourlyLines, azanLines, promoLines, musicLines, sections }
+  // Each commercial break (injected items sharing a break minute) plays in
+  // category-priority order, forced through the seconds field.
+  const sequenced = sequenceBreaks(sections, promoLines)
+
+  return {
+    ...date,
+    formatLines,
+    hourlyLines,
+    azanLines,
+    promoLines: sequenced.promoLines,
+    musicLines,
+    sections: sequenced.sections
+  }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {
