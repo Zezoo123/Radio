@@ -13,6 +13,7 @@ export interface StationConfig {
   includePromos: boolean
   includeClocks: boolean
   includeElements: boolean
+  includeMusic: boolean
 }
 
 export function defaultStationConfig(): StationConfig {
@@ -21,7 +22,8 @@ export function defaultStationConfig(): StationConfig {
     includeAzan: false,
     includePromos: true,
     includeClocks: true,
-    includeElements: true
+    includeElements: true,
+    includeMusic: true
   }
 }
 
@@ -43,7 +45,8 @@ export function normalizeStationConfig(raw: unknown): StationConfig {
     includeAzan: bool(obj.includeAzan, def.includeAzan),
     includePromos: bool(obj.includePromos, def.includePromos),
     includeClocks: bool(obj.includeClocks, def.includeClocks),
-    includeElements: bool(obj.includeElements, def.includeElements)
+    includeElements: bool(obj.includeElements, def.includeElements),
+    includeMusic: bool(obj.includeMusic, def.includeMusic)
   }
 }
 

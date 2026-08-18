@@ -1,9 +1,11 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import iconv from 'iconv-lite'
 import { session } from './session'
 import { azanFormatStore } from './azanFormat'
+import { musicImportStore } from './musicImport'
+import type { MusicImportSettings } from './core/parsers/musicLog'
 import { uiSettingsStore, type UiSettings } from './uiSettings'
 import { formatStore, normalizeFormatSet } from './formats'
 import { gridHasAssignments, serializeWeek } from './core/format/expand'
@@ -166,6 +168,38 @@ export function registerIpc(): void {
   ipcMain.handle('config:setIncludeElements', (_e, include: boolean) =>
     session.setIncludeElements(include)
   )
+  ipcMain.handle('config:setIncludeMusic', (_e, include: boolean) =>
+    session.setIncludeMusic(include)
+  )
+
+  // --- Music Log import -----------------------------------------------------
+  // The fixed-width file the music scheduler writes for Simian's Music log
+  // import. Decoded like every log file (ANSI/Windows-1256 unless valid UTF-8).
+  ipcMain.handle('music:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Import Music Log',
+      properties: ['openFile'],
+      filters: [{ name: 'Music log', extensions: ['txt', 'log'] }]
+    })
+    if (res.canceled || !res.filePaths[0]) return session.getMusicLog()
+    const path = res.filePaths[0]
+    const text = decodeLogText(await readFile(path))
+    return session.loadMusicLog(basename(path), text)
+  })
+  ipcMain.handle('music:get', () => session.getMusicLog())
+  ipcMain.handle('music:remove', () => session.removeMusicLog())
+  ipcMain.handle(
+    'music:previewRows',
+    (_e, { limit, settings }: { limit: number; settings?: MusicImportSettings }) =>
+      session.musicPreviewRows(limit, settings)
+  )
+
+  // --- Music import settings (global, like the AZAN format) ------------------
+  ipcMain.handle('musicImport:get', () => musicImportStore.load())
+  ipcMain.handle('musicImport:save', async (_e, settings: MusicImportSettings) => {
+    await musicImportStore.save(settings)
+    return musicImportStore.load()
+  })
 
   // --- AZAN format (global setting) -----------------------------------------
   ipcMain.handle('azanFormat:get', () => azanFormatStore.load())

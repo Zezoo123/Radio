@@ -53,6 +53,11 @@ save**.
 - **`elementTemplate.ts`** — the sponsor/group Excel sheets. Layout: group + code header rows,
   day-of-month columns, then time rows whose cells hold track letters. `eventsForDate()` turns one
   calendar date into `ScheduleEvent`s: cell `A` → name `CODE-A`, cell `1` → the bare code.
+- **`musicLog.ts`** — the fixed-width Music Log the station's music scheduler writes for
+  Simian's Music log import. Position dependent like Simian's Log Import dialog: each field
+  (Cue, Time, Name, Length, Category, Desc.) is a START column + LENGTH, configurable and
+  persisted (`musicImport.ts`). Lines without a valid Time (`:)` hour markers) become comment
+  rows; events always get cue `+` (AutoStep) unless a configured Cue field says otherwise.
 - **`promosFile.ts`** — the promos workbook (one row per program): airdays `S M T W T F S`
   (Sun→Sat), airtime From/To, promo file name, per-weekday promo counts. Airtime cells are Excel
   _time serials_; they're read via `getUTCHours()` because exceljs maps serials onto fixed UTC
@@ -76,9 +81,11 @@ save**.
 4. **Format (clock) rows** — resolved per date by the caller (see next section) and injected as
    `formatLinesForDate`.
 5. **Promos** — injected as `promoLinesForDate` (see Promos below).
+6. **Music Log** — injected as `musicLinesForDate`; the file carries times but no dates, so the
+   same rows repeat on every day of the range.
 
 `export/simian.ts` then serializes byte-exactly: date-header block, format rows, hourly markers,
-azan, promos, then one section per template — pipe-delimited, CRLF, trailing CRLF. The exact byte
+azan, promos, the music log, then one section per template — pipe-delimited, CRLF, trailing CRLF. The exact byte
 structure (dash counts, column positions of section headers) is pinned by constants and by the
 golden test (below). **Do not hand-roll log lines elsewhere; go through `eventLine()`.**
 
@@ -122,18 +129,19 @@ case-insensitive, extension-stripping, and dash/underscore tolerant — the sche
 
 - **`station.ts`** — the fixed station list and the active-station pointer. Per-station files
   live under `userData/stations/<Station>/`; global settings sit at the `userData` root.
-- **`session.ts`** — per-station state: loaded templates, the promos file, the
-  include-azan/include-promos toggles, hourly-marker options. `composeOptions()` is where all the
-  layers meet before `exportRange()`. Booking imports persist **by reference** (`bookings.json`
-  stores each template's path + file stats + the user's code/category edits — never parsed data)
-  and are re-parsed from their spreadsheets on first access after launch, so external edits are
-  picked up automatically; a file that can't be read shows as a `missing` row (with Re-link /
-  Remove) and keeps its edits. The LOG toggles persist in `config.json` via `stationConfig.ts`.
+- **`session.ts`** — per-station state: loaded templates, the promos file, the imported music
+  log, the include-azan/promos/music toggles, hourly-marker options. `composeOptions()` is where
+  all the layers meet before `exportRange()`. Booking imports persist **by reference**
+  (`bookings.json` stores each template's path + file stats + the user's code/category edits —
+  never parsed data) and are re-parsed from their spreadsheets on first access after launch, so
+  external edits are picked up automatically; a file that can't be read shows as a `missing` row
+  (with Re-link / Remove) and keeps its edits. The LOG toggles persist in `config.json` via
+  `stationConfig.ts`.
 - **`ipc.ts`** — every `ipcMain.handle`. Handlers are deliberately thin: dialogs + a session or
   store call. Channel naming is `module:action` (`templates:add`, `promos:week`,
   `schedule:export`, `log:open`, `simian:durations`, …).
 - **Stores** (`formats.ts`, `promos.ts`, `sequentials.ts`, `bookings.ts`, `stationConfig.ts`,
-  `azanFormat.ts`, `uiSettings.ts`) —
+  `azanFormat.ts`, `musicImport.ts`, `uiSettings.ts`) —
   one tiny class each: `load()` (normalize-or-default, migration lives here — e.g. the ADS→ADV
   category rename) and `save()`.
 - **`../preload/index.ts`** — the whole renderer↔main surface as one typed object exposed as

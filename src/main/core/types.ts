@@ -43,6 +43,8 @@ export interface ScheduleDay {
   azanLines?: string[]
   /** Promo rows (program trailers) distributed across the day. */
   promoLines?: string[]
+  /** Imported Music Log rows (from the music scheduler's fixed-width file). */
+  musicLines?: string[]
   sections: Section[]
 }
 

@@ -8,8 +8,6 @@ interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
   onConfig: (c: AppConfig) => void
-  /** Jump to the Grid tab (the promos-sheet row lives there). */
-  onOpenGrid: () => void
 }
 
 const MONTH_NAMES = [
@@ -79,7 +77,7 @@ function coversLabel(first: string | null, last: string | null): string {
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
@@ -335,27 +333,6 @@ export function BookingView({ templates, onTemplates, onConfig, onOpenGrid }: Pr
                     </td>
                   </tr>
                 ))}
-                {promos && (
-                  <>
-                    <tr className="book-sep">
-                      <td colSpan={6} className="kick">
-                        Promos sheet · {promos.programCount} programs
-                      </td>
-                    </tr>
-                    <tr
-                      className="book-row"
-                      onClick={onOpenGrid}
-                      title="Placement is managed on the Grid tab"
-                    >
-                      <td className="mono-sm">PROMOS</td>
-                      <td>{promos.programCount} programs</td>
-                      <td>PROMO</td>
-                      <td>—</td>
-                      <td className="muted">weekly</td>
-                      <td className="muted">{promos.fileName}</td>
-                    </tr>
-                  </>
-                )}
               </tbody>
             </table>
           )}

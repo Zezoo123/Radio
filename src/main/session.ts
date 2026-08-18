@@ -10,6 +10,14 @@ import {
 
 export type { TemplateGrid }
 import { parsePromosFile, type PromoEntry } from './core/parsers/promosFile'
+import {
+  musicLogLines,
+  parseMusicLog,
+  type MusicImportSettings,
+  type MusicRow,
+  type ParsedMusicLog
+} from './core/parsers/musicLog'
+import { musicImportStore } from './musicImport'
 import { computeAzanLines, type AzanFormat } from './core/prayer/azanRows'
 import { azanFormatStore } from './azanFormat'
 import { DEFAULT_HOURLY, type HourlyOptions } from './core/schedule/hourly'
@@ -61,6 +69,13 @@ export interface PromoSummary {
   programCount: number
 }
 
+export interface MusicSummary {
+  fileName: string
+  /** Timed audio rows / marker-comment rows, per the current import settings. */
+  eventCount: number
+  commentCount: number
+}
+
 export interface AppConfig {
   hourly: HourlyOptions
   /** Include the computed azan (per the global AZAN format) in the export. */
@@ -71,6 +86,9 @@ export interface AppConfig {
   includeClocks: boolean
   /** Include the booked audio-element templates in the export. */
   includeElements: boolean
+  hasMusic: boolean
+  /** Include the imported Music Log in the export. */
+  includeMusic: boolean
 }
 
 interface LoadedTemplate {
@@ -100,6 +118,9 @@ interface StationState {
   includePromos: boolean
   includeClocks: boolean
   includeElements: boolean
+  /** Imported Music Log, kept raw so settings edits re-parse it. */
+  music: { fileName: string; text: string } | null
+  includeMusic: boolean
   /** Set once hydration from the persisted stores has started. */
   hydrated?: Promise<void>
 }
@@ -112,7 +133,9 @@ function freshState(): StationState {
     promos: null,
     includePromos: true,
     includeClocks: true,
-    includeElements: true
+    includeElements: true,
+    music: null,
+    includeMusic: true
   }
 }
 
@@ -157,6 +180,7 @@ class Session {
     s.includePromos = config.includePromos
     s.includeClocks = config.includeClocks
     s.includeElements = config.includeElements
+    s.includeMusic = config.includeMusic
 
     const refs = await bookingsStore.load()
     s.templates = await Promise.all(refs.map((ref) => this.loadRef(ref)))
@@ -391,7 +415,9 @@ class Session {
       hasPromos: (s.promos?.set.entries.length ?? 0) > 0,
       includePromos: s.includePromos,
       includeClocks: s.includeClocks,
-      includeElements: s.includeElements
+      includeElements: s.includeElements,
+      hasMusic: s.music !== null,
+      includeMusic: s.includeMusic
     }
   }
 
@@ -406,7 +432,8 @@ class Session {
       includeAzan: s.includeAzan,
       includePromos: s.includePromos,
       includeClocks: s.includeClocks,
-      includeElements: s.includeElements
+      includeElements: s.includeElements,
+      includeMusic: s.includeMusic
     }
     return stationConfigStore.save(config)
   }
@@ -420,6 +447,10 @@ class Session {
 
   setIncludePromos(include: boolean): Promise<AppConfig> {
     return this.setToggle((s) => (s.includePromos = include))
+  }
+
+  setIncludeMusic(include: boolean): Promise<AppConfig> {
+    return this.setToggle((s) => (s.includeMusic = include))
   }
 
   setIncludeClocks(include: boolean): Promise<AppConfig> {
@@ -436,6 +467,58 @@ class Session {
 
   setHourly(hourly: HourlyOptions): Promise<AppConfig> {
     return this.setToggle((s) => (s.hourly = hourly))
+  }
+
+  // --- Music Log ------------------------------------------------------------
+
+  /** Parse the loaded music log with the current (or given) import settings. */
+  private async parsedMusic(settings?: MusicImportSettings): Promise<ParsedMusicLog | null> {
+    const { music } = this.st()
+    if (!music) return null
+    return parseMusicLog(music.text, settings ?? (await musicImportStore.load()))
+  }
+
+  private async musicSummaryOf(): Promise<MusicSummary | null> {
+    const { music } = this.st()
+    const parsed = await this.parsedMusic()
+    if (!music || !parsed) return null
+    return {
+      fileName: music.fileName,
+      eventCount: parsed.eventCount,
+      commentCount: parsed.commentCount
+    }
+  }
+
+  /** Store a decoded music log (the raw text; parsing follows the settings). */
+  async loadMusicLog(fileName: string, text: string): Promise<MusicSummary | null> {
+    this.st().music = { fileName, text }
+    return this.musicSummaryOf()
+  }
+
+  async getMusicLog(): Promise<MusicSummary | null> {
+    return this.musicSummaryOf()
+  }
+
+  removeMusicLog(): null {
+    this.st().music = null
+    return null
+  }
+
+  /**
+   * The first rows of the loaded log parsed with `settings` (unsaved edits from
+   * the import-settings dialog) or the persisted settings — the dialog's Test
+   * table, like Simian's own Test button.
+   */
+  async musicPreviewRows(limit: number, settings?: MusicImportSettings): Promise<MusicRow[]> {
+    const parsed = await this.parsedMusic(settings)
+    return parsed ? parsed.rows.slice(0, Math.max(0, limit)) : []
+  }
+
+  /** The music log as pipe lines, or null when excluded or not loaded. */
+  private async musicLines(): Promise<string[] | null> {
+    if (!this.st().includeMusic) return null
+    const parsed = await this.parsedMusic()
+    return parsed ? musicLogLines(parsed) : null
   }
 
   // --- Promos ---------------------------------------------------------------
@@ -608,7 +691,8 @@ class Session {
   private composeOptions(
     formatLinesForDate?: (date: CalendarDate) => string[],
     promoLinesForDate?: (date: CalendarDate) => string[],
-    azanFormat?: AzanFormat
+    azanFormat?: AzanFormat,
+    musicLines?: string[] | null
   ): ComposeOptions {
     const st = this.st()
     const azanLinesForDate =
@@ -624,6 +708,9 @@ class Session {
       azanLinesForDate,
       formatLinesForDate: st.includeClocks ? formatLinesForDate : undefined,
       promoLinesForDate,
+      // The music log carries times but no dates — it applies to every day
+      // of the composed range.
+      musicLinesForDate: musicLines?.length ? () => musicLines : undefined,
       hourly: st.hourly
     }
   }
@@ -646,7 +733,8 @@ class Session {
     const opts = this.composeOptions(
       formatLinesForDate,
       (d) => promo.byDate.get(dateKey(d)) ?? [],
-      azanFormat
+      azanFormat,
+      await this.musicLines()
     )
     const missing = s.includeElements
       ? s.templates

@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron'
-import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../main/session'
+import type {
+  AppConfig,
+  MusicSummary,
+  PromoSummary,
+  TemplateGrid,
+  TemplateSummary
+} from '../main/session'
+import type { MusicImportSettings, MusicRow } from '../main/core/parsers/musicLog'
 import type { HourlyOptions } from '../main/core/schedule/hourly'
 import type { AzanFormat } from '../main/core/prayer/azanRows'
 import type { AzanTimes } from '../main/core/prayer/azan'
@@ -85,6 +92,17 @@ const api = {
     ipcRenderer.invoke('config:setIncludeClocks', include),
   setIncludeElements: (include: boolean): Promise<AppConfig> =>
     ipcRenderer.invoke('config:setIncludeElements', include),
+  setIncludeMusic: (include: boolean): Promise<AppConfig> =>
+    ipcRenderer.invoke('config:setIncludeMusic', include),
+
+  openMusicLog: (): Promise<MusicSummary | null> => ipcRenderer.invoke('music:open'),
+  getMusicLog: (): Promise<MusicSummary | null> => ipcRenderer.invoke('music:get'),
+  removeMusicLog: (): Promise<null> => ipcRenderer.invoke('music:remove'),
+  musicPreviewRows: (limit: number, settings?: MusicImportSettings): Promise<MusicRow[]> =>
+    ipcRenderer.invoke('music:previewRows', { limit, settings }),
+  getMusicImportSettings: (): Promise<MusicImportSettings> => ipcRenderer.invoke('musicImport:get'),
+  saveMusicImportSettings: (settings: MusicImportSettings): Promise<MusicImportSettings> =>
+    ipcRenderer.invoke('musicImport:save', settings),
 
   getUiSettings: (): Promise<UiSettings> => ipcRenderer.invoke('uiSettings:get'),
   saveUiSettings: (settings: UiSettings): Promise<UiSettings> =>

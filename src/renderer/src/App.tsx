@@ -23,6 +23,28 @@ type Contrast = 'normal' | 'high'
 /** The Interface-size steps offered in Settings (percent of normal). */
 export const UI_SCALES = [80, 90, 100, 110, 120, 130]
 
+/** App-wide font override (Settings → Appearance). Empty family + null size
+    + !bold = no override, the active theme's typography applies. */
+export interface UiFont {
+  family: string
+  /** Base size in px (the theme's other sizes scale from it); null = theme size. */
+  size: number | null
+  bold: boolean
+}
+
+export const UI_FONT_DEFAULT: UiFont = { family: '', size: null, bold: false }
+export const UI_FONT_MIN = 8
+export const UI_FONT_MAX = 24
+
+/** Classic Windows fallbacks for the MS Sans Serif preset; a generic sans
+    stack for everything else, so a missing family degrades gracefully. */
+function fontStack(family: string): string {
+  const generic = /ms sans serif/i.test(family)
+    ? "'Microsoft Sans Serif', Tahoma, Geneva, 'Segoe UI', sans-serif"
+    : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  return `'${family.replace(/'/g, '')}', ${generic}`
+}
+
 const TABS: { id: Section; label: string; sub: string }[] = [
   { id: 'booking', label: 'BOOKING', sub: 'BOOKING ELEMENTS' },
   { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
@@ -66,6 +88,22 @@ export default function App(): JSX.Element {
   const [uiScale, setUiScale] = useState<number>(() => {
     const saved = parseInt(readPref('ui.scale', '100'), 10)
     return UI_SCALES.includes(saved) ? saved : 100
+  })
+  // App-wide font override. Persisted like the theme; default = theme fonts.
+  const [uiFont, setUiFont] = useState<UiFont>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ui.font') ?? '')
+      return {
+        family: typeof saved.family === 'string' ? saved.family : '',
+        size:
+          typeof saved.size === 'number' && saved.size >= UI_FONT_MIN && saved.size <= UI_FONT_MAX
+            ? saved.size
+            : null,
+        bold: saved.bold === true
+      }
+    } catch {
+      return UI_FONT_DEFAULT
+    }
   })
   const [error, setError] = useState<string | null>(null)
   const [stations, setStations] = useState<string[]>([])
@@ -160,6 +198,36 @@ export default function App(): JSX.Element {
     }
   }, [uiScale])
 
+  // Apply + persist the font override. Inline custom properties on <html>
+  // outrank every theme's token block, so the choice wins on any theme; the
+  // theme's own typography returns the moment the override is cleared.
+  useEffect(() => {
+    const root = document.documentElement
+    const { family, size, bold } = uiFont
+    if (family) root.style.setProperty('--font-ui', fontStack(family))
+    else root.style.removeProperty('--font-ui')
+    const sizes: [string, number][] = size
+      ? [
+          ['--fs-base', size],
+          ['--fs-sm', Math.max(UI_FONT_MIN, size - 1)],
+          ['--fs-xs', Math.max(UI_FONT_MIN, size - 2)],
+          ['--fs-h1', Math.round(size * 1.6)],
+          ['--fs-h2', size + 1]
+        ]
+      : []
+    for (const t of ['--fs-base', '--fs-sm', '--fs-xs', '--fs-h1', '--fs-h2'])
+      root.style.removeProperty(t)
+    for (const [t, px] of sizes) root.style.setProperty(t, `${px}px`)
+    // styles.css keys the form-control family + bold rules off this attribute.
+    if (family || size || bold) root.dataset.userFont = bold ? 'bold' : 'on'
+    else delete root.dataset.userFont
+    try {
+      localStorage.setItem('ui.font', JSON.stringify(uiFont))
+    } catch {
+      /* storage unavailable — keep the in-memory choice */
+    }
+  }, [uiFont])
+
   // The settings drawer closes on Escape like any dialog.
   useEffect(() => {
     if (!settingsOpen) return
@@ -243,12 +311,7 @@ export default function App(): JSX.Element {
           </div>
         )}
         {section === 'booking' && (
-          <BookingView
-            templates={templates}
-            onTemplates={setTemplates}
-            onConfig={setConfig}
-            onOpenGrid={() => setSection('grid')}
-          />
+          <BookingView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
         )}
         {section === 'grid' && (
           <GridView
@@ -296,6 +359,8 @@ export default function App(): JSX.Element {
               onHighContrast={(on) => setContrast(on ? 'high' : 'normal')}
               uiScale={uiScale}
               onUiScale={setUiScale}
+              uiFont={uiFont}
+              onUiFont={setUiFont}
             />
           </div>
         </div>
