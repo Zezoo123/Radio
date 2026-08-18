@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/Zezoo123/Radio)](https://github.com/Zezoo123/Radio/releases)
 [![License: source-available](https://img.shields.io/badge/license-source--available-blue.svg)](LICENSE)
 
-![The LOG tab showing a composed broadcast day: hourly comment markers, the five daily azan rows wrapped in deckfade macros, and per-sponsor section headers with their Booking element rows](docs/screenshots/hero-log.png)
+![The LOG tab showing a composed broadcast day: the five daily azan rows wrapped in deckfade macros, and per-sponsor section headers with their Booking element rows](docs/screenshots/hero-log.png)
 
 A desktop app (Electron + React + TypeScript) that runs the day-to-day playout scheduling of a
 group of Egyptian radio stations and speaks the native formats of **BSI Simian Pro** — the playout
@@ -103,13 +103,13 @@ day preview shows the exact rows that will be exported.
 
 ### Log — build & export
 
-Compose any date range into a Simian program log: date headers, the Formats clock rows, hourly
-comment markers, the computed **AZAN** rows (5 daily prayers, Cairo timetable, format configurable
-in Settings), promos, the imported **Music Log**, and one section per element template. Preview
-it, export it to a `.txt` the station imports via _Simian → Tools → Program Options → Log
-Import_ — or send it straight to the Editor. Logs are written as **ANSI (Windows-1256)** so
-Arabic survives Simian's import; opening a log auto-detects older UTF-8 files. Every date picker
-defaults to tomorrow (the day being scheduled) and the From/To range keeps itself valid.
+Compose any date range into a Simian program log: date headers, the Formats clock rows, the
+computed **AZAN** rows (5 daily prayers, Cairo timetable, format configurable in Settings),
+promos, the imported **Music Log**, and one section per element template. Preview it, export it
+to a `.txt` the station imports via _Simian → Tools → Program Options → Log Import_ — or send it
+straight to the Editor. Logs are written as **ANSI (Windows-1256)** so Arabic survives Simian's
+import; opening a log auto-detects older UTF-8 files. Every date picker defaults to tomorrow
+(the day being scheduled) and the From/To range keeps itself valid.
 
 The **Music Log** layer imports the fixed-width file the station's music scheduler writes for
 Simian's Music log import. Its **import settings** mirror Simian's own Log Import dialog —

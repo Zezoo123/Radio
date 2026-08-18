@@ -83,12 +83,6 @@ export function LogView({
     Boolean(config?.includeAzan) ||
     Boolean(config?.hasPromos) ||
     Boolean(config?.hasMusic)
-  const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
-
-  async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
-    onConfig(await window.api.setHourly({ ...hourly, ...patch }))
-  }
-
   // ---- Editor document (from the old Editor tab) -----------------------------
   const [rows, setRows] = useState<LogRow[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -350,8 +344,8 @@ export function LogView({
                 To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
               </label>
               <div className="row" style={{ marginLeft: 'auto' }}>
-                <button className="btn" onClick={openLog}>
-                  Open .bsi / .txt…
+                <button className="btn" title="Open a .bsi or .txt log file" onClick={openLog}>
+                  Open…
                 </button>
                 <button
                   className="btn"
@@ -430,33 +424,6 @@ export function LogView({
               >
                 {config?.includeAzan ? '✓ ' : ''}AZAN
               </button>
-              <button
-                className={`chip ${hourly.enabled ? 'on' : ''}`}
-                onClick={() => updateHourly({ enabled: !hourly.enabled })}
-              >
-                {hourly.enabled ? '✓ ' : ''}HOURLY MARKERS {pad2(hourly.startHour)}–
-                {pad2(hourly.endHour)}
-              </button>
-              {hourly.enabled && (
-                <>
-                  <input
-                    type="number"
-                    min={0}
-                    max={23}
-                    value={hourly.startHour}
-                    onChange={(e) => updateHourly({ startHour: +e.target.value })}
-                    style={{ width: 52 }}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={23}
-                    value={hourly.endHour}
-                    onChange={(e) => updateHourly({ endHour: +e.target.value })}
-                    style={{ width: 52 }}
-                  />
-                </>
-              )}
               <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
                 <label
                   className="kick"
@@ -619,8 +586,8 @@ export function LogView({
                 a timed row
               </div>
               <div>
-                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>skipped</span> — never
-                reached
+                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>yellow</span> — never
+                reached (Expected left empty)
               </div>
               <div>
                 <span style={{ fontWeight: 800 }}>@ # +</span> — timed · timed-next · sequential
@@ -667,8 +634,6 @@ export function LogView({
     </div>
   )
 }
-
-const pad2 = (n: number): string => String(n).padStart(2, '0')
 
 /** `2026-07-30` → `30 JUL 2026` (falls back to the raw value). */
 function prettyDate(iso: string): string {
