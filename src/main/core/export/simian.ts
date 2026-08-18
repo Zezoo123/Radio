@@ -30,6 +30,11 @@ export function ruleLine(): string {
   return COMMENT_PREFIX + '-'.repeat(RULE_DASHES)
 }
 
+/** `|||COMMENT|text` — a plain comment row. */
+export function commentLine(text: string): string {
+  return COMMENT_PREFIX + text
+}
+
 /** `|||COMMENT|--------------------=§§    18   -   06   -   2026   §§=--------------------` */
 export function dateHeaderLine(year: number, month: number, day: number): string {
   const side = '-'.repeat(DATE_SIDE_DASHES)
@@ -99,6 +104,7 @@ export function dayLines(day: ScheduleDay): string[] {
   if (day.hourlyLines?.length) lines.push(...day.hourlyLines)
   if (day.azanLines?.length) lines.push(...day.azanLines)
   if (day.promoLines?.length) lines.push(...day.promoLines)
+  if (day.musicLines?.length) lines.push(...day.musicLines)
   for (const section of day.sections) lines.push(...sectionLines(section))
   return lines
 }

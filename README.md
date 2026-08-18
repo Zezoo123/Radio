@@ -105,11 +105,18 @@ day preview shows the exact rows that will be exported.
 
 Compose any date range into a Simian program log: date headers, the Formats clock rows, hourly
 comment markers, the computed **AZAN** rows (5 daily prayers, Cairo timetable, format configurable
-in Settings), promos, and one section per element template. Preview it, export it to a `.txt` the
-station imports via _Simian → Tools → Program Options → Log Import_ — or send it straight to the
-Editor. Logs are written as **ANSI (Windows-1256)** so Arabic survives Simian's import; opening a
-log auto-detects older UTF-8 files. Every date picker defaults to tomorrow (the day being
-scheduled) and the From/To range keeps itself valid.
+in Settings), promos, the imported **Music Log**, and one section per element template. Preview
+it, export it to a `.txt` the station imports via _Simian → Tools → Program Options → Log
+Import_ — or send it straight to the Editor. Logs are written as **ANSI (Windows-1256)** so
+Arabic survives Simian's import; opening a log auto-detects older UTF-8 files. Every date picker
+defaults to tomorrow (the day being scheduled) and the From/To range keeps itself valid.
+
+The **Music Log** layer imports the fixed-width file the station's music scheduler writes for
+Simian's Music log import. Its **import settings** mirror Simian's own Log Import dialog —
+position dependent, a START column and LENGTH per field (Cue, Time, Name, Length, Category,
+Desc.) — with a **Test** table that parses the first lines of the loaded file, exactly like
+Simian's Test button. Rows without a valid Time (the `:)` hour markers) become comment rows, and
+the whole log repeats on every day of the built range.
 
 ### Log — editor
 
@@ -189,6 +196,7 @@ Everything persists as JSON under Electron's `userData` directory
 | `stations/<Station>/formats.json`     | per station | clocks, default clocks, week grid                                                           |
 | `stations/<Station>/promos.json`      | per station | imported promo set, hour exclusions, time overrides, station rules (blocked hours + breaks) |
 | `stations/<Station>/sequentials.json` | per station | sequential definitions + rotation queues                                                    |
+| `music-import.json`                   | global      | Music Log field positions (START/LENGTH per field)                                          |
 | `azan-format.json`                    | global      | the AZAN row format                                                                         |
 | `ui-settings.json`                    | global      | category colors                                                                             |
 | `simian-db.json`                      | global      | remembered path of the loaded Simian `audio.mdb`, reloaded on startup                       |
