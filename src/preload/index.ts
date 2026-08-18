@@ -66,6 +66,8 @@ const api = {
     ipcRenderer.invoke('templates:addFolder'),
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
+  relinkTemplate: (index: number): Promise<TemplateSummary[]> =>
+    ipcRenderer.invoke('templates:relink', index),
   listTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:list'),
   setTemplateCategory: (index: number, category: string): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:setCategory', { index, category }),
