@@ -10,7 +10,7 @@ import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../li
  *
  * Two derived columns sit beside the raw log fields:
  *  - Expected — the playout simulation's real air time (green plays, red was
- *    cut by an @, yellow never plays).
+ *    cut by an @; a yellow row never plays and its Expected cell stays empty).
  *  - Duration — MM:SS per file (from the Simian audio database or the .bsi,
  *    editable; comments and other non-audio rows stay 0).
  *
@@ -114,7 +114,7 @@ interface GridRowProps {
   h: RowHandlers
 }
 
-/** The Expected cell: green = plays, red = cut by an @, yellow = never plays. */
+/** The Expected cell: green = plays, red = cut by an @, empty = never plays. */
 function expectedCell(s: SimRow | undefined): JSX.Element {
   if (!s) return <td className="expected-col" />
   if (s.status === 'skipped') {
@@ -122,9 +122,7 @@ function expectedCell(s: SimRow | undefined): JSX.Element {
       <td
         className="expected-col st-skipped"
         title="Skipped — a timed event fires before it can play"
-      >
-        skipped
-      </td>
+      />
     )
   }
   if (s.status === 'interrupted') {

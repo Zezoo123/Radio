@@ -2094,21 +2094,16 @@ code {
   opacity: 0.6;
 }
 
-/* Playout simulation statuses in the Editor */
+/* Playout simulation statuses in the Editor: color only — no weight or
+   opacity changes, so rows never fade and the table never reflows. */
 .log-grid .expected-col.st-interrupted {
   color: var(--danger);
-  font-weight: 600;
-}
-.log-grid .expected-col.st-skipped {
-  color: var(--warn);
-  font-weight: 600;
 }
 .log-grid tr.row-interrupted td input {
   color: var(--danger);
 }
 .log-grid tr.row-skipped td input {
   color: var(--warn);
-  opacity: 0.75;
 }
 
 /* Settings: theme picker. Each card is a live miniature of its theme — the
