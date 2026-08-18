@@ -7,8 +7,9 @@ import { hourlyMarkerLines, DEFAULT_HOURLY, type HourlyOptions } from './hourly'
 /**
  * Assembles the section-grouped day(s) the station exports to Simian: per-day
  * date header, then clock rows, hourly comment markers, the computed azan block
- * (per the AZAN format), and one section per element template. Times are sorted
- * within each section, matching the sample files.
+ * (per the AZAN format), promo rows, the imported Music Log, and one section
+ * per element template. Times are sorted within each section, matching the
+ * sample files.
  */
 
 export interface ComposeOptions {
@@ -20,6 +21,8 @@ export interface ComposeOptions {
   formatLinesForDate?: (date: CalendarDate) => string[]
   /** Promo rows (program trailers) for a given date. */
   promoLinesForDate?: (date: CalendarDate) => string[]
+  /** Imported Music Log rows for a given date. */
+  musicLinesForDate?: (date: CalendarDate) => string[]
   /** Top-of-hour comment markers. */
   hourly?: HourlyOptions
 }
@@ -45,8 +48,9 @@ function composeOneDay(date: CalendarDate, opts: ComposeOptions): ScheduleDay {
 
   const formatLines = opts.formatLinesForDate?.(date)
   const promoLines = opts.promoLinesForDate?.(date)
+  const musicLines = opts.musicLinesForDate?.(date)
 
-  return { ...date, formatLines, hourlyLines, azanLines, promoLines, sections }
+  return { ...date, formatLines, hourlyLines, azanLines, promoLines, musicLines, sections }
 }
 
 export function composeDay(date: CalendarDate, opts: ComposeOptions): ComposedSchedule {

@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+
 interface Props {
   open: boolean
   /** Where the picked hours apply, e.g. "Row 3". */
@@ -51,6 +53,16 @@ export function HourPickerDialog({
   onChange,
   onClose
 }: Props): JSX.Element | null {
+  // Escape closes the dialog, like every overlay in the app.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   if (!open) return null
 
   const selected = new Set(hours)

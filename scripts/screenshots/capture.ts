@@ -140,9 +140,10 @@ test('capture README screenshots', async () => {
   await page.getByRole('button', { name: '+ Add file' }).click()
   await expect(page.locator('.book-row')).toHaveCount(4)
 
+  // The sheet has no row in the Booking table (placement lives on the Grid
+  // tab); the Grid promos layer below is where its content is asserted.
   await stubOpenDialog([join(ROOT, 'test', 'fixtures', 'Promos.xlsx')])
   await page.getByRole('button', { name: '+ Promos sheet' }).click()
-  await expect(page.locator('.book-row', { hasText: 'PROMOS' })).toBeVisible()
 
   // Select the first element so the plan grid + inspector fill in.
   await page.locator('.book-row').first().click()
@@ -166,19 +167,18 @@ test('capture README screenshots', async () => {
   await shoot('grid-promos.png')
 
   // ---- LOG: build the day from the Grid --------------------------------------
-  // PROMOS stays off for this shot: the day serializes clocks → hourly markers
-  // → azan → promos → element sections, and ~100 promo rows would push the
-  // section headers a full screen away from the azan block.
+  // PROMOS stays off for this shot: the day serializes clocks → azan → promos
+  // → element sections, and ~100 promo rows would push the section headers a
+  // full screen away from the azan block.
   await page.locator('.tab', { hasText: 'LOG' }).click()
   await page.locator('.logwork .chip', { hasText: 'AZAN' }).click()
-  await page.locator('.logwork .chip', { hasText: 'HOURLY MARKERS' }).click()
   await page.locator('.logwork .chip', { hasText: 'PROMOS' }).click()
   await page.getByRole('button', { name: 'Build from Grid' }).click()
   await expect(page.locator('.log-grid')).toBeVisible({ timeout: 30_000 })
 
   // The grid is virtualized — scroll until the first element-section header
-  // (right after the azan block) enters the viewport, so hourly markers, azan
-  // rows and a section header share the frame.
+  // (right after the azan block) enters the viewport, so azan rows and a
+  // section header share the frame.
   let found = false
   for (let i = 0; i < 120 && !found; i++) {
     await page.locator('.log-scroll').evaluate((el) => el.scrollBy(0, 400))
@@ -196,7 +196,7 @@ test('capture README screenshots', async () => {
   // The demo log carries durations in its Length column, so Expected simulates
   // the deck without an audio.mdb on hand.
   await stubOpenDialog([process.env.SHOT_LOG!])
-  await page.getByRole('button', { name: 'Open .bsi / .txt…' }).click()
+  await page.getByRole('button', { name: 'Open…' }).click()
   // The built log is unsaved, so the in-app discard dialog asks first.
   await page.getByRole('button', { name: 'Discard' }).click()
   await expect.poll(() => gridValue('SNG-1204')).toBe(true)

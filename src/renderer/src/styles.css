@@ -318,6 +318,24 @@ body {
   font-size: var(--fs-base);
 }
 
+/* App-wide font override (Settings → Appearance → Font). The renderer stamps
+   the chosen family/sizes as inline tokens on <html> and sets data-user-font,
+   which pushes the family into form controls (they don't inherit it) and, for
+   the bold variant, thickens everything — the classic MS Sans Serif 8 look. */
+:root[data-user-font] input,
+:root[data-user-font] select,
+:root[data-user-font] textarea,
+:root[data-user-font] button {
+  font-family: var(--font-ui);
+}
+:root[data-user-font='bold'] body,
+:root[data-user-font='bold'] input,
+:root[data-user-font='bold'] select,
+:root[data-user-font='bold'] textarea,
+:root[data-user-font='bold'] button {
+  font-weight: 700;
+}
+
 /* Top tab shell: three section tabs across the top, chrome on the right. */
 .app-shell {
   display: flex;
@@ -507,6 +525,15 @@ body {
   flex: none;
   padding: 10px 18px;
   border-bottom: 1px solid var(--border);
+}
+/* Layer hint: truncate instead of wrapping, so switching layers (different
+   hint lengths) never changes the toolbar height and jumps the grid below. */
+.work-head .hint {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .work-body {
   flex: 1;
@@ -2035,6 +2062,17 @@ code {
   text-align: right;
   padding-right: 6px;
 }
+/* Selected row — the target of Ctrl+D (duplicate) and Delete (remove). The
+   accent wash sits on the cells, so a category tint underneath still shows. */
+.log-grid tr.sel td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.log-grid tr.sel td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.log-grid tr.sel .row-act {
+  opacity: 1;
+}
 /* Armed delete: the first click turned it hot — the next one deletes. */
 .row-act.danger.armed {
   opacity: 1;
@@ -2094,21 +2132,16 @@ code {
   opacity: 0.6;
 }
 
-/* Playout simulation statuses in the Editor */
+/* Playout simulation statuses in the Editor: color only — no weight or
+   opacity changes, so rows never fade and the table never reflows. */
 .log-grid .expected-col.st-interrupted {
   color: var(--danger);
-  font-weight: 600;
-}
-.log-grid .expected-col.st-skipped {
-  color: var(--warn);
-  font-weight: 600;
 }
 .log-grid tr.row-interrupted td input {
   color: var(--danger);
 }
 .log-grid tr.row-skipped td input {
   color: var(--warn);
-  opacity: 0.75;
 }
 
 /* Settings: theme picker. Each card is a live miniature of its theme — the
