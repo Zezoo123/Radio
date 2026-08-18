@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { AppConfig, MusicSummary, TemplateSummary } from '../../../main/session'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
+import { checkLog } from '../lib/logCheck'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
 import { MusicImportDialog } from './MusicImportDialog'
@@ -117,6 +118,8 @@ export function LogView({
   const [simTick, setSimTick] = useState(0)
   const refreshSim = (): void => setSimTick((t) => t + 1)
   const [simStart, setSimStart] = useState('00:00:00')
+  /** Log-check findings from the last ↻ run (empty cues, macro traps, clashes). */
+  const [checks, setChecks] = useState<string[]>([])
 
   useEffect(() => {
     setSimStale(true)
@@ -124,6 +127,7 @@ export function LogView({
 
   useEffect(() => {
     setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0, parseTimeToSeconds(simStart) ?? 0))
+    setChecks(checkLog(rows))
     setSimStale(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simTick])
@@ -305,7 +309,7 @@ export function LogView({
               <button
                 className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                 disabled={rows.length === 0}
-                title="Recompute the Expected column"
+                title="Recompute the Expected column and re-run the log check"
                 onClick={refreshSim}
               >
                 ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -448,7 +452,7 @@ export function LogView({
                 <button
                   className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                   disabled={rows.length === 0}
-                  title="Recompute the Expected column from the current order, cues and durations"
+                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check"
                   onClick={refreshSim}
                 >
                   ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -513,6 +517,29 @@ export function LogView({
               ))}
             </div>
           )}
+
+          {rows.length > 0 &&
+            (checks.length > 0 ? (
+              <div className="attn">
+                <div className="attn-title">
+                  LOG CHECK · {checks.length}
+                  {simStale ? ' — OUTDATED' : ''}
+                </div>
+                {checks.map((c, i) => (
+                  <div key={i} className="attn-line">
+                    {c}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="insp-sec">
+                <div className="kick">Log check</div>
+                <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                  No issues found{simStale ? ' — outdated, hit ↻ EXPECTED to re-check' : ''}. Checks
+                  cues, MACRO placement and timed-row clashes.
+                </div>
+              </div>
+            ))}
 
           <div className="insp-sec">
             <div className="kick">Audio database</div>
