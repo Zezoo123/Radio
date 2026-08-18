@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { AppConfig, TemplateSummary } from '../../../main/session'
+import type { AppConfig, MusicSummary, TemplateSummary } from '../../../main/session'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
+import { checkLog } from '../lib/logCheck'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
+import { MusicImportDialog } from './MusicImportDialog'
 import { ReplaceDialog } from './ReplaceDialog'
 import { toCalendarDate } from '../App'
 import { tomorrowISO } from '../lib/dates'
@@ -55,14 +57,33 @@ export function LogView({
     if (active) window.api.hasFormats().then(setHasFormats)
   }, [active])
 
-  const ready =
-    hasFormats || templates.length > 0 || Boolean(config?.includeAzan) || Boolean(config?.hasPromos)
-  const hourly = config?.hourly ?? { enabled: false, startHour: 0, endHour: 23 }
+  // ---- Music Log import ------------------------------------------------------
+  const [music, setMusic] = useState<MusicSummary | null>(null)
+  const [musicDialogOpen, setMusicDialogOpen] = useState(false)
+  useEffect(() => {
+    if (active) window.api.getMusicLog().then(setMusic)
+  }, [active])
 
-  async function updateHourly(patch: Partial<typeof hourly>): Promise<void> {
-    onConfig(await window.api.setHourly({ ...hourly, ...patch }))
+  async function importMusicLog(): Promise<void> {
+    const summary = await window.api.openMusicLog()
+    setMusic(summary)
+    if (summary) {
+      onConfig(await window.api.getConfig())
+      setStatus(`Imported ${summary.fileName} — ${summary.eventCount} music rows`)
+    }
   }
 
+  async function removeMusicLog(): Promise<void> {
+    setMusic(await window.api.removeMusicLog())
+    onConfig(await window.api.getConfig())
+  }
+
+  const ready =
+    hasFormats ||
+    templates.length > 0 ||
+    Boolean(config?.includeAzan) ||
+    Boolean(config?.hasPromos) ||
+    Boolean(config?.hasMusic)
   // ---- Editor document (from the old Editor tab) -----------------------------
   const [rows, setRows] = useState<LogRow[]>([])
   const [path, setPath] = useState<string | null>(null)
@@ -97,6 +118,8 @@ export function LogView({
   const [simTick, setSimTick] = useState(0)
   const refreshSim = (): void => setSimTick((t) => t + 1)
   const [simStart, setSimStart] = useState('00:00:00')
+  /** Log-check findings from the last ↻ run (empty cues, macro traps, clashes). */
+  const [checks, setChecks] = useState<string[]>([])
 
   useEffect(() => {
     setSimStale(true)
@@ -104,6 +127,7 @@ export function LogView({
 
   useEffect(() => {
     setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0, parseTimeToSeconds(simStart) ?? 0))
+    setChecks(checkLog(rows))
     setSimStale(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simTick])
@@ -285,7 +309,7 @@ export function LogView({
               <button
                 className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                 disabled={rows.length === 0}
-                title="Recompute the Expected column"
+                title="Recompute the Expected column and re-run the log check"
                 onClick={refreshSim}
               >
                 ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -324,13 +348,13 @@ export function LogView({
                 To <input type="date" value={end} onChange={(e) => changeEnd(e.target.value)} />
               </label>
               <div className="row" style={{ marginLeft: 'auto' }}>
-                <button className="btn" onClick={openLog}>
-                  Open .bsi / .txt…
+                <button className="btn" title="Open a .bsi or .txt log file" onClick={openLog}>
+                  Open…
                 </button>
                 <button
                   className="btn"
                   disabled={!ready}
-                  title="Compose the range from the Grid (clocks + booked elements + promos + azan) and load it here for editing"
+                  title="Compose the range from the Grid (clocks + booked elements + promos + azan + music log) and load it here for editing"
                   onClick={buildFromGrid}
                 >
                   Build from Grid
@@ -382,6 +406,20 @@ export function LogView({
                 {config?.hasPromos && (config?.includePromos ?? true) ? '✓ ' : ''}PROMOS
               </button>
               <button
+                className={`chip ${config?.hasMusic && (config?.includeMusic ?? true) ? 'on' : ''}`}
+                disabled={!config?.hasMusic}
+                title={
+                  config?.hasMusic
+                    ? 'Include the imported Music Log (repeats on every day of the range)'
+                    : 'No music log imported (Music log panel →)'
+                }
+                onClick={async () =>
+                  onConfig(await window.api.setIncludeMusic(!(config?.includeMusic ?? true)))
+                }
+              >
+                {config?.hasMusic && (config?.includeMusic ?? true) ? '✓ ' : ''}MUSIC LOG
+              </button>
+              <button
                 className={`chip ${config?.includeAzan ? 'on' : ''}`}
                 title="Include the 5 daily azan rows"
                 onClick={async () =>
@@ -390,33 +428,6 @@ export function LogView({
               >
                 {config?.includeAzan ? '✓ ' : ''}AZAN
               </button>
-              <button
-                className={`chip ${hourly.enabled ? 'on' : ''}`}
-                onClick={() => updateHourly({ enabled: !hourly.enabled })}
-              >
-                {hourly.enabled ? '✓ ' : ''}HOURLY MARKERS {pad2(hourly.startHour)}–
-                {pad2(hourly.endHour)}
-              </button>
-              {hourly.enabled && (
-                <>
-                  <input
-                    type="number"
-                    min={0}
-                    max={23}
-                    value={hourly.startHour}
-                    onChange={(e) => updateHourly({ startHour: +e.target.value })}
-                    style={{ width: 52 }}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={23}
-                    value={hourly.endHour}
-                    onChange={(e) => updateHourly({ endHour: +e.target.value })}
-                    style={{ width: 52 }}
-                  />
-                </>
-              )}
               <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
                 <label
                   className="kick"
@@ -441,7 +452,7 @@ export function LogView({
                 <button
                   className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                   disabled={rows.length === 0}
-                  title="Recompute the Expected column from the current order, cues and durations"
+                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check"
                   onClick={refreshSim}
                 >
                   ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -507,6 +518,29 @@ export function LogView({
             </div>
           )}
 
+          {rows.length > 0 &&
+            (checks.length > 0 ? (
+              <div className="attn">
+                <div className="attn-title">
+                  LOG CHECK · {checks.length}
+                  {simStale ? ' — OUTDATED' : ''}
+                </div>
+                {checks.map((c, i) => (
+                  <div key={i} className="attn-line">
+                    {c}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="insp-sec">
+                <div className="kick">Log check</div>
+                <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                  No issues found{simStale ? ' — outdated, hit ↻ EXPECTED to re-check' : ''}. Checks
+                  cues, MACRO placement and timed-row clashes.
+                </div>
+              </div>
+            ))}
+
           <div className="insp-sec">
             <div className="kick">Audio database</div>
             <div style={{ fontSize: 13, lineHeight: 1.5 }}>
@@ -541,6 +575,37 @@ export function LogView({
           </div>
 
           <div className="insp-sec">
+            <div className="kick">Music log</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+              {music ? (
+                <span>
+                  {music.fileName} — {music.eventCount} music rows, {music.commentCount} markers.
+                  Included as its own layer on every day of the built range.
+                </span>
+              ) : (
+                'No music log imported. Import the fixed-width log your music scheduler writes for Simian.'
+              )}
+            </div>
+            <div className="row">
+              <button className="btn" onClick={importMusicLog}>
+                {music ? 'Replace…' : 'Import Music Log…'}
+              </button>
+              <button
+                className="btn-link"
+                title="Field positions (START/LENGTH), like Simian's Log Import settings"
+                onClick={() => setMusicDialogOpen(true)}
+              >
+                import settings
+              </button>
+              {music && (
+                <button className="btn-link" onClick={removeMusicLog}>
+                  remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="insp-sec">
             <div className="kick">Expected legend</div>
             <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
               <div>
@@ -548,8 +613,8 @@ export function LogView({
                 a timed row
               </div>
               <div>
-                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>skipped</span> — never
-                reached
+                <span style={{ fontWeight: 800, color: 'var(--warn)' }}>yellow</span> — never
+                reached (Expected left empty)
               </div>
               <div>
                 <span style={{ fontWeight: 800 }}>@ # +</span> — timed · timed-next · sequential
@@ -577,6 +642,13 @@ export function LogView({
         </div>
       )}
 
+      <MusicImportDialog
+        open={musicDialogOpen}
+        musicFileName={music?.fileName ?? null}
+        onSaved={() => window.api.getMusicLog().then(setMusic)}
+        onClose={() => setMusicDialogOpen(false)}
+      />
+
       <ReplaceDialog
         open={replaceOpen}
         rows={rows}
@@ -589,8 +661,6 @@ export function LogView({
     </div>
   )
 }
-
-const pad2 = (n: number): string => String(n).padStart(2, '0')
 
 /** `2026-07-30` → `30 JUL 2026` (falls back to the raw value). */
 function prettyDate(iso: string): string {
