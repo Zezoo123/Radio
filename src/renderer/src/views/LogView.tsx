@@ -72,6 +72,8 @@ export function LogView({
   /** Row id → duration seconds (from the DB lookup, or edited by hand). */
   const [durations, setDurations] = useState<Map<number, number>>(new Map())
   const [replaceOpen, setReplaceOpen] = useState(false)
+  /** Pending discard-unsaved-changes question (in-app; see guardDirty). */
+  const [discard, setDiscard] = useState<{ message: string; go: () => void } | null>(null)
   // Full-screen mode: the grid takes the whole window over a slim control bar.
   const [full, setFull] = useState(false)
   useEffect(() => {
@@ -199,11 +201,25 @@ export function LogView({
   }
 
   // ---- Build / export / open / save -----------------------------------------
-  async function buildFromGrid(): Promise<void> {
+  /**
+   * Ask before discarding unsaved changes — with an in-app dialog, never
+   * window.confirm(): Electron's native confirm breaks input focus after it
+   * closes (electron/electron#41603), which left a freshly rebuilt log's grid
+   * uneditable until a file dialog (Save) cycled window focus.
+   */
+  function guardDirty(message: string, go: () => void): void {
+    if (dirty) setDiscard({ message, go })
+    else go()
+  }
+
+  function buildFromGrid(): void {
+    guardDirty('Discard unsaved changes and rebuild the log from the Grid?', () => void rebuild())
+  }
+
+  async function rebuild(): Promise<void> {
     const s = toCalendarDate(start)
     const e = toCalendarDate(end)
     if (!s || !e) return
-    if (dirty && !confirm('Discard unsaved changes and rebuild the log from the Grid?')) return
     const res = await window.api.preview(s, e)
     loadText(res.text, null, true)
     setWarnings(res.warnings)
@@ -219,8 +235,11 @@ export function LogView({
     setStatus(res.saved ? `Saved to ${res.path}` : 'Export cancelled')
   }
 
-  async function openLog(): Promise<void> {
-    if (dirty && !confirm('Discard unsaved changes and open another log?')) return
+  function openLog(): void {
+    guardDirty('Discard unsaved changes and open another log?', () => void doOpenLog())
+  }
+
+  async function doOpenLog(): Promise<void> {
     const res = await window.api.openLog()
     if (!res) return
     if (res.bsi) {
@@ -571,6 +590,41 @@ export function LogView({
               </button>
               <button className="btn" disabled={rows.length === 0} onClick={() => save(true)}>
                 Save as…
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {discard && (
+        <div className="modal-overlay" onMouseDown={() => setDiscard(null)}>
+          <div
+            className="modal"
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setDiscard(null)
+            }}
+          >
+            <div className="modal-head">
+              <h2>Unsaved changes</h2>
+              <button className="btn-link" onClick={() => setDiscard(null)}>
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{discard.message}</p>
+            <div className="row" style={{ marginTop: 14, justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setDiscard(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn primary"
+                autoFocus
+                onClick={() => {
+                  setDiscard(null)
+                  discard.go()
+                }}
+              >
+                Discard
               </button>
             </div>
           </div>

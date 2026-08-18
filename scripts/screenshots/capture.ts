@@ -195,11 +195,10 @@ test('capture README screenshots', async () => {
   // ---- LOG: playout simulation (cut = red, skipped = yellow) -----------------
   // The demo log carries durations in its Length column, so Expected simulates
   // the deck without an audio.mdb on hand.
-  await page.evaluate(() => {
-    window.confirm = () => true // "discard unsaved changes?" — headless yes
-  })
   await stubOpenDialog([process.env.SHOT_LOG!])
   await page.getByRole('button', { name: 'Open .bsi / .txt…' }).click()
+  // The built log is unsaved, so the in-app discard dialog asks first.
+  await page.getByRole('button', { name: 'Discard' }).click()
   await expect.poll(() => gridValue('SNG-1204')).toBe(true)
   await page.locator('.logwork .chip', { hasText: '↻ EXPECTED' }).click()
   // The engineered cut (red) and skip (yellow) must actually be on screen.
