@@ -508,6 +508,15 @@ body {
   padding: 10px 18px;
   border-bottom: 1px solid var(--border);
 }
+/* Layer hint: truncate instead of wrapping, so switching layers (different
+   hint lengths) never changes the toolbar height and jumps the grid below. */
+.work-head .hint {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .work-body {
   flex: 1;
   min-height: 0;
