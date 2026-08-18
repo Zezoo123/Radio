@@ -4,7 +4,7 @@ import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
-import { UI_SCALES } from '../App'
+import { UI_FONT_DEFAULT, UI_FONT_MAX, UI_FONT_MIN, UI_SCALES, type UiFont } from '../App'
 import { withOpacity } from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
@@ -24,7 +24,13 @@ interface Props {
   /** Whole-UI scale in percent (80–130), applied as Chromium zoom by App. */
   uiScale: number
   onUiScale: (pct: number) => void
+  /** App-wide font override (family/size/bold), applied as root tokens by App. */
+  uiFont: UiFont
+  onUiFont: (font: UiFont) => void
 }
+
+/** The MS Sans Serif preset: the classic Windows UI font, bold, 8 pt (≈11 px). */
+const MS_SANS_PRESET: UiFont = { family: 'MS Sans Serif', size: 11, bold: true }
 
 /** Global Settings: appearance, the AZAN format, and category color maps. */
 export function SettingsView({
@@ -35,7 +41,9 @@ export function SettingsView({
   highContrast,
   onHighContrast,
   uiScale,
-  onUiScale
+  onUiScale,
+  uiFont,
+  onUiFont
 }: Props): JSX.Element {
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
@@ -156,6 +164,66 @@ export function SettingsView({
               Scales the whole app — text, tables and grids. Applies immediately and persists.
             </span>
           </div>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div className="kick">Font</div>
+          <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
+            <input
+              placeholder="Theme default"
+              title="Font family for the whole app; leave empty for the theme's own font"
+              value={uiFont.family}
+              style={{ width: 170 }}
+              onChange={(e) => onUiFont({ ...uiFont, family: e.target.value })}
+            />
+            <label className="pct-ctl" title="Base text size; headings scale with it">
+              Size{' '}
+              <input
+                type="number"
+                min={UI_FONT_MIN}
+                max={UI_FONT_MAX}
+                placeholder="auto"
+                value={uiFont.size ?? ''}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10)
+                  onUiFont({
+                    ...uiFont,
+                    size: Number.isInteger(n)
+                      ? Math.max(UI_FONT_MIN, Math.min(UI_FONT_MAX, n))
+                      : null
+                  })
+                }}
+              />
+              px
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={uiFont.bold}
+                onChange={(e) => onUiFont({ ...uiFont, bold: e.target.checked })}
+              />
+              Bold
+            </label>
+            <button
+              className="btn"
+              title="Classic Windows look: MS Sans Serif, bold, 8 pt (falls back to a similar sans if not installed)"
+              onClick={() => onUiFont(MS_SANS_PRESET)}
+            >
+              MS Sans Serif 8
+            </button>
+            {(uiFont.family || uiFont.size || uiFont.bold) && (
+              <button
+                className="btn-link"
+                title="Back to the theme's own typography"
+                onClick={() => onUiFont(UI_FONT_DEFAULT)}
+              >
+                ✕ Reset
+              </button>
+            )}
+          </div>
+          <span className="muted" style={{ fontSize: 12 }}>
+            Overrides the theme typography everywhere. Missing fonts fall back to a similar
+            sans-serif.
+          </span>
         </div>
       </section>
 

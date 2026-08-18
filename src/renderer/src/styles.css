@@ -318,6 +318,24 @@ body {
   font-size: var(--fs-base);
 }
 
+/* App-wide font override (Settings → Appearance → Font). The renderer stamps
+   the chosen family/sizes as inline tokens on <html> and sets data-user-font,
+   which pushes the family into form controls (they don't inherit it) and, for
+   the bold variant, thickens everything — the classic MS Sans Serif 8 look. */
+:root[data-user-font] input,
+:root[data-user-font] select,
+:root[data-user-font] textarea,
+:root[data-user-font] button {
+  font-family: var(--font-ui);
+}
+:root[data-user-font='bold'] body,
+:root[data-user-font='bold'] input,
+:root[data-user-font='bold'] select,
+:root[data-user-font='bold'] textarea,
+:root[data-user-font='bold'] button {
+  font-weight: 700;
+}
+
 /* Top tab shell: three section tabs across the top, chrome on the right. */
 .app-shell {
   display: flex;
