@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { colorBase } from '../lib/colors'
 import { blankRow, cloneRow, rowKind, type LogRow } from '../lib/logRows'
 import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../lib/runtime'
+import { inEditable, isMod, overlayOpen } from '../lib/shortcuts'
 
 /**
  * Simian-style log grid: one row per log line, every cell directly editable,
@@ -20,6 +21,8 @@ import { formatDuration, formatSeconds, parseDuration, type SimRow } from '../li
  */
 
 interface Props {
+  /** True while the LOG tab is visible — gates the grid's keyboard shortcuts. */
+  active: boolean
   rows: LogRow[]
   onRows: (rows: LogRow[]) => void
   /** Playout simulation result per row (indexed like `rows`). */
@@ -93,6 +96,7 @@ interface RowHandlers {
   duplicateRow(index: number): void
   insertBelow(index: number): void
   removeRow(index: number, id: number): void
+  selectRow(id: number): void
   armDrag(id: number | null): void
   dragStart(index: number): void
   dragOver(index: number, e: React.DragEvent): void
@@ -111,6 +115,7 @@ interface GridRowProps {
   isDragging: boolean
   isDropTarget: boolean
   isConfirmDelete: boolean
+  isSelected: boolean
   h: RowHandlers
 }
 
@@ -156,6 +161,7 @@ const GridRow = memo(
     isDragging,
     isDropTarget,
     isConfirmDelete,
+    isSelected,
     h
   }: GridRowProps): JSX.Element {
     const fieldCell = (fi: number): JSX.Element => (
@@ -178,9 +184,12 @@ const GridRow = memo(
           sim?.status === 'skipped' ? 'row-skipped' : '',
           sim?.status === 'interrupted' ? 'row-interrupted' : '',
           isDragging ? 'dragging' : '',
-          isDropTarget ? 'drop-target' : ''
+          isDropTarget ? 'drop-target' : '',
+          isSelected ? 'sel' : ''
         ].join(' ')}
         draggable={isDragArmed}
+        onMouseDown={() => h.selectRow(r.id)}
+        onFocus={() => h.selectRow(r.id)}
         onDragStart={() => h.dragStart(i)}
         onDragOver={(e) => h.dragOver(i, e)}
         onDrop={() => h.drop(i)}
@@ -213,7 +222,11 @@ const GridRow = memo(
         {fieldCell(3)}
         {fieldCell(4)}
         <td className="act-col">
-          <button className="row-act" title="Duplicate row" onClick={() => h.duplicateRow(i)}>
+          <button
+            className="row-act"
+            title="Duplicate row (Ctrl+D)"
+            onClick={() => h.duplicateRow(i)}
+          >
             ⧉
           </button>
           <button className="row-act" title="Insert row below" onClick={() => h.insertBelow(i)}>
@@ -221,7 +234,11 @@ const GridRow = memo(
           </button>
           <button
             className={`row-act danger ${isConfirmDelete ? 'armed' : ''}`}
-            title={isConfirmDelete ? 'Click again to delete' : 'Delete row (click twice)'}
+            title={
+              isConfirmDelete
+                ? 'Click again (or press Delete) to delete'
+                : 'Delete row — click twice, or press Delete on the selected row'
+            }
             onClick={() => h.removeRow(i, r.id)}
           >
             ×
@@ -240,6 +257,7 @@ const GridRow = memo(
     a.isDragging === b.isDragging &&
     a.isDropTarget === b.isDropTarget &&
     a.isConfirmDelete === b.isConfirmDelete &&
+    a.isSelected === b.isSelected &&
     // sim objects are rebuilt each simulation — compare by value.
     a.sim?.expected === b.sim?.expected &&
     a.sim?.status === b.sim?.status &&
@@ -247,6 +265,7 @@ const GridRow = memo(
 )
 
 export function LogGrid({
+  active,
   rows,
   onRows,
   sim,
@@ -255,6 +274,9 @@ export function LogGrid({
   categoryColors,
   categoryTextColors
 }: Props): JSX.Element {
+  // The selected row (by stable id — survives reorders): clicking or focusing
+  // any cell selects its row, which is what Ctrl+D and Delete act on.
+  const [sel, setSel] = useState<number | null>(null)
   // Drag state: which row id may start a drag (grip pressed), the row being
   // dragged and the row currently hovered as the drop target.
   const [dragArmed, setDragArmed] = useState<number | null>(null)
@@ -313,8 +335,8 @@ export function LogGrid({
 
   // Live state behind stable handler identities: the memoized rows keep one
   // handlers object for the grid's whole life and read current data through it.
-  const live = useRef({ rows, onRows, durationOf, onDuration, dragIndex, confirmDelete })
-  live.current = { rows, onRows, durationOf, onDuration, dragIndex, confirmDelete }
+  const live = useRef({ rows, onRows, durationOf, onDuration, dragIndex, confirmDelete, sel })
+  live.current = { rows, onRows, durationOf, onDuration, dragIndex, confirmDelete, sel }
 
   // VIRTUALIZATION — only the rows in (and around) the viewport exist in the
   // DOM. A full day is thousands of rows × ~8 interactive cells; mounting them
@@ -381,6 +403,7 @@ export function LogGrid({
         // Carry the original's duration so the Expected timeline stays truthful.
         onDuration(dupe.id, durationOf(rows[index]))
         onRows(copy)
+        setSel(dupe.id)
       },
       insertBelow(index) {
         const copy = [...live.current.rows]
@@ -396,7 +419,13 @@ export function LogGrid({
           return
         }
         setConfirmDelete(null)
-        live.current.onRows(live.current.rows.filter((_, i) => i !== index))
+        const next = live.current.rows.filter((_, i) => i !== index)
+        live.current.onRows(next)
+        // The row that slides into this slot inherits the selection.
+        setSel(next[index]?.id ?? next[next.length - 1]?.id ?? null)
+      },
+      selectRow(id) {
+        setSel(id)
       },
       armDrag(id) {
         setDragArmed(id)
@@ -423,6 +452,31 @@ export function LogGrid({
       dragEnd: endDrag
     }
   }, [])
+
+  // Keyboard row actions while the LOG tab is visible: Ctrl+D duplicates the
+  // selected row; Delete (from outside a text field, so forward-delete still
+  // edits text) asks twice via the same arm/confirm as the × button.
+  useEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.repeat || overlayOpen()) return
+      const { rows, sel } = live.current
+      if (sel == null) return
+      const index = rows.findIndex((r) => r.id === sel)
+      if (index === -1) return
+      if (isMod(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault()
+        handlers.duplicateRow(index)
+        return
+      }
+      if (e.key === 'Delete' && !inEditable(e.target)) {
+        e.preventDefault()
+        handlers.removeRow(index, sel)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active, handlers])
 
   const topPad = win.start * rowHeight.current
   const bottomPad = Math.max(0, rows.length - win.end) * rowHeight.current
@@ -479,6 +533,7 @@ export function LogGrid({
                 isDragging={dragIndex === i}
                 isDropTarget={overIndex === i && dragIndex !== null && dragIndex !== i}
                 isConfirmDelete={confirmDelete === r.id}
+                isSelected={sel === r.id}
                 h={handlers}
               />
             )

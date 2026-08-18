@@ -56,6 +56,16 @@ export function SequentialEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial])
 
+  // Escape closes the dialog, like every overlay in the app.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   if (!open) return null
 
   const draft: Sequential = {

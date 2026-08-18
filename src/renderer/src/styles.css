@@ -2035,6 +2035,17 @@ code {
   text-align: right;
   padding-right: 6px;
 }
+/* Selected row — the target of Ctrl+D (duplicate) and Delete (remove). The
+   accent wash sits on the cells, so a category tint underneath still shows. */
+.log-grid tr.sel td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.log-grid tr.sel td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.log-grid tr.sel .row-act {
+  opacity: 1;
+}
 /* Armed delete: the first click turned it hot — the next one deletes. */
 .row-act.danger.armed {
   opacity: 1;
