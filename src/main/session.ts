@@ -190,7 +190,7 @@ class Session {
 
   /** Reapply the user's persisted edits over a freshly parsed template. */
   private applyOverrides(template: ElementTemplate, overrides: LoadedTemplate['overrides']): void {
-    // Imports are "audio" by default: every event gets the AUDIO category.
+    // Rows saved before the ADV import default carry no category and stay AUDIO.
     template.category = overrides.category ?? 'AUDIO'
     if (overrides.code) template.code = overrides.code
   }
@@ -246,7 +246,7 @@ class Session {
   /** Parse + stat a newly imported spreadsheet into a live template row. */
   private async importFile(filePath: string): Promise<LoadedTemplate> {
     const template = await parseElementTemplate(filePath)
-    const overrides: LoadedTemplate['overrides'] = {}
+    const overrides: LoadedTemplate['overrides'] = { category: 'ADV' }
     this.applyOverrides(template, overrides)
     const stats = await stat(filePath)
     return {
@@ -260,7 +260,7 @@ class Session {
     }
   }
 
-  /** Import element templates as "audio": every event gets the AUDIO category. */
+  /** Import element templates as adverts: every event gets the ADV category. */
   async addTemplates(filePaths: string[]): Promise<TemplateSummary[]> {
     const s = await this.load()
     for (const filePath of filePaths) {
