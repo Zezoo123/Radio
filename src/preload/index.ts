@@ -23,6 +23,19 @@ export interface PromoRules {
 import type { PromoEntry } from '../main/core/parsers/promosFile'
 import type { CalendarDate } from '../main/core/types'
 
+export interface AzanCoverage {
+  dayCount: number
+  first: string | null
+  last: string | null
+  fetchedAt: string | null
+}
+
+export interface AzanFetchOutcome {
+  coverage: AzanCoverage
+  monthsOk: number[]
+  monthsFailed: number[]
+}
+
 export interface ExportResult {
   saved: boolean
   path?: string
@@ -113,6 +126,8 @@ const api = {
     ipcRenderer.invoke('azanFormat:save', format),
   azanTimesForDate: (date: CalendarDate): Promise<AzanTimes> =>
     ipcRenderer.invoke('azan:timesForDate', date),
+  getAzanCoverage: (): Promise<AzanCoverage> => ipcRenderer.invoke('azan:officialCoverage'),
+  fetchOfficialAzan: (): Promise<AzanFetchOutcome> => ipcRenderer.invoke('azan:fetchOfficial'),
 
   openPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:open'),
   getPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:get'),
