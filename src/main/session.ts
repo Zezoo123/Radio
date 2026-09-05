@@ -18,8 +18,10 @@ import {
   type ParsedMusicLog
 } from './core/parsers/musicLog'
 import { musicImportStore } from './musicImport'
-import { computeAzanLines, type AzanFormat } from './core/prayer/azanRows'
+import { buildAzanRows, type AzanFormat } from './core/prayer/azanRows'
+import { calibratedAzanTimes } from './core/prayer/calibrate'
 import { azanFormatStore } from './azanFormat'
+import { azanTimesStore, type AzanTimesFile } from './azanTimes'
 import { DEFAULT_HOURLY, type HourlyOptions } from './core/schedule/hourly'
 import { exportRange, type ComposeOptions } from './core/schedule/compose'
 import { dateRange } from './core/dates'
@@ -692,12 +694,23 @@ class Session {
     formatLinesForDate?: (date: CalendarDate) => string[],
     promoLinesForDate?: (date: CalendarDate) => string[],
     azanFormat?: AzanFormat,
-    musicLines?: string[] | null
+    musicLines?: string[] | null,
+    azanData?: AzanTimesFile,
+    azanFallbackDates?: string[]
   ): ComposeOptions {
     const st = this.st()
+    const iso = (d: CalendarDate): string =>
+      `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+    // Official esa.gov.eg times when the date is covered; otherwise the
+    // calibrated computation, with the date collected for a build warning.
     const azanLinesForDate =
       st.includeAzan && azanFormat
-        ? (date: CalendarDate) => computeAzanLines(date, azanFormat)
+        ? (date: CalendarDate) => {
+            const official = azanData?.times[iso(date)]
+            if (official) return buildAzanRows(official, azanFormat)
+            azanFallbackDates?.push(iso(date))
+            return buildAzanRows(calibratedAzanTimes(date, azanData?.biases), azanFormat)
+          }
         : undefined
     return {
       // Missing-file rows have nothing parsed to contribute — they are
@@ -729,12 +742,16 @@ class Session {
     const s = await this.load()
     await this.ensurePromos()
     const azanFormat = s.includeAzan ? await azanFormatStore.load() : undefined
+    const azanData = s.includeAzan ? await azanTimesStore.load() : undefined
+    const azanFallbackDates: string[] = []
     const promo = this.promoLines(start, end)
     const opts = this.composeOptions(
       formatLinesForDate,
       (d) => promo.byDate.get(dateKey(d)) ?? [],
       azanFormat,
-      await this.musicLines()
+      await this.musicLines(),
+      azanData,
+      azanFallbackDates
     )
     const missing = s.includeElements
       ? s.templates
@@ -745,7 +762,15 @@ class Session {
           )
       : []
     const { text, warnings } = exportRange(start, end, opts)
-    return { text, warnings: [...missing, ...warnings, ...promo.warnings] }
+    const azanWarnings =
+      azanFallbackDates.length > 0
+        ? [
+            `AZAN computed (calibrated) for ${azanFallbackDates.length} date(s) without official times` +
+              ` — ${azanFallbackDates.slice(0, 5).join(', ')}${azanFallbackDates.length > 5 ? ', …' : ''}.` +
+              ' Fetch official times in Settings → AZAN.'
+          ]
+        : []
+    return { text, warnings: [...missing, ...azanWarnings, ...warnings, ...promo.warnings] }
   }
 }
 

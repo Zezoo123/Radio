@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Cue } from '../../../main/core/types'
 import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
+import type { AzanCoverage } from '../../../preload'
 import type { UiSettings } from '../../../main/uiSettings'
 import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
@@ -47,10 +48,33 @@ export function SettingsView({
 }: Props): JSX.Element {
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
+  // Official azan times (esa.gov.eg): stored coverage + the fetch action.
+  const [azanCoverage, setAzanCoverage] = useState<AzanCoverage | null>(null)
+  const [azanFetching, setAzanFetching] = useState(false)
+  const [azanFetchNote, setAzanFetchNote] = useState('')
 
   useEffect(() => {
     window.api.getAzanFormat().then(setFormat)
+    window.api.getAzanCoverage().then(setAzanCoverage)
   }, [])
+
+  async function fetchOfficialAzan(): Promise<void> {
+    setAzanFetching(true)
+    setAzanFetchNote('Fetching the year from esa.gov.eg…')
+    try {
+      const res = await window.api.fetchOfficialAzan()
+      setAzanCoverage(res.coverage)
+      setAzanFetchNote(
+        res.monthsFailed.length === 0
+          ? `Fetched — ${res.coverage.dayCount} days stored`
+          : `Fetched ${res.monthsOk.length} month(s); month(s) ${res.monthsFailed.join(', ')} failed — try again later`
+      )
+    } catch {
+      setAzanFetchNote('Fetch failed — check the internet connection and try again')
+    } finally {
+      setAzanFetching(false)
+    }
+  }
 
   const { categoryColors, categoryTextColors } = settings
 
@@ -343,9 +367,37 @@ export function SettingsView({
       </section>
 
       <section className="card">
+        <h2>Official azan times</h2>
+        <p className="muted">
+          The exact published times from the Egyptian Survey Authority (esa.gov.eg). Fetch once and
+          they are stored on this PC — builds never touch the internet. Dates outside the stored
+          range fall back to a calibrated computation (within a minute) and are flagged in the
+          build warnings.
+        </p>
+        <div className="row">
+          <button className="btn" disabled={azanFetching} onClick={fetchOfficialAzan}>
+            {azanFetching ? 'Fetching…' : 'Fetch official times'}
+          </button>
+          <span className="muted">
+            {azanCoverage && azanCoverage.dayCount > 0
+              ? `Stored: ${azanCoverage.dayCount} days (${azanCoverage.first} → ${azanCoverage.last})` +
+                (azanCoverage.fetchedAt
+                  ? ` · fetched ${azanCoverage.fetchedAt.slice(0, 10)}`
+                  : '')
+              : 'Nothing stored yet — all azan times are computed'}
+          </span>
+          {azanFetchNote && <span className="muted">{azanFetchNote}</span>}
+        </div>
+        <p className="muted" style={{ marginBottom: 0 }}>
+          The site publishes the current year only — re-fetch each January (and after Ramadan
+          adjustments, if any).
+        </p>
+      </section>
+
+      <section className="card">
         <h2>AZAN format</h2>
         <p className="muted">
-          Each prayer plays its azan at the computed time (category below). These extra lines are
+          Each prayer plays its azan at the official time (category below). These extra lines are
           emitted around every azan at a second offset — e.g. the deckfade macro 10 seconds before.
         </p>
 

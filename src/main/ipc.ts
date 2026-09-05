@@ -4,6 +4,9 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import iconv from 'iconv-lite'
 import { session } from './session'
 import { azanFormatStore } from './azanFormat'
+import { azanTimesStore, coverageOf } from './azanTimes'
+import { fetchEsaYear } from './esaFetch'
+import { calibratedAzanTimes, fitBiases } from './core/prayer/calibrate'
 import { musicImportStore } from './musicImport'
 import type { MusicImportSettings } from './core/parsers/musicLog'
 import { uiSettingsStore, type UiSettings } from './uiSettings'
@@ -17,7 +20,6 @@ import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
-import { azanTimes } from './core/prayer/azan'
 import type { AzanFormat } from './core/prayer/azanRows'
 import type { Sequential } from './core/sequential/types'
 import type { HourlyOptions } from './core/schedule/hourly'
@@ -207,8 +209,33 @@ export function registerIpc(): void {
     await azanFormatStore.save(format)
     return azanFormatStore.load()
   })
-  // Prayer times for one date (pure adhan math) — the Grid hour inspector.
-  ipcMain.handle('azan:timesForDate', (_e, date: CalendarDate) => azanTimes(date))
+  // Prayer times for one date — the Grid hour inspector. Official esa.gov.eg
+  // times when fetched-and-covered, else the calibrated computation, matching
+  // exactly what the export will emit.
+  ipcMain.handle('azan:timesForDate', async (_e, date: CalendarDate) => {
+    const data = await azanTimesStore.load()
+    const iso = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+    return data.times[iso] ?? calibratedAzanTimes(date, data.biases)
+  })
+
+  // --- Official azan times (esa.gov.eg) — fetched on demand, stored locally --
+  ipcMain.handle('azan:officialCoverage', async () => coverageOf(await azanTimesStore.load()))
+
+  ipcMain.handle('azan:fetchOfficial', async () => {
+    const result = await fetchEsaYear()
+    const file = await azanTimesStore.load()
+    for (const day of result.days) file.times[day.date] = day.times
+    if (result.days.length > 0) {
+      file.biases = fitBiases(file.times)
+      file.fetchedAt = new Date().toISOString()
+      await azanTimesStore.save(file)
+    }
+    return {
+      coverage: coverageOf(file),
+      monthsOk: result.monthsOk,
+      monthsFailed: result.monthsFailed
+    }
+  })
 
   // --- Front-end preferences (global setting) --------------------------------
   ipcMain.handle('uiSettings:get', () => uiSettingsStore.load())
