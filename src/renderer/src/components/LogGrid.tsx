@@ -318,10 +318,51 @@ export function LogGrid({
     window.addEventListener('mouseup', onUp)
   }
 
-  /** Double-click a handle to snap the column back to its default width. */
-  function resetWidth(key: ColKey): void {
+  /** Widest rendered text of a column's content, in px (canvas measure). */
+  function contentWidth(key: ColKey): number {
+    const fieldOf: Partial<Record<ColKey, number>> = {
+      time: 0,
+      cue: 1,
+      name: 2,
+      category: 3,
+      description: 4
+    }
+    // Measure with the grid's real cell font so themes/font overrides count.
+    const cell = scrollRef.current?.querySelector('td input, td')
+    const font = cell ? getComputedStyle(cell).font : '12px ui-monospace'
+    const ctx = document.createElement('canvas').getContext('2d')
+    if (!ctx) return defaultWidths()[key]
+    ctx.font = font
+    const texts: string[] =
+      key === 'expected' || key === 'time'
+        ? ['00:00:00']
+        : key === 'dur'
+          ? ['00:00']
+          : live.current.rows.map((r) => r.fields[fieldOf[key] ?? 0])
+    let max = ctx.measureText(COLUMNS.find((c) => c.key === key)?.label ?? '').width
+    for (const t of texts) max = Math.max(max, ctx.measureText(t).width)
+    // Input padding + cell padding + the resize handle's grab zone.
+    return Math.min(640, Math.max(MIN_COL_WIDTH, Math.ceil(max) + 26))
+  }
+
+  /** Double-click a handle: fit that column to its content (Excel-style). */
+  function autoFit(key: ColKey): void {
     setWidths((prev) => {
-      const next = { ...prev, [key]: defaultWidths()[key] }
+      const next = { ...prev, [key]: contentWidth(key) }
+      try {
+        localStorage.setItem(WIDTHS_KEY, JSON.stringify(next))
+      } catch {
+        /* storage unavailable */
+      }
+      return next
+    })
+  }
+
+  /** The header's ⇔ button: fit every column to its content at once. */
+  function autoFitAll(): void {
+    setWidths((prev) => {
+      const next = { ...prev }
+      for (const c of COLUMNS) if (!c.fixed) next[c.key] = contentWidth(c.key)
       try {
         localStorage.setItem(WIDTHS_KEY, JSON.stringify(next))
       } catch {
@@ -492,7 +533,17 @@ export function LogGrid({
           <tr>
             {COLUMNS.map((c) =>
               c.fixed ? (
-                <th key={c.key} className={`${c.key}-col`} />
+                <th key={c.key} className={`${c.key}-col`}>
+                  {c.key === 'grip' && (
+                    <button
+                      className="fit-cols"
+                      title="Auto-fit every column to its content"
+                      onClick={autoFitAll}
+                    >
+                      ⇔
+                    </button>
+                  )}
+                </th>
               ) : (
                 <th
                   key={c.key}
@@ -501,9 +552,9 @@ export function LogGrid({
                   {c.label}
                   <span
                     className="col-resize"
-                    title="Drag to resize · double-click to reset"
+                    title="Drag to resize · double-click to auto-fit"
                     onMouseDown={(e) => startResize(c.key, e)}
-                    onDoubleClick={() => resetWidth(c.key)}
+                    onDoubleClick={() => autoFit(c.key)}
                   />
                 </th>
               )

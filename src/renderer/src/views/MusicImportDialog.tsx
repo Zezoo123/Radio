@@ -99,7 +99,7 @@ export function MusicImportDialog({
           </button>
         </div>
 
-        <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 10px' }}>
+        <p className="muted" style={{ fontSize: 'var(--fs-sm)', margin: '4px 0 10px' }}>
           Position dependent, like Simian&apos;s Log Import: each field starts at column START (the
           first character of a line is column 1) and is LENGTH characters long. START 0 disables a
           field. Rows without a valid Time become comment rows.
@@ -129,7 +129,7 @@ export function MusicImportDialog({
             <button className="btn" disabled={!musicFileName} onClick={test}>
               Test
             </button>
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
               {musicFileName
                 ? `parses the first ${TEST_ROWS} lines of ${musicFileName}`
                 : 'import a music log to test against'}
@@ -145,7 +145,7 @@ export function MusicImportDialog({
           </span>
         </div>
         {status && (
-          <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+          <div className="muted" style={{ fontSize: 'var(--fs-xs)', marginTop: 6 }}>
             {status}
           </div>
         )}

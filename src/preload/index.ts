@@ -56,6 +56,8 @@ export interface SimianDbSummary {
 export interface SimianTrack {
   duration?: number
   description?: string
+  /** Simian category from the audio database (UPPERCASE), when the table has one. */
+  category?: string
 }
 
 export interface OpenLogResult {
@@ -188,6 +190,8 @@ const api = {
     ipcRenderer.invoke('schedule:export', { start, end, text }),
 
   openLog: (): Promise<OpenLogResult | null> => ipcRenderer.invoke('log:open'),
+  /** Re-read an already-open log file from disk (F5) — no dialog. */
+  reloadLog: (path: string): Promise<OpenLogResult> => ipcRenderer.invoke('log:reload', path),
   saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('log:save', { text, path }),
 

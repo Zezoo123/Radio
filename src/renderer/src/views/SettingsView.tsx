@@ -3,18 +3,23 @@ import type { Cue } from '../../../main/core/types'
 import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { AzanCoverage } from '../../../preload'
 import type { UiSettings } from '../../../main/uiSettings'
-import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { THEMES, type ThemeId } from '../theme'
 import { UI_FONT_DEFAULT, UI_FONT_MAX, UI_FONT_MIN, UI_SCALES, type UiFont } from '../App'
 import { withOpacity } from '../lib/colors'
 
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
-// Categories offered for azan lines (the built-in set already includes MACRO).
-const CATEGORY_OPTIONS = DEFAULT_CATEGORIES
+
+/** The Settings sections, in nav order (Appearance deliberately last). */
+const SECTIONS = [
+  { id: 'categories', label: 'Categories' },
+  { id: 'azan', label: 'AZAN' },
+  { id: 'appearance', label: 'Appearance' }
+] as const
+type SectionId = (typeof SECTIONS)[number]['id']
 
 interface Props {
-  /** App-wide category color maps (Editor rows tint / recolor by category). */
+  /** App-wide category list + color maps (Editor rows tint / recolor by category). */
   settings: UiSettings
   onSettings: (settings: UiSettings) => void
   /** Active theme + high-contrast toggle (applied live, persisted by App). */
@@ -33,7 +38,7 @@ interface Props {
 /** The MS Sans Serif preset: the classic Windows UI font, bold, 8 pt (≈11 px). */
 const MS_SANS_PRESET: UiFont = { family: 'MS Sans Serif', size: 11, bold: true }
 
-/** Global Settings: appearance, the AZAN format, and category color maps. */
+/** Global Settings: the category list, the AZAN setup, and appearance. */
 export function SettingsView({
   settings,
   onSettings,
@@ -46,6 +51,7 @@ export function SettingsView({
   uiFont,
   onUiFont
 }: Props): JSX.Element {
+  const [section, setSection] = useState<SectionId>('categories')
   const [format, setFormat] = useState<AzanFormat | null>(null)
   const [newCategory, setNewCategory] = useState('')
   // Official azan times (esa.gov.eg): stored coverage + the fetch action.
@@ -76,15 +82,20 @@ export function SettingsView({
     }
   }
 
-  const { categoryColors, categoryTextColors } = settings
+  const { categories, categoryColors, categoryTextColors } = settings
 
-  // Built-in categories plus any custom ones that already have a color.
+  // THE list, plus any category that still has a color from before the list
+  // existed (so a legacy custom color stays manageable).
   const colorRows = [
-    ...DEFAULT_CATEGORIES,
+    ...categories,
     ...Object.keys({ ...categoryColors, ...categoryTextColors }).filter(
-      (c) => !DEFAULT_CATEGORIES.includes(c)
+      (c) => !categories.includes(c)
     )
   ]
+
+  /** Category options for a select: THE list, an unknown current value prepended. */
+  const optionsFor = (current: string): string[] =>
+    categories.includes(current) ? categories : [current, ...categories]
 
   function setColor(
     map: 'categoryColors' | 'categoryTextColors',
@@ -97,11 +108,27 @@ export function SettingsView({
     onSettings({ ...settings, [map]: next })
   }
 
-  function addCustomCategory(): void {
+  function addCategory(): void {
     const name = newCategory.trim().toUpperCase()
-    if (!name || name in categoryColors || name in categoryTextColors) return
-    setColor('categoryColors', name, '#4f8cff')
+    if (!name || categories.includes(name)) return
+    onSettings({ ...settings, categories: [...categories, name] })
     setNewCategory('')
+  }
+
+  /** Remove a category everywhere: the list and both color maps. Rows keeping
+      the value still work — selects show it prepended as an unknown option. */
+  function deleteCategory(cat: string): void {
+    const drop = (m: Record<string, string>): Record<string, string> => {
+      const next = { ...m }
+      delete next[cat]
+      return next
+    }
+    onSettings({
+      ...settings,
+      categories: categories.filter((c) => c !== cat),
+      categoryColors: drop(categoryColors),
+      categoryTextColors: drop(categoryTextColors)
+    })
   }
 
   // Persist on every change so the setting is durable without an explicit Save.
@@ -121,7 +148,7 @@ export function SettingsView({
       ...format,
       lines: [
         ...format.lines,
-        { offset: 0, cue: '+', name: '', category: 'AUDIO', description: '' }
+        { offset: 0, cue: '+', name: '', category: categories[0] ?? 'AUDIO', description: '' }
       ]
     })
   }
@@ -132,392 +159,429 @@ export function SettingsView({
   }
 
   return (
-    <div className="view">
+    <div className="view settings-view">
       <div className="card-head">
         <h1>Settings</h1>
       </div>
 
-      <section className="card">
-        <h2>Appearance</h2>
-        <p className="muted">
-          Pick a theme for the whole app. Changes apply immediately and persist.
-        </p>
-        <div className="theme-grid">
-          {THEMES.map((t) => (
+      <div className="settings-body">
+        <nav className="settings-nav">
+          {SECTIONS.map((s) => (
             <button
-              key={t.id}
-              className={`theme-card ${theme === t.id ? 'on' : ''}`}
-              onClick={() => onTheme(t.id)}
+              key={s.id}
+              className={`settings-nav-btn ${section === s.id ? 'on' : ''}`}
+              onClick={() => setSection(s.id)}
             >
-              <span className="theme-thumb" style={{ background: t.preview.bg }}>
-                <span className="th-dot" style={{ background: t.preview.accent }} />
-                <span className="th-lines">
-                  <span className="th-line" style={{ background: t.preview.text, opacity: 0.8 }} />
-                  <span className="th-line short" style={{ background: t.preview.accent }} />
-                </span>
-              </span>
-              <span className="theme-name">{t.name}</span>
-              <span className="theme-desc">{t.desc}</span>
+              {s.label}
             </button>
           ))}
-        </div>
-        <label className="check" style={{ marginTop: 12 }}>
-          <input
-            type="checkbox"
-            checked={highContrast}
-            onChange={(e) => onHighContrast(e.target.checked)}
-          />
-          High contrast
-        </label>
-        <div style={{ marginTop: 14 }}>
-          <div className="kick">Interface size</div>
-          <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
-            <div className="seg">
-              {UI_SCALES.map((pct) => (
-                <button
-                  key={pct}
-                  className={`seg-btn ${uiScale === pct ? 'on' : ''}`}
-                  title={pct === 100 ? 'Normal size' : `Everything at ${pct}% size`}
-                  onClick={() => onUiScale(pct)}
-                >
-                  {pct}%
-                </button>
-              ))}
-            </div>
-            <span className="muted" style={{ fontSize: 12 }}>
-              Scales the whole app — text, tables and grids. Applies immediately and persists.
-            </span>
-          </div>
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <div className="kick">Font</div>
-          <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
-            <input
-              placeholder="Theme default"
-              title="Font family for the whole app; leave empty for the theme's own font"
-              value={uiFont.family}
-              style={{ width: 170 }}
-              onChange={(e) => onUiFont({ ...uiFont, family: e.target.value })}
-            />
-            <label className="pct-ctl" title="Base text size; headings scale with it">
-              Size{' '}
-              <input
-                type="number"
-                min={UI_FONT_MIN}
-                max={UI_FONT_MAX}
-                placeholder="auto"
-                value={uiFont.size ?? ''}
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10)
-                  onUiFont({
-                    ...uiFont,
-                    size: Number.isInteger(n)
-                      ? Math.max(UI_FONT_MIN, Math.min(UI_FONT_MAX, n))
-                      : null
-                  })
-                }}
-              />
-              px
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={uiFont.bold}
-                onChange={(e) => onUiFont({ ...uiFont, bold: e.target.checked })}
-              />
-              Bold
-            </label>
-            <button
-              className="btn"
-              title="Classic Windows look: MS Sans Serif, bold, 8 pt (falls back to a similar sans if not installed)"
-              onClick={() => onUiFont(MS_SANS_PRESET)}
-            >
-              MS Sans Serif 8
-            </button>
-            {(uiFont.family || uiFont.size || uiFont.bold) && (
-              <button
-                className="btn-link"
-                title="Back to the theme's own typography"
-                onClick={() => onUiFont(UI_FONT_DEFAULT)}
-              >
-                ✕ Reset
-              </button>
-            )}
-          </div>
-          <span className="muted" style={{ fontSize: 12 }}>
-            Overrides the theme typography everywhere. Missing fonts fall back to a similar
-            sans-serif.
-          </span>
-        </div>
-      </section>
+        </nav>
 
-      <section className="card">
-        <h2>Category colors</h2>
-        <p className="muted">
-          Give a Simian category a highlight and/or a text color and every row of that category is
-          recolored across the app (the log Editor). Applies everywhere, on every station.
-          Interrupted (red) and skipped (yellow) rows keep their warning text color.
-        </p>
-        <div className="row" style={{ marginBottom: 10 }}>
-          <label className="pct-ctl" title="How strongly every highlight color fills its rows">
-            Highlight opacity{' '}
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={settings.tintOpacity}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10)
-                if (Number.isInteger(n))
-                  onSettings({ ...settings, tintOpacity: Math.max(1, Math.min(100, n)) })
-              }}
-            />
-            %
-          </label>
-          <label className="pct-ctl" title="Opacity of every category text color">
-            Text opacity{' '}
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={settings.textOpacity}
-              onChange={(e) => {
-                const n = parseInt(e.target.value, 10)
-                if (Number.isInteger(n))
-                  onSettings({ ...settings, textOpacity: Math.max(1, Math.min(100, n)) })
-              }}
-            />
-            %
-          </label>
-          <span className="muted">One setting for all colors — applied when rows paint.</span>
-        </div>
-        <div className="color-grid">
-          {colorRows.map((cat) => {
-            const color = categoryColors[cat]
-            const textColor = categoryTextColors[cat]
-            return (
-              <div key={cat} className={`color-item ${color || textColor ? 'on' : ''}`}>
-                <span className="color-ctl">
+        <div className="settings-content">
+          {section === 'categories' && (
+            <section className="card">
+              <h2>Categories</h2>
+              <p className="muted">
+                THE category list — every category dropdown in the app (Booking, Clock rows, the
+                AZAN format) offers exactly these. Give one a highlight and/or text color and every
+                row of that category is recolored in the log Editor. Applies everywhere, on every
+                station.
+              </p>
+              <div className="row" style={{ marginBottom: 10 }}>
+                <label
+                  className="pct-ctl"
+                  title="How strongly every highlight color fills its rows"
+                >
+                  Highlight opacity{' '}
                   <input
-                    type="color"
-                    value={color ?? '#666666'}
-                    title={color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`}
-                    onChange={(e) => setColor('categoryColors', cat, e.target.value)}
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={settings.tintOpacity}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10)
+                      if (Number.isInteger(n))
+                        onSettings({ ...settings, tintOpacity: Math.max(1, Math.min(100, n)) })
+                    }}
                   />
-                  {color && (
-                    <button
-                      className="btn-link"
-                      title="Remove highlight color"
-                      onClick={() => setColor('categoryColors', cat, null)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </span>
-                <span className="color-ctl">
-                  <label
-                    className="text-color-pick"
-                    style={{ color: textColor }}
-                    title={textColor ? `Text: ${textColor}` : `Set a text color for ${cat}`}
-                  >
-                    A
-                    <input
-                      type="color"
-                      value={textColor ?? '#e6e6e6'}
-                      onChange={(e) => setColor('categoryTextColors', cat, e.target.value)}
-                    />
-                  </label>
-                  {textColor && (
-                    <button
-                      className="btn-link"
-                      title="Remove text color"
-                      onClick={() => setColor('categoryTextColors', cat, null)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </span>
-                <span
-                  className="color-name"
-                  style={{
-                    background: color ? withOpacity(color, settings.tintOpacity) : undefined,
-                    color: textColor ? withOpacity(textColor, settings.textOpacity) : undefined
-                  }}
-                >
-                  {cat}
-                </span>
+                  %
+                </label>
+                <label className="pct-ctl" title="Opacity of every category text color">
+                  Text opacity{' '}
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={settings.textOpacity}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10)
+                      if (Number.isInteger(n))
+                        onSettings({ ...settings, textOpacity: Math.max(1, Math.min(100, n)) })
+                    }}
+                  />
+                  %
+                </label>
+                <span className="muted">One setting for all colors — applied when rows paint.</span>
               </div>
-            )
-          })}
-        </div>
-        <div className="row" style={{ marginTop: 10 }}>
-          <input
-            placeholder="Custom category…"
-            value={newCategory}
-            style={{ width: 160 }}
-            onChange={(e) => setNewCategory(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addCustomCategory()
-            }}
-          />
-          <button className="btn" onClick={addCustomCategory}>
-            + Add
-          </button>
-        </div>
-      </section>
-
-      <section className="card">
-        <h2>Official azan times</h2>
-        <p className="muted">
-          The exact published times from the Egyptian Survey Authority (esa.gov.eg). Fetch once and
-          they are stored on this PC — builds never touch the internet. Dates outside the stored
-          range fall back to a calibrated computation (within a minute) and are flagged in the
-          build warnings.
-        </p>
-        <div className="row">
-          <button className="btn" disabled={azanFetching} onClick={fetchOfficialAzan}>
-            {azanFetching ? 'Fetching…' : 'Fetch official times'}
-          </button>
-          <span className="muted">
-            {azanCoverage && azanCoverage.dayCount > 0
-              ? `Stored: ${azanCoverage.dayCount} days (${azanCoverage.first} → ${azanCoverage.last})` +
-                (azanCoverage.fetchedAt
-                  ? ` · fetched ${azanCoverage.fetchedAt.slice(0, 10)}`
-                  : '')
-              : 'Nothing stored yet — all azan times are computed'}
-          </span>
-          {azanFetchNote && <span className="muted">{azanFetchNote}</span>}
-        </div>
-        <p className="muted" style={{ marginBottom: 0 }}>
-          The site publishes the current year only — re-fetch each January (and after Ramadan
-          adjustments, if any).
-        </p>
-      </section>
-
-      <section className="card">
-        <h2>AZAN format</h2>
-        <p className="muted">
-          Each prayer plays its azan at the official time (category below). These extra lines are
-          emitted around every azan at a second offset — e.g. the deckfade macro 10 seconds before.
-        </p>
-
-        {!format ? (
-          <p className="empty">Loading…</p>
-        ) : (
-          <>
-            <div className="row" style={{ margin: '8px 0 4px' }}>
-              <label>
-                AZAN audio category{' '}
-                <select
-                  value={format.azanCategory}
-                  onChange={(e) => update({ ...format, azanCategory: e.target.value })}
-                >
-                  {(CATEGORY_OPTIONS.includes(format.azanCategory)
-                    ? CATEGORY_OPTIONS
-                    : [format.azanCategory, ...CATEGORY_OPTIONS]
-                  ).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th style={{ width: 96 }}>Offset (s)</th>
-                  <th style={{ width: 64 }}>Cue</th>
-                  <th>Name / cart</th>
-                  <th style={{ width: 130 }}>Category</th>
-                  <th>Description</th>
-                  <th style={{ width: 40 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {format.lines.map((ln, i) => {
-                  const noName = NO_NAME_CATEGORIES.includes(ln.category)
+              <div className="color-grid">
+                {colorRows.map((cat) => {
+                  const color = categoryColors[cat]
+                  const textColor = categoryTextColors[cat]
                   return (
-                    <tr key={i}>
-                      <td>
+                    <div key={cat} className={`color-item ${color || textColor ? 'on' : ''}`}>
+                      <span className="color-ctl">
                         <input
-                          type="number"
-                          value={ln.offset}
-                          onChange={(e) => patchLine(i, { offset: Math.trunc(+e.target.value) })}
-                          title="Seconds relative to the azan (negative = before)"
+                          type="color"
+                          value={color ?? '#666666'}
+                          title={color ? `Highlight: ${color}` : `Set a highlight color for ${cat}`}
+                          onChange={(e) => setColor('categoryColors', cat, e.target.value)}
                         />
-                      </td>
-                      <td>
-                        <select
-                          value={ln.cue}
-                          onChange={(e) => patchLine(i, { cue: e.target.value as Cue })}
+                        {color && (
+                          <button
+                            className="btn-link"
+                            title="Remove highlight color"
+                            onClick={() => setColor('categoryColors', cat, null)}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </span>
+                      <span className="color-ctl">
+                        <label
+                          className="text-color-pick"
+                          style={{ color: textColor }}
+                          title={textColor ? `Text: ${textColor}` : `Set a text color for ${cat}`}
                         >
-                          {CUES.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          value={ln.name}
-                          disabled={noName}
-                          placeholder={noName ? 'n/a for this category' : ''}
-                          onChange={(e) => patchLine(i, { name: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <select
-                          value={ln.category}
-                          onChange={(e) => {
-                            const category = e.target.value
-                            patchLine(i, {
-                              category,
-                              ...(NO_NAME_CATEGORIES.includes(category) ? { name: '' } : {})
-                            })
-                          }}
-                        >
-                          {(CATEGORY_OPTIONS.includes(ln.category)
-                            ? CATEGORY_OPTIONS
-                            : [ln.category, ...CATEGORY_OPTIONS]
-                          ).map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          dir="auto"
-                          value={ln.description}
-                          onChange={(e) => patchLine(i, { description: e.target.value })}
-                        />
-                      </td>
-                      <td>
-                        <button className="btn-link" onClick={() => removeLine(i)}>
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
+                          A
+                          <input
+                            type="color"
+                            value={textColor ?? '#e6e6e6'}
+                            onChange={(e) => setColor('categoryTextColors', cat, e.target.value)}
+                          />
+                        </label>
+                        {textColor && (
+                          <button
+                            className="btn-link"
+                            title="Remove text color"
+                            onClick={() => setColor('categoryTextColors', cat, null)}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </span>
+                      <span
+                        className="color-name"
+                        style={{
+                          background: color ? withOpacity(color, settings.tintOpacity) : undefined,
+                          color: textColor
+                            ? withOpacity(textColor, settings.textOpacity)
+                            : undefined
+                        }}
+                      >
+                        {cat}
+                      </span>
+                      <button
+                        className="btn-link cat-delete"
+                        title={`Delete ${cat} from the category list (rows already using it keep working)`}
+                        onClick={() => deleteCategory(cat)}
+                      >
+                        🗑
+                      </button>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
+              </div>
+              <div className="row" style={{ marginTop: 10 }}>
+                <input
+                  placeholder="New category…"
+                  value={newCategory}
+                  style={{ width: 160 }}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') addCategory()
+                  }}
+                />
+                <button className="btn" onClick={addCategory}>
+                  + Add
+                </button>
+              </div>
+            </section>
+          )}
 
-            <div className="row" style={{ marginTop: 10 }}>
-              <button className="btn" onClick={addLine}>
-                + Add line
-              </button>
-              <span className="muted">
-                Offset 0 = at the azan · negative = before · positive = after.
-              </span>
-            </div>
-          </>
-        )}
-      </section>
+          {section === 'azan' && (
+            <>
+              <section className="card">
+                <h2>Official azan times</h2>
+                <p className="muted">
+                  The exact published times from the Egyptian Survey Authority (esa.gov.eg). Fetch
+                  once and they are stored on this PC — builds never touch the internet. Dates
+                  outside the stored range fall back to a calibrated computation (within a minute)
+                  and are flagged in the build warnings.
+                </p>
+                <div className="row">
+                  <button className="btn" disabled={azanFetching} onClick={fetchOfficialAzan}>
+                    {azanFetching ? 'Fetching…' : 'Fetch official times'}
+                  </button>
+                  <span className="muted">
+                    {azanCoverage && azanCoverage.dayCount > 0
+                      ? `Stored: ${azanCoverage.dayCount} days (${azanCoverage.first} → ${azanCoverage.last})` +
+                        (azanCoverage.fetchedAt
+                          ? ` · fetched ${azanCoverage.fetchedAt.slice(0, 10)}`
+                          : '')
+                      : 'Nothing stored yet — all azan times are computed'}
+                  </span>
+                  {azanFetchNote && <span className="muted">{azanFetchNote}</span>}
+                </div>
+                <p className="muted" style={{ marginBottom: 0 }}>
+                  The site publishes the current year only — re-fetch each January (and after
+                  Ramadan adjustments, if any).
+                </p>
+              </section>
+
+              <section className="card">
+                <h2>AZAN format</h2>
+                <p className="muted">
+                  Each prayer plays its azan at the official time (category below). These extra
+                  lines are emitted around every azan at a second offset — e.g. the deckfade macro
+                  10 seconds before.
+                </p>
+
+                {!format ? (
+                  <p className="empty">Loading…</p>
+                ) : (
+                  <>
+                    <div className="row" style={{ margin: '8px 0 4px' }}>
+                      <label>
+                        AZAN audio category{' '}
+                        <select
+                          value={format.azanCategory}
+                          onChange={(e) => update({ ...format, azanCategory: e.target.value })}
+                        >
+                          {optionsFor(format.azanCategory).map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <table className="tbl">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 96 }}>Offset (s)</th>
+                          <th style={{ width: 64 }}>Cue</th>
+                          <th>Name / cart</th>
+                          <th style={{ width: 130 }}>Category</th>
+                          <th>Description</th>
+                          <th style={{ width: 40 }} />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {format.lines.map((ln, i) => {
+                          const noName = NO_NAME_CATEGORIES.includes(ln.category)
+                          return (
+                            <tr key={i}>
+                              <td>
+                                <input
+                                  type="number"
+                                  value={ln.offset}
+                                  onChange={(e) =>
+                                    patchLine(i, { offset: Math.trunc(+e.target.value) })
+                                  }
+                                  title="Seconds relative to the azan (negative = before)"
+                                />
+                              </td>
+                              <td>
+                                <select
+                                  value={ln.cue}
+                                  onChange={(e) => patchLine(i, { cue: e.target.value as Cue })}
+                                >
+                                  {CUES.map((c) => (
+                                    <option key={c} value={c}>
+                                      {c}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  value={ln.name}
+                                  disabled={noName}
+                                  placeholder={noName ? 'n/a for this category' : ''}
+                                  onChange={(e) => patchLine(i, { name: e.target.value })}
+                                />
+                              </td>
+                              <td>
+                                <select
+                                  value={ln.category}
+                                  onChange={(e) => {
+                                    const category = e.target.value
+                                    patchLine(i, {
+                                      category,
+                                      ...(NO_NAME_CATEGORIES.includes(category) ? { name: '' } : {})
+                                    })
+                                  }}
+                                >
+                                  {optionsFor(ln.category).map((c) => (
+                                    <option key={c} value={c}>
+                                      {c}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  dir="auto"
+                                  value={ln.description}
+                                  onChange={(e) => patchLine(i, { description: e.target.value })}
+                                />
+                              </td>
+                              <td>
+                                <button className="btn-link" onClick={() => removeLine(i)}>
+                                  ✕
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+
+                    <div className="row" style={{ marginTop: 10 }}>
+                      <button className="btn" onClick={addLine}>
+                        + Add line
+                      </button>
+                      <span className="muted">
+                        Offset 0 = at the azan · negative = before · positive = after.
+                      </span>
+                    </div>
+                  </>
+                )}
+              </section>
+            </>
+          )}
+
+          {section === 'appearance' && (
+            <section className="card">
+              <h2>Appearance</h2>
+              <p className="muted">
+                Pick a theme for the whole app. Changes apply immediately and persist.
+              </p>
+              <div className="theme-grid">
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    className={`theme-card ${theme === t.id ? 'on' : ''}`}
+                    onClick={() => onTheme(t.id)}
+                  >
+                    <span className="theme-thumb" style={{ background: t.preview.bg }}>
+                      <span className="th-dot" style={{ background: t.preview.accent }} />
+                      <span className="th-lines">
+                        <span
+                          className="th-line"
+                          style={{ background: t.preview.text, opacity: 0.8 }}
+                        />
+                        <span className="th-line short" style={{ background: t.preview.accent }} />
+                      </span>
+                    </span>
+                    <span className="theme-name">{t.name}</span>
+                    <span className="theme-desc">{t.desc}</span>
+                  </button>
+                ))}
+              </div>
+              <label className="check" style={{ marginTop: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={highContrast}
+                  onChange={(e) => onHighContrast(e.target.checked)}
+                />
+                High contrast
+              </label>
+              <div style={{ marginTop: 14 }}>
+                <div className="kick">Interface size</div>
+                <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
+                  <div className="seg">
+                    {UI_SCALES.map((pct) => (
+                      <button
+                        key={pct}
+                        className={`seg-btn ${uiScale === pct ? 'on' : ''}`}
+                        title={pct === 100 ? 'Normal size' : `Everything at ${pct}% size`}
+                        onClick={() => onUiScale(pct)}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                  <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
+                    Scales the whole app — text, tables and grids. Applies immediately and persists.
+                  </span>
+                </div>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div className="kick">Font</div>
+                <div className="row" style={{ marginTop: 6, alignItems: 'center' }}>
+                  <input
+                    placeholder="Theme default"
+                    title="Font family for the whole app; leave empty for the theme's own font"
+                    value={uiFont.family}
+                    style={{ width: 170 }}
+                    onChange={(e) => onUiFont({ ...uiFont, family: e.target.value })}
+                  />
+                  <label className="pct-ctl" title="Base text size; headings scale with it">
+                    Size{' '}
+                    <input
+                      type="number"
+                      min={UI_FONT_MIN}
+                      max={UI_FONT_MAX}
+                      placeholder="auto"
+                      value={uiFont.size ?? ''}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10)
+                        onUiFont({
+                          ...uiFont,
+                          size: Number.isInteger(n)
+                            ? Math.max(UI_FONT_MIN, Math.min(UI_FONT_MAX, n))
+                            : null
+                        })
+                      }}
+                    />
+                    px
+                  </label>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={uiFont.bold}
+                      onChange={(e) => onUiFont({ ...uiFont, bold: e.target.checked })}
+                    />
+                    Bold
+                  </label>
+                  <button
+                    className="btn"
+                    title="Classic Windows look: MS Sans Serif, bold, 8 pt (falls back to a similar sans if not installed)"
+                    onClick={() => onUiFont(MS_SANS_PRESET)}
+                  >
+                    MS Sans Serif 8
+                  </button>
+                  {(uiFont.family || uiFont.size || uiFont.bold) && (
+                    <button
+                      className="btn-link"
+                      title="Back to the theme's own typography"
+                      onClick={() => onUiFont(UI_FONT_DEFAULT)}
+                    >
+                      ✕ Reset
+                    </button>
+                  )}
+                </div>
+                <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
+                  Overrides the theme typography everywhere. Missing fonts fall back to a similar
+                  sans-serif.
+                </span>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

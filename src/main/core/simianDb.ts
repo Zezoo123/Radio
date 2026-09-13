@@ -21,6 +21,8 @@ export interface SimianDb {
    * showing both makes the Description column self-explanatory.
    */
   descriptions: Map<string, string>
+  /** UPPERCASED file name (no extension) → Simian category, when the table has it. */
+  categories: Map<string, string>
   /** Table the durations came from (for the UI/debugging). */
   table: string
 }
@@ -75,20 +77,28 @@ const NAME_COLS = /^(file_?name|name|cart|cart_?name|audio_?file)$/i
 const DUR_COLS = /^(length|duration|run_?time|len|total_?length|play_?length)$/i
 const DESC_COLS = /^(description|desc|title|comment|notes?)$/i
 const ADV_COLS = /^advertiser$/i
+const CAT_COLS = /^(category|cat|cat_?name|group)$/i
 
 /** Score a table's columns: which look like the file name and the duration? */
-export function pickColumns(
-  columns: string[]
-): { name: string; duration: string; description?: string; advertiser?: string } | null {
+export function pickColumns(columns: string[]): {
+  name: string
+  duration: string
+  description?: string
+  advertiser?: string
+  category?: string
+} | null {
   const name = columns.find((c) => NAME_COLS.test(c)) ?? columns.find((c) => /file/i.test(c))
   const duration =
     columns.find((c) => DUR_COLS.test(c)) ?? columns.find((c) => /length|duration/i.test(c))
   if (!name || !duration) return null
-  // Description/advertiser are optional — never steal the name/duration column.
+  // Description/advertiser/category are optional — never steal name/duration.
   const rest = columns.filter((c) => c !== name && c !== duration)
   const description = rest.find((c) => DESC_COLS.test(c)) ?? rest.find((c) => /desc|title/i.test(c))
   const advertiser = rest.filter((c) => c !== description).find((c) => ADV_COLS.test(c))
-  return { name, duration, description, advertiser }
+  const category = rest
+    .filter((c) => c !== description && c !== advertiser)
+    .find((c) => CAT_COLS.test(c))
+  return { name, duration, description, advertiser, category }
 }
 
 /** Load the audio database from an .mdb file's contents. */
@@ -112,6 +122,7 @@ export function loadSimianDb(buffer: Buffer): SimianDb {
 
     const tracks = new Map<string, number>()
     const descriptions = new Map<string, string>()
+    const categories = new Map<string, string>()
     for (const row of table.getData()) {
       const rawName = row[cols.name]
       if (typeof rawName !== 'string' || !rawName.trim()) continue
@@ -130,8 +141,10 @@ export function loadSimianDb(buffer: Buffer): SimianDb {
       const combined =
         advertiser && desc ? advertiser + DESCRIPTION_INDENT + desc : advertiser || desc
       if (combined) descriptions.set(key, combined)
+      const category = text(cols.category)
+      if (category) categories.set(key, category.toUpperCase())
     }
-    if (tracks.size > 0) return { tracks, descriptions, table: tableName }
+    if (tracks.size > 0) return { tracks, descriptions, categories, table: tableName }
   }
 
   throw new Error('No audio table with file names and durations found in this database')

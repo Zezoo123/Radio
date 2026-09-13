@@ -48,6 +48,9 @@
   --fs-base: 14px;
   --fs-sm: 13px;
   --fs-xs: 12px;
+  /* Micro labels (kickers, grid headers). Themes inherit it; the user font
+     override scales it with the rest. */
+  --fs-xxs: 10px;
   --fs-h1: 22px;
   --fs-h2: 15px;
   --heading: var(--text);
@@ -362,7 +365,7 @@ body {
   border-right: 1px solid var(--border);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: var(--heading-weight);
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -379,7 +382,7 @@ body {
   box-shadow: var(--accent-glow);
 }
 .tab-sub {
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   font-weight: 600;
   letter-spacing: 0.1em;
   opacity: 0.55;
@@ -553,7 +556,7 @@ body {
 
 /* Uppercase micro-label ("kicker"), the workbench's section voice. */
 .kick {
-  font-size: 10.5px;
+  font-size: var(--fs-xxs);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -661,14 +664,14 @@ body {
 }
 .mono-sm {
   font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -778,7 +781,7 @@ body {
   display: inline-block;
   margin-left: 8px;
   padding: 0 6px;
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   font-weight: 700;
   letter-spacing: 0.06em;
   border-radius: var(--radius-sm);
@@ -848,36 +851,85 @@ body {
 }
 .attn-title {
   font-weight: 800;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.04em;
 }
 .attn-line {
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
   opacity: 0.92;
 }
 
-/* Settings drawer sliding over the right edge. */
+/* Settings: a wide dialog centered on screen. */
 .settings-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   background: color-mix(in srgb, #000 45%, transparent);
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
 }
 .settings-drawer {
-  width: min(780px, 92vw);
+  width: min(1100px, 94vw);
+  max-height: 92vh;
   background: var(--bg);
-  border-left: 2px solid var(--rule-strong);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-lg);
   overflow: auto;
-  padding: 20px 28px 32px;
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.25);
+  padding: 16px 28px 32px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
 }
 .settings-drawer-head {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 4px;
+}
+
+/* Settings: section buttons on the left, one section's cards on the right. */
+.settings-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+  position: sticky;
+  top: 0;
+}
+.settings-nav-btn {
+  text-align: left;
+  padding: 9px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--speed) var(--ease);
+}
+.settings-nav-btn:hover {
+  border-color: var(--muted);
+}
+.settings-nav-btn.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+  color: var(--accent);
+}
+.settings-content {
+  flex: 1;
+  min-width: 0;
+}
+.settings-content .card {
+  margin-top: 0;
+}
+/* The per-category delete sits at the row's right edge. */
+.cat-delete {
+  margin-left: auto;
 }
 
 /* Full-screen station chooser on load */
@@ -936,7 +988,7 @@ body {
   justify-content: center;
   color: #fff;
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--fs-base);
 }
 .station-name {
   font-weight: 600;
@@ -965,7 +1017,7 @@ body {
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--danger) 12%, var(--panel));
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .error-banner-text {
   flex: 1;
@@ -977,7 +1029,7 @@ body {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   padding: 2px 6px;
 }
 .error-banner-close:hover {
@@ -1306,7 +1358,7 @@ select:focus {
   border-radius: var(--radius);
   padding: 12px;
   font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   white-space: pre;
   resize: vertical;
 }
@@ -1461,7 +1513,7 @@ select:focus {
   color: color-mix(in srgb, var(--accent-fg) 80%, transparent);
 }
 .menu-item .muted {
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 /* Small category tag */
@@ -1471,7 +1523,7 @@ select:focus {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 1px 9px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.04em;
   color: var(--muted);
 }
@@ -1558,7 +1610,7 @@ select:focus {
 }
 .trash.confirm {
   opacity: 1;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: #fff;
   background: var(--danger);
@@ -1617,7 +1669,7 @@ input[type='color'] {
   padding: 6px 10px;
   border-radius: var(--radius);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .pal-item.on {
   border-color: var(--accent);
@@ -1645,7 +1697,7 @@ input[type='color'] {
 .grid-tbl td {
   border: 1px solid var(--border);
   text-align: center;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .grid-tbl thead th {
   background: var(--panel);
@@ -1688,11 +1740,11 @@ input[type='color'] {
 }
 .grid-tbl .default-row .hour-label {
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .grid-tbl .default-row select {
   width: 100%;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   padding: 3px 4px;
 }
 
@@ -1728,7 +1780,7 @@ input[type='color'] {
 }
 .insert-group h3 {
   margin: 0 0 2px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .insert-list {
   display: flex;
@@ -1829,7 +1881,7 @@ code {
   background: var(--panel-2);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 /* --- Promos view --------------------------------------------------------- */
@@ -1876,7 +1928,7 @@ code {
   flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 10px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .hour-legend span {
@@ -1919,7 +1971,7 @@ code {
   text-align: left;
   padding: 2px 14px 2px 0;
   font-weight: 400;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .week-table th.wd-col strong {
   font-weight: 600;
@@ -1928,7 +1980,7 @@ code {
   width: 28px;
   padding: 0 0 1px;
   text-align: center;
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   font-weight: 400;
   color: var(--muted);
 }
@@ -1984,7 +2036,7 @@ code {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 15px;
+  font-size: var(--fs-base);
   line-height: 1;
   padding: 0 2px;
 }
@@ -2001,12 +2053,12 @@ code {
   table-layout: fixed; /* column widths come from the <colgroup> (resizable) */
   border-collapse: collapse;
   font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .log-grid th {
   text-align: left;
   padding: 6px 8px;
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2022,7 +2074,16 @@ code {
 }
 .log-grid td {
   border-bottom: 1px solid var(--border);
+  /* Visible column separators so the eye tracks a column down the log. */
+  border-right: 1px solid var(--border);
   padding: 0;
+}
+.log-grid th {
+  border-right: 1px solid var(--border);
+}
+.log-grid td:last-child,
+.log-grid th:last-child {
+  border-right: none;
 }
 .log-grid td input {
   width: 100%;
@@ -2042,15 +2103,20 @@ code {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-/* Column sizing: Time / Cue / Category narrow; Name and Description flex. */
+/* Column sizing: Time / Cue / Category narrow; Name and Description flex.
+   Every column reads left-aligned (client request) — including Cue and Dur. */
 .log-grid .lf-0 {
   white-space: nowrap;
 }
-.log-grid .lf-1 {
-  text-align: center;
-}
-.log-grid .lf-1 input {
-  text-align: center;
+
+/* Header ⇔: auto-fit every column to its content. */
+.log-grid .fit-cols {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
 }
 
 .log-grid .grip-col {
@@ -2058,7 +2124,7 @@ code {
   color: var(--muted);
   cursor: grab;
   user-select: none;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .log-grid tr.dragging {
   opacity: 0.45;
@@ -2111,7 +2177,7 @@ code {
   width: 20px;
   height: 20px;
   line-height: 1;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   opacity: 0;
   padding: 0;
@@ -2141,7 +2207,7 @@ code {
 }
 
 .log-grid .dur-col input {
-  text-align: right;
+  text-align: left;
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -2172,18 +2238,18 @@ code {
    every card previews its own look regardless of the active theme. */
 .theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
 }
 .theme-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px;
+  padding: 8px;
   cursor: pointer;
   color: var(--text);
   transition: border-color var(--speed) var(--ease);
@@ -2198,39 +2264,39 @@ code {
 .theme-thumb {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(128, 128, 128, 0.35);
-  padding: 8px;
-  height: 44px;
+  padding: 6px;
+  height: 30px;
 }
 .th-dot {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex: none;
 }
 .th-lines {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 .th-line {
-  height: 5px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   width: 100%;
 }
 .th-line.short {
   width: 45%;
 }
 .theme-name {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 .theme-desc {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.4;
 }
@@ -2272,13 +2338,13 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .pct-ctl input[type='number'] {
   width: 44px;
   padding: 2px 4px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .pct-ctl input:disabled {
   opacity: 0.5;
@@ -2288,7 +2354,7 @@ code {
   position: relative;
   width: 22px;
   text-align: center;
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
@@ -2303,7 +2369,7 @@ code {
 }
 .color-item .color-name {
   flex: 1;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.03em;
   padding: 2px 6px;
   border-radius: 4px;
@@ -2367,7 +2433,7 @@ code {
   background: var(--panel);
 }
 .full-title {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: var(--heading-weight);
   letter-spacing: var(--heading-tracking);
   color: var(--heading);
@@ -2380,7 +2446,7 @@ code {
 .hour-cell {
   width: 100%;
   padding: 4px 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2420,7 +2486,7 @@ code {
 .tgrid {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
 }
 .tgrid th,
@@ -2441,7 +2507,7 @@ code {
   display: block;
   font-weight: 400;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--fs-xxs);
 }
 .tgrid .t-time {
   position: sticky;
@@ -2519,13 +2585,13 @@ code {
 }
 .week-table.blocked-edit th.wd-col .btn-link {
   padding: 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 .hour-h-btn {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--fs-xxs);
   padding: 0 2px;
   cursor: pointer;
 }

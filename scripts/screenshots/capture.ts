@@ -206,9 +206,11 @@ test('capture README screenshots', async () => {
   await expect(page.locator('.st-skipped').first()).toBeVisible()
   await shoot('editor-simulation.png')
 
-  // ---- Settings drawer on a non-default theme --------------------------------
+  // ---- Settings dialog on a non-default theme --------------------------------
   await page.locator('.topbar .icon-btn[title="Settings"]').click()
   await expect(page.locator('.settings-drawer')).toBeVisible()
+  // Appearance is deliberately the LAST section now — navigate to it first.
+  await page.locator('.settings-nav-btn', { hasText: 'Appearance' }).click()
   await page.locator('.theme-card', { hasText: 'Studio' }).click()
   await shoot('settings.png')
 })

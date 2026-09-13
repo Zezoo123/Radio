@@ -439,17 +439,13 @@ export function registerIpc(): void {
     { name: 'BSI log', extensions: ['bsi'] }
   ]
 
-  ipcMain.handle('log:open', async () => {
-    const res = await dialog.showOpenDialog({
-      title: 'Open log',
-      properties: ['openFile'],
-      filters: OPEN_LOG_FILTERS
-    })
-    if (res.canceled || !res.filePaths[0]) return null
-    const path = res.filePaths[0]
+  // Read a log file into the editor's shape. Native Simian logs (.bsi) are
+  // Access databases, not text — detect by content, not extension, and
+  // convert to the standard pipe lines.
+  const readLogFile = async (
+    path: string
+  ): Promise<{ path: string; text: string; rowDurations?: number[]; bsi?: boolean }> => {
     const buffer = await readFile(path)
-    // Native Simian logs (.bsi) are Access databases, not text — detect by
-    // content, not extension, and convert to the standard pipe lines.
     if (isBsiBuffer(buffer)) {
       const { lines, durations } = parseBsiLog(buffer)
       return {
@@ -460,7 +456,20 @@ export function registerIpc(): void {
       }
     }
     return { path, text: decodeLogText(buffer) }
+  }
+
+  ipcMain.handle('log:open', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Open log',
+      properties: ['openFile'],
+      filters: OPEN_LOG_FILTERS
+    })
+    if (res.canceled || !res.filePaths[0]) return null
+    return readLogFile(res.filePaths[0])
   })
+
+  // F5 in the editor: re-read the already-open file, no dialog.
+  ipcMain.handle('log:reload', async (_e, path: string) => readLogFile(path))
 
   ipcMain.handle('log:save', async (_e, { text, path }: { text: string; path?: string }) => {
     if (path) {
@@ -539,19 +548,21 @@ export function registerIpc(): void {
     return out
   })
 
-  // Batch lookup: names → duration + library description (names the DB doesn't
-  // know are simply absent from the result).
+  // Batch lookup: names → duration + library description + category (names
+  // the DB doesn't know are simply absent from the result).
   ipcMain.handle('simian:tracks', async (_e, names: string[]) => {
     await simianRestored
-    const out: Record<string, { duration?: number; description?: string }> = {}
+    const out: Record<string, { duration?: number; description?: string; category?: string }> = {}
     if (!simianDb) return out
     for (const name of names) {
       const duration = lookupDuration(simianDb.db.tracks, name)
       const description = lookupTrack(simianDb.db.descriptions, name)
-      if (duration != null || description != null) {
+      const category = lookupTrack(simianDb.db.categories, name)
+      if (duration != null || description != null || category != null) {
         out[name] = {
           ...(duration != null ? { duration } : {}),
-          ...(description != null ? { description } : {})
+          ...(description != null ? { description } : {}),
+          ...(category != null ? { category } : {})
         }
       }
     }

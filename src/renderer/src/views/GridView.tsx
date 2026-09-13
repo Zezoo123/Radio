@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  DEFAULT_CATEGORIES,
   emptyDayDefaults,
   emptyFormatSet,
   FORMAT_COLORS,
@@ -66,9 +65,18 @@ function rowsAtHour(clock: HourFormat, hour: number): HourFormat['rows'] {
 interface Props {
   onOpenLog: () => void
   onOpenSettings: () => void
+  /** THE app-wide category list (Settings → Categories). */
+  categories: string[]
+  /** Adds a brand-new category to the app-wide list. */
+  onAddCategory: (category: string) => void
 }
 
-export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
+export function GridView({
+  onOpenLog,
+  onOpenSettings,
+  categories,
+  onAddCategory
+}: Props): JSX.Element {
   // ---- Formats document (identical persistence contract to the old view:
   // load once, debounce saves 350 ms, flush on unmount) ----------------------
   const [set, setSet] = useState<FormatSet>(emptyFormatSet())
@@ -213,13 +221,12 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
     setMode('clock')
   }
 
-  function addCategory(cat: string): void {
-    setSet((s) => {
-      const cur = s.categories ?? DEFAULT_CATEGORIES
-      if (cur.includes(cat)) return s
-      return { ...s, categories: [...cur, cat] }
-    })
-  }
+  // Clock-row category options: the app-wide list plus any station-local
+  // extras persisted before the list moved to Settings.
+  const categoryOptions = [
+    ...categories,
+    ...(set.categories ?? []).filter((c) => !categories.includes(c))
+  ]
 
   function changeFormat(format: HourFormat): void {
     setSet((s) => ({ ...s, formats: s.formats.map((f) => (f.id === format.id ? format : f)) }))
@@ -806,7 +813,7 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
               </button>
             </div>
             {status && (
-              <div className="muted" style={{ fontSize: 12 }}>
+              <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                 {status}
               </div>
             )}
@@ -928,14 +935,14 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
             <ClockEditor
               hideList
               formats={editingDefaults ? (set.defaultClocks ?? []) : set.formats}
-              categories={set.categories ?? DEFAULT_CATEGORIES}
+              categories={categoryOptions}
               selectedId={editingDefaults ? selectedDefaultId : selectedId}
               onSelect={editingDefaults ? setSelectedDefaultId : setSelectedId}
               onAddFormat={editingDefaults ? addDefaultClock : addFormat}
               onChangeFormat={editingDefaults ? changeDefaultClock : changeFormat}
               onDeleteFormat={editingDefaults ? deleteDefaultClock : deleteFormat}
               onDuplicateFormat={editingDefaults ? duplicateDefaultClock : duplicateFormat}
-              onAddCategory={addCategory}
+              onAddCategory={onAddCategory}
               showHour={editingDefaults}
             />
           </div>
@@ -1032,7 +1039,7 @@ export function GridView({ onOpenLog, onOpenSettings }: Props): JSX.Element {
                         <span className="muted">none</span>
                       )}
                     </div>
-                    <div className="muted" style={{ fontSize: 12 }}>
+                    <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                       {isBlocked(sel.wd, sel.hour)
                         ? 'This hour is blocked for all promos.'
                         : rules.breaks.length

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
-import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
 import { clampISO, tomorrowISO } from '../lib/dates'
 
@@ -8,6 +7,8 @@ interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
   onConfig: (c: AppConfig) => void
+  /** THE app-wide category list (Settings → Categories). */
+  categories: string[]
 }
 
 const MONTH_NAMES = [
@@ -77,7 +78,7 @@ function coversLabel(first: string | null, last: string | null): string {
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, onConfig, categories }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
@@ -263,7 +264,7 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
             </div>
           </div>
           {note && (
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
               {note}
             </span>
           )}
@@ -449,14 +450,17 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
             </div>
             <div className="insp-sec">
               <div className="kick">Source file missing</div>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>
                 <span className="mono-sm" title={selected.path}>
                   {selected.fileName}
                 </span>{' '}
                 can’t be read right now — moved, renamed, or not synced yet. Its plan is left out of
                 previews and exports until it’s back; your edits (name, category) are kept.
               </div>
-              <div className="muted mono-sm" style={{ fontSize: 11, wordBreak: 'break-all' }}>
+              <div
+                className="muted mono-sm"
+                style={{ fontSize: 'var(--fs-xs)', wordBreak: 'break-all' }}
+              >
                 {selected.path}
               </div>
             </div>
@@ -505,9 +509,9 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
                 value={selected.category}
                 onChange={(e) => sel !== null && changeCategory(sel, e.target.value)}
               >
-                {(DEFAULT_CATEGORIES.includes(selected.category)
-                  ? DEFAULT_CATEGORIES
-                  : [selected.category, ...DEFAULT_CATEGORIES]
+                {(categories.includes(selected.category)
+                  ? categories
+                  : [selected.category, ...categories]
                 ).map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -518,7 +522,7 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
 
             <div className="insp-sec">
               <div className="kick">This plan</div>
-              <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
                 <div>
                   <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
                 </div>
@@ -560,7 +564,7 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
                 </tbody>
               </table>
               {!dbLoaded && (
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                   Duration and description fill in from the audio database (load it once in LOG →
                   Audio database — it stays loaded from then on).
                 </div>
