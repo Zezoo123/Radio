@@ -40,6 +40,19 @@ describe('aired list parser', () => {
     expect(rows[0].actual).toBe(30)
   })
 
+  it('skips the same-second STARTNEXT event when measuring actual length', () => {
+    // Simian logs a STARTNEXT macro on the very second each audio row starts.
+    const rows = parseAiredList(
+      [
+        line('X', '07:39:58', '07:40:50', 'FEA-0817-I', 'FEA'),
+        'X|07:39:58||-1||||MACRO|STARTNEXT|4|',
+        line('X', '07:40:26', '07:37:41', 'L024-033', 'LI')
+      ].join('\r\n')
+    )
+    expect(rows[0].actual).toBe(28) // to the liner, not the same-second macro
+    expect(rows[1].actual).toBe(28) // the macro row measures to the liner too
+  })
+
   it('timeToSeconds parses HH:MM:SS only', () => {
     expect(timeToSeconds('01:02:03')).toBe(3723)
     expect(timeToSeconds('nope')).toBeNull()
@@ -188,8 +201,10 @@ describe.skipIf(!existsSync(LST_PATH))('aired list (local integration)', () => {
     expect(rows.length).toBeGreaterThan(1400)
     const played = rows.filter((r) => r.played)
     expect(played.length).toBeGreaterThan(1400)
-    // Every played row but the last carries a derived actual length.
-    expect(rows.slice(0, -1).every((r) => r.actual != null && r.actual >= 0)).toBe(true)
+    // Nearly every row carries a derived actual length (only the file's tail
+    // rows, with no later-timed successor, stay unknown).
+    const withActual = rows.filter((r) => r.actual != null && r.actual > 0)
+    expect(withActual.length).toBeGreaterThan(rows.length - 5)
     // The known ad spot airs (HP25-GMASR at 08:19:32).
     expect(played.some((r) => r.name === 'HP25-GMASR')).toBe(true)
   })

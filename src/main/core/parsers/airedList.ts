@@ -49,10 +49,18 @@ export function parseAiredList(text: string): AiredRow[] {
       actual: null
     })
   }
-  // Actual length = gap to the next aired line (+24h when it wraps midnight).
+  // Actual length = gap to the next line with a LATER air time (+24h when it
+  // wraps midnight). Simian logs a STARTNEXT macro event on the same second an
+  // audio row starts, so same-second lines are skipped — counting them would
+  // make every row look like it played for 00:00.
   for (let i = 0; i < rows.length - 1; i++) {
-    const gap = rows[i + 1].air - rows[i].air
-    rows[i].actual = gap >= 0 ? gap : gap + 86400
+    for (let j = i + 1; j < rows.length; j++) {
+      const gap = (rows[j].air - rows[i].air + 86400) % 86400
+      if (gap > 0) {
+        rows[i].actual = gap
+        break
+      }
+    }
   }
   return rows
 }
