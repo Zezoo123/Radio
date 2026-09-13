@@ -22,6 +22,11 @@ export interface AiredRow {
   scheduled: string
   name: string
   category: string
+  /**
+   * Deck automation event (row number `-1`, e.g. the STARTNEXT macro Simian
+   * logs as each row starts) — not a log row, ignored for length measurement.
+   */
+  deckEvent: boolean
   /** Seconds until the next line went to air (null for the last row). */
   actual: number | null
 }
@@ -46,15 +51,17 @@ export function parseAiredList(text: string): AiredRow[] {
       scheduled: f[5]?.trim() ?? '',
       name: f[6]?.trim() ?? '',
       category: (f[7] ?? '').trim().toUpperCase(),
+      deckEvent: f[3]?.trim() === '-1',
       actual: null
     })
   }
-  // Actual length = gap to the next line with a LATER air time (+24h when it
-  // wraps midnight). Simian logs a STARTNEXT macro event on the same second an
-  // audio row starts, so same-second lines are skipped — counting them would
-  // make every row look like it played for 00:00.
+  // Actual length = gap to the next real log line with a LATER air time (+24h
+  // when it wraps midnight). Deck events (STARTNEXT, row `-1`) are skipped —
+  // Simian logs one as each row starts, sometimes a second late, which would
+  // make every row look like it played for 00:00 or 00:01.
   for (let i = 0; i < rows.length - 1; i++) {
     for (let j = i + 1; j < rows.length; j++) {
+      if (rows[j].deckEvent) continue
       const gap = (rows[j].air - rows[i].air + 86400) % 86400
       if (gap > 0) {
         rows[i].actual = gap

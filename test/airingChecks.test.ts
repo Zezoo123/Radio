@@ -27,9 +27,10 @@ describe('aired list parser', () => {
     const rows = parseAiredList(text)
     expect(rows).toHaveLength(4)
     expect(rows.map((r) => r.played)).toEqual([true, true, false, true])
-    // Gaps: 08:00→08:03 = 180s; the STARTNEXT at 08:03:20 caps the ad at 20s.
+    // Gaps between real log rows: 08:00→08:03 and 08:03→08:04 — the STARTNEXT
+    // deck event between them is not a boundary.
     expect(rows[0].actual).toBe(180)
-    expect(rows[1].actual).toBe(20)
+    expect(rows[1].actual).toBe(60)
     expect(rows[3].actual).toBeNull() // last row has no successor
   })
 
@@ -40,17 +41,48 @@ describe('aired list parser', () => {
     expect(rows[0].actual).toBe(30)
   })
 
-  it('skips the same-second STARTNEXT event when measuring actual length', () => {
-    // Simian logs a STARTNEXT macro on the very second each audio row starts.
+  it('skips deck events (STARTNEXT, row -1) when measuring actual length', () => {
+    // Simian logs a STARTNEXT macro as each audio row starts — on the same
+    // second or a second late. Both must not count as the row's end.
     const rows = parseAiredList(
       [
         line('X', '07:39:58', '07:40:50', 'FEA-0817-I', 'FEA'),
-        'X|07:39:58||-1||||MACRO|STARTNEXT|4|',
+        'X|07:39:59||-1||||MACRO|STARTNEXT|4|', // one second late
         line('X', '07:40:26', '07:37:41', 'L024-033', 'LI')
       ].join('\r\n')
     )
-    expect(rows[0].actual).toBe(28) // to the liner, not the same-second macro
-    expect(rows[1].actual).toBe(28) // the macro row measures to the liner too
+    expect(rows[1].deckEvent).toBe(true)
+    expect(rows[0].actual).toBe(28) // to the liner, not the deck event
+  })
+
+  it('assigns an aired row to the nearest booked slot of that name', () => {
+    // F booked twice (10:40 and 22:40), aired once near 22:40 — the evening
+    // slot is credited and the MORNING one reports missed.
+    const aired = parseAiredList(
+      [
+        line('X', '22:38:04', '22:40:02', 'FEA-0817-F', 'FEA'),
+        line('X', '22:38:30', '', 'SNG', 'AUDIO')
+      ].join('\r\n')
+    )
+    const res = checkAiredDay(
+      '2026-08-31',
+      [
+        { name: 'FEA-0817-F', time: '10:40:50' },
+        { name: 'FEA-0817-F', time: '22:40:50' }
+      ],
+      aired,
+      ['FEA-0817'],
+      () => 25
+    )
+    expect(res.played).toBe(1)
+    expect(res.issues).toEqual([
+      {
+        name: 'FEA-0817-F',
+        status: 'missed',
+        time: '10:40:50',
+        detail: 'not in the aired list'
+      }
+    ])
   })
 
   it('timeToSeconds parses HH:MM:SS only', () => {

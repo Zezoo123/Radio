@@ -1,4 +1,4 @@
-import type { AiredRow } from '../parsers/airedList'
+import { timeToSeconds, type AiredRow } from '../parsers/airedList'
 import { canonicalName } from './bookingCheck'
 
 /**
@@ -65,8 +65,42 @@ export function checkAiredDay(
 
   const result: AiredDayResult = { date, planned: planned.length, played: 0, issues: [] }
 
+  // Assign aired rows to booked spots per name by NEAREST air-vs-booked time,
+  // so when a name is booked twice and airs once, the slot it actually served
+  // is the one credited and the other one reports missed (first-come order
+  // would credit the morning slot with an evening airing).
+  const spotEntry = new Map<{ name: string; time: string }, { row: AiredRow; used: boolean }>()
+  const byName = new Map<string, { name: string; time: string }[]>()
+  for (const spot of planned) {
+    const key = canonicalName(spot.name)
+    const list = byName.get(key)
+    if (list) list.push(spot)
+    else byName.set(key, [spot])
+  }
+  const clockDist = (a: number, b: number): number => {
+    const d = Math.abs(a - b) % 86400
+    return Math.min(d, 86400 - d)
+  }
+  for (const [key, spots] of byName) {
+    const entries = pool.get(key) ?? []
+    const pairs: { spot: (typeof spots)[number]; entry: (typeof entries)[number]; d: number }[] = []
+    for (const spot of spots) {
+      const t = timeToSeconds(spot.time)
+      if (t == null) continue
+      for (const entry of entries) pairs.push({ spot, entry, d: clockDist(t, entry.row.air) })
+    }
+    pairs.sort((a, b) => a.d - b.d)
+    const spotDone = new Set<(typeof spots)[number]>()
+    for (const p of pairs) {
+      if (spotDone.has(p.spot) || p.entry.used) continue
+      spotDone.add(p.spot)
+      p.entry.used = true
+      spotEntry.set(p.spot, p.entry)
+    }
+  }
+
   for (const spot of [...planned].sort((a, b) => a.time.localeCompare(b.time))) {
-    const entry = pool.get(canonicalName(spot.name))?.find((e) => !e.used)
+    const entry = spotEntry.get(spot)
     if (!entry) {
       result.issues.push({
         name: spot.name,
@@ -76,7 +110,6 @@ export function checkAiredDay(
       })
       continue
     }
-    entry.used = true
     if (!entry.row.played) {
       result.issues.push({
         name: spot.name,
