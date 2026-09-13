@@ -188,7 +188,10 @@ export function SettingsView({
                 station.
               </p>
               <div className="row" style={{ marginBottom: 10 }}>
-                <label className="pct-ctl" title="How strongly every highlight color fills its rows">
+                <label
+                  className="pct-ctl"
+                  title="How strongly every highlight color fills its rows"
+                >
                   Highlight opacity{' '}
                   <input
                     type="number"
@@ -270,7 +273,9 @@ export function SettingsView({
                         className="color-name"
                         style={{
                           background: color ? withOpacity(color, settings.tintOpacity) : undefined,
-                          color: textColor ? withOpacity(textColor, settings.textOpacity) : undefined
+                          color: textColor
+                            ? withOpacity(textColor, settings.textOpacity)
+                            : undefined
                         }}
                       >
                         {cat}
@@ -414,9 +419,7 @@ export function SettingsView({
                                     const category = e.target.value
                                     patchLine(i, {
                                       category,
-                                      ...(NO_NAME_CATEGORIES.includes(category)
-                                        ? { name: '' }
-                                        : {})
+                                      ...(NO_NAME_CATEGORIES.includes(category) ? { name: '' } : {})
                                     })
                                   }}
                                 >
@@ -511,8 +514,7 @@ export function SettingsView({
                     ))}
                   </div>
                   <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
-                    Scales the whole app — text, tables and grids. Applies immediately and
-                    persists.
+                    Scales the whole app — text, tables and grids. Applies immediately and persists.
                   </span>
                 </div>
               </div>

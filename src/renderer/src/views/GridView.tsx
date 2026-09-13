@@ -71,7 +71,12 @@ interface Props {
   onAddCategory: (category: string) => void
 }
 
-export function GridView({ onOpenLog, onOpenSettings, categories, onAddCategory }: Props): JSX.Element {
+export function GridView({
+  onOpenLog,
+  onOpenSettings,
+  categories,
+  onAddCategory
+}: Props): JSX.Element {
   // ---- Formats document (identical persistence contract to the old view:
   // load once, debounce saves 350 ms, flush on unmount) ----------------------
   const [set, setSet] = useState<FormatSet>(emptyFormatSet())
@@ -808,7 +813,7 @@ export function GridView({ onOpenLog, onOpenSettings, categories, onAddCategory 
               </button>
             </div>
             {status && (
-              <div className="muted" style={{ fontSize: 12 }}>
+              <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                 {status}
               </div>
             )}
@@ -1034,7 +1039,7 @@ export function GridView({ onOpenLog, onOpenSettings, categories, onAddCategory 
                         <span className="muted">none</span>
                       )}
                     </div>
-                    <div className="muted" style={{ fontSize: 12 }}>
+                    <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                       {isBlocked(sel.wd, sel.hour)
                         ? 'This hour is blocked for all promos.'
                         : rules.breaks.length

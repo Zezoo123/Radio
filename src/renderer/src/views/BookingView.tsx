@@ -264,7 +264,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
             </div>
           </div>
           {note && (
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
               {note}
             </span>
           )}
@@ -450,14 +450,17 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
             </div>
             <div className="insp-sec">
               <div className="kick">Source file missing</div>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}>
                 <span className="mono-sm" title={selected.path}>
                   {selected.fileName}
                 </span>{' '}
                 can’t be read right now — moved, renamed, or not synced yet. Its plan is left out of
                 previews and exports until it’s back; your edits (name, category) are kept.
               </div>
-              <div className="muted mono-sm" style={{ fontSize: 11, wordBreak: 'break-all' }}>
+              <div
+                className="muted mono-sm"
+                style={{ fontSize: 'var(--fs-xs)', wordBreak: 'break-all' }}
+              >
                 {selected.path}
               </div>
             </div>
@@ -519,7 +522,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
 
             <div className="insp-sec">
               <div className="kick">This plan</div>
-              <div style={{ fontSize: 13, lineHeight: 1.7 }}>
+              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
                 <div>
                   <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
                 </div>
@@ -561,7 +564,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 </tbody>
               </table>
               {!dbLoaded && (
-                <div className="muted" style={{ fontSize: 12 }}>
+                <div className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
                   Duration and description fill in from the audio database (load it once in LOG →
                   Audio database — it stays loaded from then on).
                 </div>

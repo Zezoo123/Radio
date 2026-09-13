@@ -220,11 +220,12 @@ export default function App(): JSX.Element {
           ['--fs-base', size],
           ['--fs-sm', Math.max(UI_FONT_MIN, size - 1)],
           ['--fs-xs', Math.max(UI_FONT_MIN, size - 2)],
+          ['--fs-xxs', Math.max(UI_FONT_MIN, size - 4)],
           ['--fs-h1', Math.round(size * 1.6)],
           ['--fs-h2', size + 1]
         ]
       : []
-    for (const t of ['--fs-base', '--fs-sm', '--fs-xs', '--fs-h1', '--fs-h2'])
+    for (const t of ['--fs-base', '--fs-sm', '--fs-xs', '--fs-xxs', '--fs-h1', '--fs-h2'])
       root.style.removeProperty(t)
     for (const [t, px] of sizes) root.style.setProperty(t, `${px}px`)
     // styles.css keys the form-control family + bold rules off this attribute.

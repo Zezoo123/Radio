@@ -88,6 +88,8 @@ export function LogView({
   // ---- Editor document (from the old Editor tab) -----------------------------
   const [rows, setRows] = useState<LogRow[]>([])
   const [path, setPath] = useState<string | null>(null)
+  /** File the log was opened from (kept for .bsi too, unlike `path`) — F5 reloads it. */
+  const [sourcePath, setSourcePath] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [status, setStatus] = useState('')
   const [db, setDb] = useState<SimianDbSummary | null>(null)
@@ -159,9 +161,10 @@ export function LogView({
   }
 
   /**
-   * Pull Duration AND Description from the audio DB for every row whose file
-   * name it knows. Descriptions overwrite the log's text, so this only runs
-   * from its button, never automatically, and it marks the log dirty.
+   * Pull Duration, Description AND Category from the audio DB for every row
+   * whose file name it knows. Descriptions/categories overwrite the log's
+   * text, so this only runs from its button ("Update Data"), never
+   * automatically, and it marks the log dirty.
    */
   async function fillFromDb(): Promise<void> {
     const names = [
@@ -181,23 +184,30 @@ export function LogView({
       }
       return next
     })
-    let changed = 0
+    let descChanged = 0
+    let catChanged = 0
     const next = rows.map((r) => {
       if (rowKind(r) !== 'event') return r
-      const desc = found[r.fields[2].trim()]?.description
-      if (!desc || desc === r.fields[4]) return r
-      changed++
+      const hit = found[r.fields[2].trim()]
+      const desc = hit?.description
+      const cat = hit?.category
+      const newDesc = desc && desc !== r.fields[4]
+      const newCat = cat && cat !== r.fields[3].trim().toUpperCase()
+      if (!newDesc && !newCat) return r
+      if (newDesc) descChanged++
+      if (newCat) catChanged++
       const fields = [...r.fields] as LogRow['fields']
-      fields[4] = desc
+      if (newDesc) fields[4] = desc
+      if (newCat) fields[3] = cat
       return { ...r, fields }
     })
-    if (changed > 0) updateRows(next)
+    if (descChanged + catChanged > 0) updateRows(next)
     refreshSim()
     const matched = Object.keys(found).length
     setStatus(
-      `Updated from DB: ${matched} of ${names.length} names matched, ${changed} description${
-        changed === 1 ? '' : 's'
-      } changed`
+      `Updated from DB: ${matched} of ${names.length} names matched — ` +
+        `${descChanged} description${descChanged === 1 ? '' : 's'}, ` +
+        `${catChanged} categor${catChanged === 1 ? 'y' : 'ies'} changed`
     )
   }
 
@@ -248,6 +258,7 @@ export function LogView({
     if (!s || !e) return
     const res = await window.api.preview(s, e)
     loadText(res.text, null, true)
+    setSourcePath(null)
     setWarnings(res.warnings)
     setStatus('Built from Grid — not saved yet')
   }
@@ -277,6 +288,22 @@ export function LogView({
       loadText(res.text, res.path, false)
       setStatus('')
     }
+    setSourcePath(res.path)
+    setWarnings([])
+  }
+
+  /** F5: re-read the opened file from disk — same flow as opening it again. */
+  function reloadLog(): void {
+    if (!sourcePath) return
+    guardDirty('Discard unsaved changes and reload the file from disk?', () => void doReload())
+  }
+
+  async function doReload(): Promise<void> {
+    if (!sourcePath) return
+    const res = await window.api.reloadLog(sourcePath)
+    if (res.bsi) loadText(res.text, null, false, res.rowDurations)
+    else loadText(res.text, res.path, false)
+    setStatus(`Reloaded ${res.path.split(/[\\/]/).pop()}`)
     setWarnings([])
   }
 
@@ -320,6 +347,8 @@ export function LogView({
     buildFromGrid,
     save,
     refreshSim,
+    reloadLog,
+    canReload: sourcePath !== null,
     openReplace: () => setReplaceOpen(true),
     canBuild: ready,
     // Mirrors the Save buttons' disabled condition.
@@ -331,6 +360,8 @@ export function LogView({
     buildFromGrid,
     save,
     refreshSim,
+    reloadLog,
+    canReload: sourcePath !== null,
     openReplace: () => setReplaceOpen(true),
     canBuild: ready,
     canSave: rows.length > 0 && (dirty || !path),
@@ -344,7 +375,11 @@ export function LogView({
       if (e.repeat) return
       if (e.key === 'F5' && !isMod(e) && !e.altKey && !e.shiftKey) {
         e.preventDefault()
-        if (s.hasRows && !overlayOpen()) s.refreshSim()
+        if (overlayOpen()) return
+        // F5 = reload the opened file from disk; a built (unopened) log has no
+        // file, so F5 falls back to refreshing the Expected column.
+        if (s.canReload) s.reloadLog()
+        else if (s.hasRows) s.refreshSim()
         return
       }
       if (!isMod(e) || e.altKey || e.shiftKey) return
@@ -382,7 +417,7 @@ export function LogView({
           <div className="full-bar">
             <span className="kick">Log</span>
             <span className="full-title">{rangeLabel}</span>
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
               {rows.length} rows
               {dirty ? ' — unsaved' : ''}
             </span>
@@ -390,7 +425,7 @@ export function LogView({
               <button
                 className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                 disabled={rows.length === 0}
-                title="Recompute the Expected column and re-run the log check (F5)"
+                title="Recompute the Expected column and re-run the log check"
                 onClick={refreshSim}
               >
                 ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -433,7 +468,7 @@ export function LogView({
               <div className="row" style={{ marginLeft: 'auto' }}>
                 <button
                   className="btn"
-                  title="Open a .bsi or .txt log file (Ctrl+O)"
+                  title="Open a .bsi or .txt log file (Ctrl+O) — F5 reloads the open file from disk"
                   onClick={openLog}
                 >
                   Open…
@@ -540,7 +575,7 @@ export function LogView({
                 <button
                   className={`chip ${simStale && rows.length > 0 ? 'stale' : ''}`}
                   disabled={rows.length === 0}
-                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check (F5)"
+                  title="Recompute the Expected column from the current order, cues and durations, and re-run the log check"
                   onClick={refreshSim}
                 >
                   ↻ EXPECTED{simStale && rows.length > 0 ? ' — OUTDATED' : ''}
@@ -585,12 +620,12 @@ export function LogView({
           <div>
             <div className="kick">Log</div>
             <div className="insp-title">{rows.length} rows</div>
-            <div className="muted" style={{ fontSize: 12 }} title={path ?? undefined}>
+            <div className="muted" style={{ fontSize: 'var(--fs-xs)' }} title={path ?? undefined}>
               {rows.length > 0 ? (fileName ?? '(unsaved log)') : 'nothing open'}
               {dirty ? ' — unsaved changes' : ''}
             </div>
             {status && (
-              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+              <div className="muted" style={{ fontSize: 'var(--fs-xs)', marginTop: 4 }}>
                 {status}
               </div>
             )}
@@ -623,7 +658,7 @@ export function LogView({
             ) : (
               <div className="insp-sec">
                 <div className="kick">Log check</div>
-                <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+                <div className="muted" style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
                   No issues found{simStale ? ' — outdated, hit ↻ EXPECTED to re-check' : ''}. Checks
                   cues, MACRO placement and timed-row clashes.
                 </div>
@@ -632,7 +667,7 @@ export function LogView({
 
           <div className="insp-sec">
             <div className="kick">Audio database</div>
-            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
               {db ? (
                 <span title={db.path}>
                   {dbName} — {db.trackCount} tracks (table “{db.table}”). Durations and descriptions
@@ -655,17 +690,17 @@ export function LogView({
             {db && rows.length > 0 && (
               <button
                 className="btn"
-                title="Fill Duration and overwrite Description from the audio database for every row whose file name it knows"
+                title="Fill Duration and overwrite Description and Category from the audio database for every row whose file name it knows"
                 onClick={fillFromDb}
               >
-                Update Dur &amp; Desc from DB
+                Update Data
               </button>
             )}
           </div>
 
           <div className="insp-sec">
             <div className="kick">Music log</div>
-            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
               {music ? (
                 <span>
                   {music.fileName} — {music.eventCount} music rows, {music.commentCount} markers.
@@ -696,7 +731,7 @@ export function LogView({
 
           <div className="insp-sec">
             <div className="kick">Expected legend</div>
-            <div style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
               <div>
                 <span style={{ fontWeight: 800, color: 'var(--danger)' }}>red</span> — cut short by
                 a timed row
@@ -712,7 +747,7 @@ export function LogView({
           </div>
 
           <div className="insp-foot">
-            <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            <div className="muted" style={{ fontSize: 'var(--fs-xs)', marginBottom: 8 }}>
               Logs are written as ANSI (Windows-1256) for Simian → Tools → Log Import.
             </div>
             <div className="row">
@@ -747,7 +782,9 @@ export function LogView({
                 ✕
               </button>
             </div>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{discard.message}</p>
+            <p style={{ margin: 0, fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
+              {discard.message}
+            </p>
             <div className="row" style={{ marginTop: 14, justifyContent: 'flex-end' }}>
               <button className="btn" onClick={() => setDiscard(null)}>
                 Cancel
