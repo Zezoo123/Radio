@@ -1769,6 +1769,17 @@ input[type='color'] {
   overflow: auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
+/* The aired-check dialog holds a per-day results list — wider than the base. */
+.modal.aired-modal {
+  width: min(780px, 92vw);
+}
+.aired-results {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+.aired-day {
+  margin-top: 8px;
+}
 .modal-head {
   display: flex;
   align-items: center;

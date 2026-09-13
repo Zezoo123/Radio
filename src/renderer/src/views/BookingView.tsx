@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 import { clampISO, tomorrowISO } from '../lib/dates'
+import { AiredCheckDialog } from './AiredCheckDialog'
 
 interface Props {
   templates: TemplateSummary[]
@@ -86,6 +87,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const [planText, setPlanText] = useState('')
   const [note, setNote] = useState('')
   const [promos, setPromos] = useState<PromoSummary | null>(null)
+  const [airedOpen, setAiredOpen] = useState(false)
 
   useEffect(() => {
     window.api.getPromos().then(setPromos)
@@ -285,6 +287,13 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               onClick={addPromosSheet}
             >
               + Promos sheet
+            </button>
+            <button
+              className="btn"
+              title="Compare booked spots against Simian's aired lists (YYMMDD.lst) for a date range"
+              onClick={() => setAiredOpen(true)}
+            >
+              Aired check…
             </button>
           </div>
         </div>
@@ -583,6 +592,8 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
           </>
         )}
       </div>
+
+      <AiredCheckDialog open={airedOpen} onClose={() => setAiredOpen(false)} />
     </div>
   )
 }

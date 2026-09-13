@@ -17,6 +17,8 @@ import { sequentialStore } from './sequentials'
 import { sanitizeSequential } from './core/sequential/sanitize'
 import { loadSimianDb, lookupDuration, lookupTrack, type SimianDb } from './core/simianDb'
 import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
+import { parseAiredList } from './core/parsers/airedList'
+import { checkAiredDay, type AiredDayResult } from './core/schedule/airedCheck'
 import { STATIONS, getActiveStation, setActiveStation, type Station } from './station'
 import { dateRange } from './core/dates'
 import type { FormatSet } from './core/format/types'
@@ -547,6 +549,67 @@ export function registerIpc(): void {
     }
     return out
   })
+
+  // --- Airing checks ---------------------------------------------------------
+  // Pre-air: the booked element spots expected in a date's log (LOG check).
+  ipcMain.handle('check:elements', (_e, date: CalendarDate) => session.expectedElements(date))
+
+  ipcMain.handle('aired:pickFolder', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Choose the List folder (Simian aired .lst files)',
+      properties: ['openDirectory']
+    })
+    return res.canceled ? null : (res.filePaths[0] ?? null)
+  })
+
+  // After-air: reconcile every booked spot in the range against the folder's
+  // `<YYMMDD>.lst` files. Days without a list file are reported, not fatal.
+  ipcMain.handle(
+    'aired:check',
+    async (_e, { folder, start, end }: { folder: string } & RangeArg) => {
+      await simianRestored
+      const expectedDur = (name: string): number | null =>
+        simianDb ? lookupDuration(simianDb.db.tracks, name) : null
+      const pad = (n: number): string => String(n).padStart(2, '0')
+      const days: AiredDayResult[] = []
+      for (const date of dateRange(start, end)) {
+        const iso = `${date.year}-${pad(date.month)}-${pad(date.day)}`
+        const { planned, codes } = await session.expectedElements(date)
+        const fileName = `${pad(date.year % 100)}${pad(date.month)}${pad(date.day)}.lst`
+        let text: string
+        try {
+          text = decodeLogText(await readFile(join(folder, fileName)))
+        } catch {
+          days.push({
+            date: iso,
+            planned: planned.length,
+            played: 0,
+            issues: [],
+            error: `no list file (${fileName})`
+          })
+          continue
+        }
+        days.push(checkAiredDay(iso, planned, parseAiredList(text), codes, expectedDur))
+      }
+      return { days, dbLoaded: simianDb != null }
+    }
+  )
+
+  // Save a check report as a .txt (UTF-8 with BOM so Notepad shows Arabic).
+  ipcMain.handle(
+    'report:save',
+    async (_e, { text, defaultName }: { text: string; defaultName: string }) => {
+      const win = BrowserWindow.getFocusedWindow() ?? undefined
+      const res = await dialog.showSaveDialog(win!, {
+        title: 'Save report',
+        defaultPath: defaultName,
+        filters: [{ name: 'Text', extensions: ['txt'] }]
+      })
+      if (res.canceled || !res.filePath) return { saved: false }
+      await writeFile(res.filePath, '﻿' + text, 'utf-8')
+      return { saved: true, path: res.filePath }
+    }
+  )
 
   // Batch lookup: names → duration + library description + category (names
   // the DB doesn't know are simply absent from the result).

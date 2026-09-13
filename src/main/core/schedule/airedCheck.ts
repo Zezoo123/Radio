@@ -1,0 +1,126 @@
+import type { AiredRow } from '../parsers/airedList'
+import { canonicalName } from './bookingCheck'
+
+/**
+ * After-air reconciliation: each booked element spot for a date is looked for
+ * in that date's aired list (`<YYMMDD>.lst`).
+ *
+ *   played   — an `X` line exists and it ran its full length
+ *   partial  — an `X` line exists but the gap to the next line is shorter
+ *              than the library duration (something cut it)
+ *   missed   — booked, but no line for it (or the line never got its `X`)
+ *   extra    — an element-named `X` line that was never booked that day
+ *
+ * Per the client's spec only errors are itemized; `played` is a count. The
+ * actual length comes from air-time gaps, so a crossfade overlaps the next
+ * start by a moment — TOLERANCE_S absorbs that before calling a spot cut.
+ */
+
+export const TOLERANCE_S = 5
+
+export type AiredStatus = 'partial' | 'missed' | 'extra'
+
+export interface AiredIssue {
+  name: string
+  status: AiredStatus
+  /** Booked `HH:MM:SS` (missed/partial) or actual air time (extra). */
+  time: string
+  /** Human detail, e.g. `played 00:18 of 00:30`. */
+  detail: string
+}
+
+export interface AiredDayResult {
+  /** `YYYY-MM-DD`. */
+  date: string
+  /** Booked spots that day. */
+  planned: number
+  /** Of those, how many fully played. */
+  played: number
+  issues: AiredIssue[]
+  /** Set when the day could not be checked at all (no/unreadable list file). */
+  error?: string
+}
+
+const mmss = (s: number): string =>
+  `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.round(s) % 60).padStart(2, '0')}`
+
+export function checkAiredDay(
+  date: string,
+  planned: { name: string; time: string }[],
+  aired: AiredRow[],
+  codes: string[],
+  expectedDuration: (name: string) => number | null,
+  toleranceS: number = TOLERANCE_S
+): AiredDayResult {
+  // Aired rows by canonical name, in air order, consumed as spots claim them.
+  const pool = new Map<string, { row: AiredRow; used: boolean }[]>()
+  for (const row of aired) {
+    if (!row.name) continue
+    const key = canonicalName(row.name)
+    const list = pool.get(key)
+    const entry = { row, used: false }
+    if (list) list.push(entry)
+    else pool.set(key, [entry])
+  }
+
+  const result: AiredDayResult = { date, planned: planned.length, played: 0, issues: [] }
+
+  for (const spot of [...planned].sort((a, b) => a.time.localeCompare(b.time))) {
+    const entry = pool.get(canonicalName(spot.name))?.find((e) => !e.used)
+    if (!entry) {
+      result.issues.push({
+        name: spot.name,
+        status: 'missed',
+        time: spot.time,
+        detail: 'not in the aired list'
+      })
+      continue
+    }
+    entry.used = true
+    if (!entry.row.played) {
+      result.issues.push({
+        name: spot.name,
+        status: 'missed',
+        time: spot.time,
+        detail: 'listed but never played (no X)'
+      })
+      continue
+    }
+    const expected = expectedDuration(spot.name)
+    const actual = entry.row.actual
+    if (expected != null && actual != null && actual + toleranceS < expected) {
+      result.issues.push({
+        name: spot.name,
+        status: 'partial',
+        time: spot.time,
+        detail: `played ${mmss(actual)} of ${mmss(expected)}`
+      })
+      continue
+    }
+    result.played++
+  }
+
+  // Element-named aired rows nothing claimed: extras (aired but not booked).
+  const isElementName = (key: string): boolean =>
+    codes.some((code) => {
+      const c = canonicalName(code)
+      return key === c || key.startsWith(c + '_')
+    })
+  const secondsToTime = (s: number): string =>
+    `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  for (const [key, entries] of pool) {
+    if (!isElementName(key)) continue
+    for (const e of entries) {
+      if (e.used || !e.row.played) continue
+      result.issues.push({
+        name: e.row.name,
+        status: 'extra',
+        time: secondsToTime(e.row.air),
+        detail: 'aired but not booked this day'
+      })
+    }
+  }
+
+  result.issues.sort((a, b) => a.time.localeCompare(b.time))
+  return result
+}

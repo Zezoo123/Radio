@@ -17,6 +17,20 @@ import { formatSeconds, parseTimeToSeconds } from './runtime'
  * every `=§§ dd - mm - yyyy §§=` date header, so a multi-day range doesn't
  * flag tomorrow's azan for landing on today's time.
  */
+/**
+ * The log's (first) date, from its `=§§ dd - mm - yyyy §§=` header comment —
+ * what the pre-air booking check compares against ("check 1 log per action":
+ * a multi-day range is checked for its first day).
+ */
+export function logDate(rows: LogRow[]): { year: number; month: number; day: number } | null {
+  for (const row of rows.slice(0, 20)) {
+    if (rowKind(row) !== 'comment') continue
+    const m = row.fields[4].match(/=§§\s*(\d{2})\s*-\s*(\d{2})\s*-\s*(\d{4})\s*§§=/)
+    if (m) return { year: +m[3], month: +m[2], day: +m[1] }
+  }
+  return null
+}
+
 export function checkLog(rows: LogRow[]): string[] {
   const issues: string[] = []
 
