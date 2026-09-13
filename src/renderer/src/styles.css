@@ -849,6 +849,20 @@ body {
   flex-direction: column;
   gap: 6px;
 }
+/* A control inside the accent-filled box: the default .btn-link is
+   accent-on-accent (invisible) — restyle it as a small outlined button. */
+.attn .btn-link {
+  color: var(--accent-fg);
+  border: 1px solid color-mix(in srgb, var(--accent-fg) 55%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  align-self: flex-start;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.attn .btn-link:hover {
+  border-color: var(--accent-fg);
+}
 .attn-title {
   font-weight: 800;
   font-size: var(--fs-sm);
