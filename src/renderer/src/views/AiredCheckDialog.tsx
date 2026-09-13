@@ -211,7 +211,9 @@ export function AiredCheckDialog({ open, onClose }: Props): JSX.Element | null {
                   </div>
                   {!day.error && (
                     <div className="spot-strip">
-                      {day.spots.map((s, k) => (
+                      {/* Tolerate a not-yet-restarted main process (dev HMR)
+                          still returning days without the spots array. */}
+                      {(day.spots ?? []).map((s, k) => (
                         <span
                           key={k}
                           className={`spot-chip ${s.status}`}
