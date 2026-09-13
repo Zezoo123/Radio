@@ -5,9 +5,12 @@ import { toCalendarDate } from '../App'
 /**
  * After-air check: every booked element spot in a date range is reconciled
  * against Simian's aired lists — the `<YYMMDD>.lst` files the station keeps
- * in a "List" folder. Per the client's spec only errors are itemized:
- * MISSED (never went to air), PARTIAL (cut before its full length) and
- * EXTRA (aired but not booked); fully played spots are only counted.
+ * in a "List" folder.
+ *
+ * The screen is visual: summary tiles, then one strip per day where every
+ * booked spot is a chip in time order — green played, amber cut short, red
+ * missed, blue aired-without-booking — with the issues itemized underneath.
+ * The saved .txt report keeps the client's errors-only format.
  */
 
 interface Props {
@@ -15,7 +18,7 @@ interface Props {
   onClose: () => void
 }
 
-const STATUS_LABEL = { missed: 'MISSED', partial: 'PARTIALLY PLAYED', extra: 'EXTRA' } as const
+const STATUS_LABEL = { missed: 'MISSED', partial: 'CUT SHORT', extra: 'EXTRA' } as const
 
 /** Local YYYY-MM-DD, `delta` days from today. */
 function isoDaysAgo(delta: number): string {
@@ -95,10 +98,12 @@ export function AiredCheckDialog({ open, onClose }: Props): JSX.Element | null {
     (t, d) => ({
       planned: t.planned + d.planned,
       played: t.played + d.played,
-      issues: t.issues + d.issues.length,
+      partial: t.partial + d.issues.filter((i) => i.status === 'partial').length,
+      missed: t.missed + d.issues.filter((i) => i.status === 'missed').length,
+      extra: t.extra + d.issues.filter((i) => i.status === 'extra').length,
       unchecked: t.unchecked + (d.error ? 1 : 0)
     }),
-    { planned: 0, played: 0, issues: 0, unchecked: 0 }
+    { planned: 0, played: 0, partial: 0, missed: 0, extra: 0, unchecked: 0 }
   )
 
   return (
@@ -117,8 +122,8 @@ export function AiredCheckDialog({ open, onClose }: Props): JSX.Element | null {
           </button>
         </div>
         <p className="muted" style={{ marginTop: 0 }}>
-          Compares every booked element spot in the range against Simian&apos;s aired lists (
-          <code>YYMMDD.lst</code>) — played in full, cut, missed, or aired without a booking.
+          Every booked element spot in the range, reconciled against Simian&apos;s aired lists (
+          <code>YYMMDD.lst</code>). One chip per spot, in time order.
         </p>
 
         <div className="row" style={{ alignItems: 'center' }}>
@@ -152,30 +157,94 @@ export function AiredCheckDialog({ open, onClose }: Props): JSX.Element | null {
         </div>
 
         {result && totals && (
-          <div className="aired-results">
-            <div className="kick" style={{ margin: '12px 0 6px' }}>
-              {totals.planned} booked · {totals.played} fully played · {totals.issues} issue
-              {totals.issues === 1 ? '' : 's'}
-              {totals.unchecked > 0 ? ` · ${totals.unchecked} day(s) not checked` : ''}
-              {!result.dbLoaded ? ' · no audio DB — cut check skipped' : ''}
-            </div>
-            {result.days.map((day) => (
-              <div key={day.date} className="aired-day">
-                <div className={day.error || day.issues.length > 0 ? 'attn-title' : 'muted'}>
-                  {day.date} —{' '}
-                  {day.error
-                    ? `not checked: ${day.error}`
-                    : `booked ${day.planned}, fully played ${day.played}` +
-                      (day.issues.length > 0 ? `, ${day.issues.length} issue(s)` : ' ✓')}
-                </div>
-                {day.issues.map((i, k) => (
-                  <div key={k} className="attn-line">
-                    {i.time} · <b>{i.name}</b> — {STATUS_LABEL[i.status]} ({i.detail})
-                  </div>
-                ))}
+          <>
+            <div className="aired-stats">
+              <div className="aired-stat">
+                <div className="n">{totals.planned}</div>
+                <div className="l">Booked</div>
               </div>
-            ))}
-          </div>
+              <div className="aired-stat ok">
+                <div className="n">{totals.played}</div>
+                <div className="l">Fully played</div>
+              </div>
+              <div className="aired-stat warn">
+                <div className="n">{totals.partial}</div>
+                <div className="l">Cut short</div>
+              </div>
+              <div className="aired-stat danger">
+                <div className="n">{totals.missed}</div>
+                <div className="l">Missed</div>
+              </div>
+              <div className="aired-stat extra">
+                <div className="n">{totals.extra}</div>
+                <div className="l">Extra</div>
+              </div>
+              {totals.unchecked > 0 && (
+                <div className="aired-stat mutedstat">
+                  <div className="n">{totals.unchecked}</div>
+                  <div className="l">Days without list</div>
+                </div>
+              )}
+            </div>
+            {!result.dbLoaded && (
+              <div className="muted" style={{ marginBottom: 6 }}>
+                No audio database loaded — the cut-duration check was skipped.
+              </div>
+            )}
+
+            <div className="aired-results">
+              {result.days.map((day) => (
+                <div key={day.date} className="aired-day">
+                  <div className="aired-day-head">
+                    <span className="aired-day-date">{day.date}</span>
+                    {day.error ? (
+                      <span className="aired-nofile">{day.error}</span>
+                    ) : (
+                      <span className="muted">
+                        {day.played}/{day.planned} played
+                        {day.issues.length > 0 ? ` · ${day.issues.length} issue(s)` : ''}
+                      </span>
+                    )}
+                    {!day.error && day.issues.length === 0 && day.planned > 0 && (
+                      <span className="aired-allok">✓ all played</span>
+                    )}
+                  </div>
+                  {!day.error && (
+                    <div className="spot-strip">
+                      {day.spots.map((s, k) => (
+                        <span
+                          key={k}
+                          className={`spot-chip ${s.status}`}
+                          title={`${s.time.slice(0, 5)} ${s.name}${s.detail ? ` — ${s.detail}` : ' — played'}`}
+                        />
+                      ))}
+                      {day.issues
+                        .filter((i) => i.status === 'extra')
+                        .map((i, k) => (
+                          <span
+                            key={`x${k}`}
+                            className="spot-chip extra"
+                            title={`${i.time.slice(0, 5)} ${i.name} — ${i.detail}`}
+                          />
+                        ))}
+                    </div>
+                  )}
+                  {day.issues.length > 0 && (
+                    <div className="aired-issues">
+                      {day.issues.map((i, k) => (
+                        <div key={k} className="aired-issue">
+                          <span className={`st-pill ${i.status}`}>{STATUS_LABEL[i.status]}</span>
+                          <span className="mono-sm">{i.time.slice(0, 5)}</span>
+                          <b>{i.name}</b>
+                          <span className="muted">{i.detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
         {note && (
           <div className="muted" style={{ marginTop: 8 }}>

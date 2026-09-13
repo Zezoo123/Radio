@@ -29,6 +29,17 @@ export interface AiredIssue {
   detail: string
 }
 
+/** One booked spot's outcome — the full picture (the visual screen shows
+    every spot; the text report itemizes only the issues). */
+export interface AiredSpot {
+  name: string
+  /** Booked `HH:MM:SS`. */
+  time: string
+  status: 'played' | 'partial' | 'missed'
+  /** Present for issues, e.g. `played 00:18 of 00:30`. */
+  detail?: string
+}
+
 export interface AiredDayResult {
   /** `YYYY-MM-DD`. */
   date: string
@@ -36,6 +47,8 @@ export interface AiredDayResult {
   planned: number
   /** Of those, how many fully played. */
   played: number
+  /** Every booked spot in time order, with its outcome. */
+  spots: AiredSpot[]
   issues: AiredIssue[]
   /** Set when the day could not be checked at all (no/unreadable list file). */
   error?: string
@@ -63,7 +76,13 @@ export function checkAiredDay(
     else pool.set(key, [entry])
   }
 
-  const result: AiredDayResult = { date, planned: planned.length, played: 0, issues: [] }
+  const result: AiredDayResult = {
+    date,
+    planned: planned.length,
+    played: 0,
+    spots: [],
+    issues: []
+  }
 
   // Assign aired rows to booked spots per name by NEAREST air-vs-booked time,
   // so when a name is booked twice and airs once, the slot it actually served
@@ -102,19 +121,19 @@ export function checkAiredDay(
   for (const spot of [...planned].sort((a, b) => a.time.localeCompare(b.time))) {
     const entry = spotEntry.get(spot)
     if (!entry) {
-      result.issues.push({
+      result.spots.push({
         name: spot.name,
-        status: 'missed',
         time: spot.time,
+        status: 'missed',
         detail: 'not in the aired list'
       })
       continue
     }
     if (!entry.row.played) {
-      result.issues.push({
+      result.spots.push({
         name: spot.name,
-        status: 'missed',
         time: spot.time,
+        status: 'missed',
         detail: 'listed but never played (no X)'
       })
       continue
@@ -122,15 +141,22 @@ export function checkAiredDay(
     const expected = expectedDuration(spot.name)
     const actual = entry.row.actual
     if (expected != null && actual != null && actual + toleranceS < expected) {
-      result.issues.push({
+      result.spots.push({
         name: spot.name,
-        status: 'partial',
         time: spot.time,
+        status: 'partial',
         detail: `played ${mmss(actual)} of ${mmss(expected)}`
       })
       continue
     }
+    result.spots.push({ name: spot.name, time: spot.time, status: 'played' })
     result.played++
+  }
+  // Issues = the non-played spots (the text report itemizes errors only).
+  for (const s of result.spots) {
+    if (s.status !== 'played') {
+      result.issues.push({ name: s.name, status: s.status, time: s.time, detail: s.detail ?? '' })
+    }
   }
 
   // Element-named aired rows nothing claimed: extras (aired but not booked).

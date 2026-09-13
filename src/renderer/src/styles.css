@@ -1783,16 +1783,140 @@ input[type='color'] {
   overflow: auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
-/* The aired-check dialog holds a per-day results list — wider than the base. */
+/* The aired-check dialog is a review screen — wider than the base modal. */
 .modal.aired-modal {
-  width: min(780px, 92vw);
+  width: min(920px, 94vw);
+  --aired-extra: #4f8cff; /* "aired but not booked" — distinct from the semantic set */
 }
+
+/* Summary tiles: the range's outcome at a glance. */
+.aired-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 10px;
+}
+.aired-stat {
+  flex: 1;
+  min-width: 96px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  background: var(--panel-2);
+}
+.aired-stat .n {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.aired-stat .l {
+  font-size: var(--fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.aired-stat.ok .n {
+  color: var(--ok);
+}
+.aired-stat.warn .n {
+  color: var(--warn);
+}
+.aired-stat.danger .n {
+  color: var(--danger);
+}
+.aired-stat.extra .n {
+  color: var(--aired-extra);
+}
+.aired-stat.mutedstat .n {
+  color: var(--muted);
+}
+
 .aired-results {
   border-top: 1px solid var(--border);
-  margin-top: 12px;
 }
 .aired-day {
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.aired-day-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.aired-day-date {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.aired-allok {
+  color: var(--ok);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.aired-nofile {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* One chip per booked spot, in time order — hover for time/name/detail. */
+.spot-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+.spot-chip {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  cursor: help;
+}
+.spot-chip.played {
+  background: color-mix(in srgb, var(--ok) 75%, transparent);
+}
+.spot-chip.partial {
+  background: var(--warn);
+}
+.spot-chip.missed {
+  background: var(--danger);
+}
+.spot-chip.extra {
+  background: var(--aired-extra);
+  border-radius: 50%;
+}
+
+/* Itemized issues under a day's strip. */
+.aired-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-top: 8px;
+}
+.aired-issue {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.st-pill {
+  font-size: var(--fs-xxs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
+  padding: 2px 7px;
+  color: #fff;
+  min-width: 74px;
+  text-align: center;
+}
+.st-pill.missed {
+  background: var(--danger);
+}
+.st-pill.partial {
+  background: var(--warn);
+  color: #241a00;
+}
+.st-pill.extra {
+  background: var(--aired-extra);
 }
 .modal-head {
   display: flex;

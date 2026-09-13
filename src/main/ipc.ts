@@ -584,6 +584,7 @@ export function registerIpc(): void {
             date: iso,
             planned: planned.length,
             played: 0,
+            spots: [],
             issues: [],
             error: `no list file (${fileName})`
           })
