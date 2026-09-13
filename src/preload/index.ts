@@ -34,6 +34,8 @@ export interface AiredCheckResult {
   days: AiredDayResult[]
   /** False = no audio DB loaded, so cut-duration detection was skipped. */
   dbLoaded: boolean
+  /** Every booking element code in the range (groups spots in the by-ad view). */
+  codes: string[]
 }
 
 export interface AzanCoverage {

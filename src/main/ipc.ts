@@ -572,9 +572,11 @@ export function registerIpc(): void {
         simianDb ? lookupDuration(simianDb.db.tracks, name) : null
       const pad = (n: number): string => String(n).padStart(2, '0')
       const days: AiredDayResult[] = []
+      const allCodes = new Set<string>()
       for (const date of dateRange(start, end)) {
         const iso = `${date.year}-${pad(date.month)}-${pad(date.day)}`
         const { planned, codes } = await session.expectedElements(date)
+        for (const c of codes) allCodes.add(c)
         const fileName = `${pad(date.year % 100)}${pad(date.month)}${pad(date.day)}.lst`
         let text: string
         try {
@@ -592,7 +594,8 @@ export function registerIpc(): void {
         }
         days.push(checkAiredDay(iso, planned, parseAiredList(text), codes, expectedDur))
       }
-      return { days, dbLoaded: simianDb != null }
+      // codes lets the UI group spots per booking element (the by-ad view).
+      return { days, dbLoaded: simianDb != null, codes: [...allCodes] }
     }
   )
 

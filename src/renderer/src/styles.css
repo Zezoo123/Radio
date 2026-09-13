@@ -1858,6 +1858,19 @@ input[type='color'] {
   color: var(--muted);
   font-style: italic;
 }
+/* Inline colored counts in the by-booking header line. */
+.ok-text {
+  color: var(--ok);
+  font-weight: 600;
+}
+.warn-text {
+  color: var(--warn);
+  font-weight: 600;
+}
+.danger-text {
+  color: var(--danger);
+  font-weight: 600;
+}
 
 /* One chip per booked spot, in time order — hover for time/name/detail. */
 .spot-strip {
