@@ -8,7 +8,8 @@ import { formatSeconds, parseTimeToSeconds } from './runtime'
  *
  *  - an event row with an empty Cue (Simian imports it as NULL and the
  *    chain stops there),
- *  - a MACRO row directly under a comment (the macro does not fire),
+ *  - a comment row directly after a MACRO (the row after a macro must be a
+ *    playable line with a duration, or the chain stalls),
  *  - a log whose first line is a comment,
  *  - two or more timed rows (`@`/`#`) scheduled on the same second.
  *
@@ -17,6 +18,20 @@ import { formatSeconds, parseTimeToSeconds } from './runtime'
  * every `=§§ dd - mm - yyyy §§=` date header, so a multi-day range doesn't
  * flag tomorrow's azan for landing on today's time.
  */
+/**
+ * The log's (first) date, from its `=§§ dd - mm - yyyy §§=` header comment —
+ * what the pre-air booking check compares against ("check 1 log per action":
+ * a multi-day range is checked for its first day).
+ */
+export function logDate(rows: LogRow[]): { year: number; month: number; day: number } | null {
+  for (const row of rows.slice(0, 20)) {
+    if (rowKind(row) !== 'comment') continue
+    const m = row.fields[4].match(/=§§\s*(\d{2})\s*-\s*(\d{2})\s*-\s*(\d{4})\s*§§=/)
+    if (m) return { year: +m[3], month: +m[2], day: +m[1] }
+  }
+  return null
+}
+
 export function checkLog(rows: LogRow[]): string[] {
   const issues: string[] = []
 
@@ -28,8 +43,12 @@ export function checkLog(rows: LogRow[]): string[] {
     if (rowKind(row) === 'event' && row.fields[1].trim() === '') {
       issues.push(`Row ${i + 1} — empty Cue`)
     }
-    if (row.fields[3].trim() === 'MACRO' && i > 0 && rowKind(rows[i - 1]) === 'comment') {
-      issues.push(`Row ${i + 1} — MACRO directly under a comment (row ${i})`)
+    if (
+      row.fields[3].trim() === 'MACRO' &&
+      i + 1 < rows.length &&
+      rowKind(rows[i + 1]) === 'comment'
+    ) {
+      issues.push(`Row ${i + 1} — MACRO directly followed by a comment (row ${i + 2})`)
     }
   })
 

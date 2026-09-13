@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppConfig, MusicSummary, TemplateSummary } from '../../../main/session'
 import type { SimianDbSummary } from '../../../preload'
 import { LogGrid } from '../components/LogGrid'
-import { checkLog } from '../lib/logCheck'
+import { checkLog, logDate } from '../lib/logCheck'
+import { checkBookingElements } from '../../../main/core/schedule/bookingCheck'
 import { parseLogText, rowKind, serializeRows, type LogRow } from '../lib/logRows'
 import { isMod, overlayOpen } from '../lib/shortcuts'
 import { parseTimeToSeconds, simulateLog, type SimRow } from '../lib/runtime'
@@ -135,8 +136,57 @@ export function LogView({
     setSim(simulateLog(rows, (r) => durations.get(r.id) ?? 0, parseTimeToSeconds(simStart) ?? 0))
     setChecks(checkLog(rows))
     setSimStale(false)
+    void runBookingCheck(rows)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [simTick])
+
+  /**
+   * Pre-air booking check (runs with the ↻ pass): every element spot booked
+   * for the log's date must still be IN the log after human editing, and no
+   * element-named row may exceed its booked count. Errors only, per the spec.
+   */
+  const [bookingChecks, setBookingChecks] = useState<string[]>([])
+  async function runBookingCheck(rs: LogRow[]): Promise<void> {
+    const date = logDate(rs)
+    if (!date) {
+      setBookingChecks([])
+      return
+    }
+    const { planned, codes } = await window.api.expectedElements(date)
+    if (planned.length === 0 && codes.length === 0) {
+      setBookingChecks([])
+      return
+    }
+    const names = rs.filter((r) => rowKind(r) === 'event').map((r) => r.fields[2])
+    const issues = checkBookingElements(
+      planned.map((p) => p.name),
+      names,
+      codes
+    )
+    setBookingChecks(
+      issues.map((i) =>
+        i.status === 'not-inserted'
+          ? `Booking · ${i.name} — NOT INSERTED (booked ${i.booked}, in log ${i.inLog})`
+          : `Booking · ${i.name} — EXTRA (booked ${i.booked}, in log ${i.inLog})`
+      )
+    )
+  }
+
+  /** All ↻ findings together — the panel, its count and the report share it. */
+  const allChecks = [...checks, ...bookingChecks]
+
+  async function saveCheckReport(): Promise<void> {
+    const date = logDate(rows)
+    const iso = date
+      ? `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+      : 'unknown-date'
+    const text =
+      `LOG CHECK REPORT — ${iso}\r\n` +
+      `Log: ${fileName ?? '(built from Grid, unsaved)'} · ${rows.length} rows\r\n\r\n` +
+      (allChecks.length === 0 ? 'No issues found.\r\n' : allChecks.join('\r\n') + '\r\n')
+    const res = await window.api.saveReport(text, `log-check-${iso}.txt`)
+    if (res.saved) setStatus(`Report saved to ${res.path}`)
+  }
 
   /** Look up every audio row's file name in the Simian DB (comments stay 0). */
   async function fillDurations(rs: LogRow[]): Promise<void> {
@@ -643,24 +693,31 @@ export function LogView({
           )}
 
           {rows.length > 0 &&
-            (checks.length > 0 ? (
+            (allChecks.length > 0 ? (
               <div className="attn">
                 <div className="attn-title">
-                  LOG CHECK · {checks.length}
+                  LOG CHECK · {allChecks.length}
                   {simStale ? ' — OUTDATED' : ''}
                 </div>
-                {checks.map((c, i) => (
+                {allChecks.map((c, i) => (
                   <div key={i} className="attn-line">
                     {c}
                   </div>
                 ))}
+                <button
+                  className="btn-link"
+                  title="Save these findings as a .txt report"
+                  onClick={saveCheckReport}
+                >
+                  Save report…
+                </button>
               </div>
             ) : (
               <div className="insp-sec">
                 <div className="kick">Log check</div>
                 <div className="muted" style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
                   No issues found{simStale ? ' — outdated, hit ↻ EXPECTED to re-check' : ''}. Checks
-                  cues, MACRO placement and timed-row clashes.
+                  cues, MACRO placement, timed-row clashes and booked-element presence.
                 </div>
               </div>
             ))}

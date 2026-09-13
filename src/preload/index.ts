@@ -22,6 +22,21 @@ export interface PromoRules {
 }
 import type { PromoEntry } from '../main/core/parsers/promosFile'
 import type { CalendarDate } from '../main/core/types'
+import type { AiredDayResult } from '../main/core/schedule/airedCheck'
+
+/** The booked element spots expected in one date's log (airing checks). */
+export interface ExpectedElements {
+  planned: { name: string; time: string }[]
+  codes: string[]
+}
+
+export interface AiredCheckResult {
+  days: AiredDayResult[]
+  /** False = no audio DB loaded, so cut-duration detection was skipped. */
+  dbLoaded: boolean
+  /** Every booking element code in the range (groups spots in the by-ad view). */
+  codes: string[]
+}
 
 export interface AzanCoverage {
   dayCount: number
@@ -192,6 +207,14 @@ const api = {
   openLog: (): Promise<OpenLogResult | null> => ipcRenderer.invoke('log:open'),
   /** Re-read an already-open log file from disk (F5) — no dialog. */
   reloadLog: (path: string): Promise<OpenLogResult> => ipcRenderer.invoke('log:reload', path),
+
+  expectedElements: (date: CalendarDate): Promise<ExpectedElements> =>
+    ipcRenderer.invoke('check:elements', date),
+  pickAiredFolder: (): Promise<string | null> => ipcRenderer.invoke('aired:pickFolder'),
+  checkAired: (folder: string, start: CalendarDate, end: CalendarDate): Promise<AiredCheckResult> =>
+    ipcRenderer.invoke('aired:check', { folder, start, end }),
+  saveReport: (text: string, defaultName: string): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('report:save', { text, defaultName }),
   saveLog: (text: string, path?: string): Promise<{ saved: boolean; path?: string }> =>
     ipcRenderer.invoke('log:save', { text, path }),
 

@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises'
 import { basename } from 'node:path'
 import {
+  eventsForDate,
   parseElementTemplate,
   playedDayColumns,
   templateGrid,
@@ -372,6 +373,24 @@ class Session {
 
   async templateSummaries(): Promise<TemplateSummary[]> {
     return this.summaries(await this.load())
+  }
+
+  /**
+   * The booked element spots for one date (name + time, time-sorted) plus
+   * every element code — the airing checks' expectation. Uses all loaded
+   * templates regardless of the LOG include-chips: the checks ask "is what
+   * was BOOKED in the log / on air", not "what would compose today".
+   */
+  async expectedElements(
+    date: CalendarDate
+  ): Promise<{ planned: { name: string; time: string }[]; codes: string[] }> {
+    const s = await this.load()
+    const loaded = s.templates.filter((t) => t.template != null)
+    const planned = loaded
+      .flatMap((t) => eventsForDate(t.template!, date))
+      .map((e) => ({ name: e.name, time: e.time }))
+      .sort((a, b) => a.time.localeCompare(b.time))
+    return { planned, codes: loaded.map((t) => t.template!.code) }
   }
 
   private summaries(s: StationState): TemplateSummary[] {
