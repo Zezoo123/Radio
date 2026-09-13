@@ -8,7 +8,8 @@ import { formatSeconds, parseTimeToSeconds } from './runtime'
  *
  *  - an event row with an empty Cue (Simian imports it as NULL and the
  *    chain stops there),
- *  - a MACRO row directly under a comment (the macro does not fire),
+ *  - a comment row directly after a MACRO (the row after a macro must be a
+ *    playable line with a duration, or the chain stalls),
  *  - a log whose first line is a comment,
  *  - two or more timed rows (`@`/`#`) scheduled on the same second.
  *
@@ -42,8 +43,12 @@ export function checkLog(rows: LogRow[]): string[] {
     if (rowKind(row) === 'event' && row.fields[1].trim() === '') {
       issues.push(`Row ${i + 1} — empty Cue`)
     }
-    if (row.fields[3].trim() === 'MACRO' && i > 0 && rowKind(rows[i - 1]) === 'comment') {
-      issues.push(`Row ${i + 1} — MACRO directly under a comment (row ${i})`)
+    if (
+      row.fields[3].trim() === 'MACRO' &&
+      i + 1 < rows.length &&
+      rowKind(rows[i + 1]) === 'comment'
+    ) {
+      issues.push(`Row ${i + 1} — MACRO directly followed by a comment (row ${i + 2})`)
     }
   })
 

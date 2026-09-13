@@ -37,23 +37,23 @@ describe('log check', () => {
     expect(issues).toEqual(['Row 4 — empty Cue', 'Row 5 — empty Cue'])
   })
 
-  it('flags a MACRO row directly under a comment', () => {
-    // The azan shape: comment banner, blank line (dropped by the parser),
-    // then the deckfade macro — after parsing the comment is directly above.
+  it('flags a comment directly after a MACRO', () => {
     const issues = checkLog(
       rowsOf([
         '08:00:00|+|JIN-01',
-        '|||COMMENT|--------------------=§§    01   -   06   -   2026   §§=--------------------',
-        '04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN'
+        '04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN',
+        '|||COMMENT|--------------------=§§    01   -   06   -   2026   §§=--------------------'
       ])
     )
-    expect(issues).toEqual(['Row 3 — MACRO directly under a comment (row 2)'])
+    expect(issues).toEqual(['Row 2 — MACRO directly followed by a comment (row 3)'])
   })
 
-  it('does not flag a MACRO under an event row or at the top of the log', () => {
+  it('does not flag a MACRO followed by audio, under a comment, or ending the log', () => {
     expect(
       checkLog(
         rowsOf([
+          '08:00:00|+|JIN-01',
+          '|||COMMENT|--------', // comment BEFORE a macro is fine now
           '04:10:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN',
           '04:10:02|+|AZ22-01RB|FEA|AZAN',
           '12:53:00|@||MACRO|DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN'
@@ -101,15 +101,16 @@ describe('log check', () => {
       rowsOf([
         '|||COMMENT|banner',
         '04:10:00|@||MACRO|DECKFADE',
+        '|||COMMENT|azan banner',
         '04:10:00|@|AZ22-01RB|FEA|AZAN',
         '08:20:01||ADS_1710-A'
       ])
     )
     expect(issues).toEqual([
       'Row 1 — the log starts with a comment',
-      'Row 2 — MACRO directly under a comment (row 1)',
-      'Row 4 — empty Cue',
-      'Rows 2, 3 — 2 timed rows share 04:10:00'
+      'Row 2 — MACRO directly followed by a comment (row 3)',
+      'Row 5 — empty Cue',
+      'Rows 2, 4 — 2 timed rows share 04:10:00'
     ])
   })
 })
