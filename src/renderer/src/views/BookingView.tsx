@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
-import { DEFAULT_CATEGORIES } from '../../../main/core/format/types'
 import { toCalendarDate } from '../App'
 import { clampISO, tomorrowISO } from '../lib/dates'
 
@@ -8,6 +7,8 @@ interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
   onConfig: (c: AppConfig) => void
+  /** THE app-wide category list (Settings → Categories). */
+  categories: string[]
 }
 
 const MONTH_NAMES = [
@@ -77,7 +78,7 @@ function coversLabel(first: string | null, last: string | null): string {
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, onConfig, categories }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
@@ -505,9 +506,9 @@ export function BookingView({ templates, onTemplates, onConfig }: Props): JSX.El
                 value={selected.category}
                 onChange={(e) => sel !== null && changeCategory(sel, e.target.value)}
               >
-                {(DEFAULT_CATEGORIES.includes(selected.category)
-                  ? DEFAULT_CATEGORIES
-                  : [selected.category, ...DEFAULT_CATEGORIES]
+                {(categories.includes(selected.category)
+                  ? categories
+                  : [selected.category, ...categories]
                 ).map((c) => (
                   <option key={c} value={c}>
                     {c}

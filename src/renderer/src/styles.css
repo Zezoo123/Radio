@@ -857,27 +857,76 @@ body {
   opacity: 0.92;
 }
 
-/* Settings drawer sliding over the right edge. */
+/* Settings: a wide dialog centered on screen. */
 .settings-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   background: color-mix(in srgb, #000 45%, transparent);
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
 }
 .settings-drawer {
-  width: min(780px, 92vw);
+  width: min(1100px, 94vw);
+  max-height: 92vh;
   background: var(--bg);
-  border-left: 2px solid var(--rule-strong);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-lg);
   overflow: auto;
-  padding: 20px 28px 32px;
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.25);
+  padding: 16px 28px 32px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
 }
 .settings-drawer-head {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 4px;
+}
+
+/* Settings: section buttons on the left, one section's cards on the right. */
+.settings-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+  position: sticky;
+  top: 0;
+}
+.settings-nav-btn {
+  text-align: left;
+  padding: 9px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--speed) var(--ease);
+}
+.settings-nav-btn:hover {
+  border-color: var(--muted);
+}
+.settings-nav-btn.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+  color: var(--accent);
+}
+.settings-content {
+  flex: 1;
+  min-width: 0;
+}
+.settings-content .card {
+  margin-top: 0;
+}
+/* The per-category delete sits at the row's right edge. */
+.cat-delete {
+  margin-left: auto;
 }
 
 /* Full-screen station chooser on load */
@@ -2172,18 +2221,18 @@ code {
    every card previews its own look regardless of the active theme. */
 .theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
 }
 .theme-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   text-align: left;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px;
+  padding: 8px;
   cursor: pointer;
   color: var(--text);
   transition: border-color var(--speed) var(--ease);
@@ -2198,28 +2247,28 @@ code {
 .theme-thumb {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(128, 128, 128, 0.35);
-  padding: 8px;
-  height: 44px;
+  padding: 6px;
+  height: 30px;
 }
 .th-dot {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex: none;
 }
 .th-lines {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
 }
 .th-line {
-  height: 5px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   width: 100%;
 }
 .th-line.short {

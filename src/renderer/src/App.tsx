@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { AppConfig, TemplateSummary } from '../../main/session'
 import type { CalendarDate } from '../../main/core/types'
 import type { UiSettings } from '../../main/uiSettings'
+import { DEFAULT_CATEGORIES } from '../../main/core/format/types'
 import { withOpacity } from './lib/colors'
 import { BookingView } from './views/BookingView'
 import { GridView } from './views/GridView'
@@ -114,8 +115,9 @@ export default function App(): JSX.Element {
   useEffect(() => {
     window.api.onUpdateDownloaded(setUpdateReady)
   }, [])
-  // App-wide per-category row colors (persisted in Settings, used by the Editor).
+  // App-wide category list + per-category row colors (persisted in Settings).
   const [uiSettings, setUiSettings] = useState<UiSettings>({
+    categories: [...DEFAULT_CATEGORIES],
     categoryColors: {},
     categoryTextColors: {},
     tintOpacity: 35,
@@ -140,6 +142,13 @@ export default function App(): JSX.Element {
   async function updateUiSettings(next: UiSettings): Promise<void> {
     setUiSettings(next)
     setUiSettings(await window.api.saveUiSettings(next))
+  }
+
+  /** Add to THE category list (Clock editor's "new category" flows here). */
+  function addCategory(cat: string): void {
+    const name = cat.trim().toUpperCase()
+    if (!name || uiSettings.categories.includes(name)) return
+    void updateUiSettings({ ...uiSettings, categories: [...uiSettings.categories, name] })
   }
 
   useEffect(() => {
@@ -311,12 +320,19 @@ export default function App(): JSX.Element {
           </div>
         )}
         {section === 'booking' && (
-          <BookingView templates={templates} onTemplates={setTemplates} onConfig={setConfig} />
+          <BookingView
+            templates={templates}
+            onTemplates={setTemplates}
+            onConfig={setConfig}
+            categories={uiSettings.categories}
+          />
         )}
         {section === 'grid' && (
           <GridView
             onOpenLog={() => setSection('log')}
             onOpenSettings={() => setSettingsOpen(true)}
+            categories={uiSettings.categories}
+            onAddCategory={addCategory}
           />
         )}
         {/* The LOG workbench stays mounted so its unsaved document survives
