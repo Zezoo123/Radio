@@ -241,6 +241,83 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     window.api.getSimianDb().then((s) => setDbLoaded(Boolean(s)))
   }, [])
 
+  // Track durations for EVERY booked element (the table's Dur / Total Dur
+  // columns) — one batch lookup across all plans.
+  const allTrackNames = useMemo(
+    () => [...new Set(templates.flatMap((t) => (t.tracks ?? []).map((tr) => tr.name)))],
+    [templates]
+  )
+  const [allDur, setAllDur] = useState<Record<string, number>>({})
+  useEffect(() => {
+    if (!dbLoaded || allTrackNames.length === 0) {
+      setAllDur({})
+      return
+    }
+    let gone = false
+    window.api.simianDurations(allTrackNames).then((r) => {
+      if (!gone) setAllDur(r)
+    })
+    return () => {
+      gone = true
+    }
+  }, [dbLoaded, allTrackNames])
+
+  /** Per-track second lengths for a row (rounded; null = not in the DB). */
+  const rowDurations = (t: TemplateSummary): (number | null)[] =>
+    (t.tracks ?? []).map((tr) => {
+      const d = allDur[tr.name]
+      return d != null ? Math.round(d) : null
+    })
+
+  /** The Dur cell: one shared length, `Mixed`, or unknown. */
+  const durLabel = (t: TemplateSummary): string => {
+    const known = rowDurations(t).filter((d): d is number => d != null)
+    if (known.length === 0) return '—'
+    const unique = [...new Set(known)]
+    return unique.length === 1 && known.length === (t.tracks ?? []).length
+      ? String(unique[0])
+      : 'Mixed'
+  }
+
+  /** Total airtime = Σ spots × track length (null while any track is unknown). */
+  const totalDuration = (t: TemplateSummary): number | null => {
+    const tracks = t.tracks ?? []
+    if (tracks.length === 0) return null
+    let sum = 0
+    for (const tr of tracks) {
+      const d = allDur[tr.name]
+      if (d == null) return null
+      sum += tr.spots * Math.round(d)
+    }
+    return sum
+  }
+
+  /** Seconds → `H:MM:SS` / `MM:SS`. */
+  const airtime = (s: number | null): string => {
+    if (s == null) return '—'
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    const p = (n: number): string => String(n).padStart(2, '0')
+    return h > 0 ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`
+  }
+
+  /** `2026-09-01` → `01-09-2026` (the station's plan-table date style). */
+  const ddmmyyyy = (iso: string | null): string => (iso ? iso.split('-').reverse().join('-') : '—')
+
+  const footer = templates.reduce(
+    (f, t) => {
+      const total = totalDuration(t)
+      return {
+        tracks: f.tracks + (t.tracks?.length ?? 0),
+        spots: f.spots + (t.spotCount ?? 0),
+        seconds: total != null ? f.seconds + total : f.seconds,
+        allKnown: f.allKnown && total != null
+      }
+    },
+    { tracks: 0, spots: 0, seconds: 0, allKnown: true }
+  )
+
   useEffect(() => {
     if (!dbLoaded || tracks.length === 0) {
       setTrackInfo({})
@@ -305,12 +382,23 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
             <table className="tbl dense-book">
               <thead>
                 <tr>
-                  <th style={{ width: 130 }}>Name</th>
+                  <th style={{ width: 120 }}>Name</th>
                   <th>Client</th>
-                  <th style={{ width: 120 }}>Category</th>
-                  <th style={{ width: 60 }}>Spots</th>
-                  <th style={{ width: 110 }}>Covers</th>
-                  <th>Source file</th>
+                  <th style={{ width: 100 }}>Category</th>
+                  <th style={{ width: 96 }}>Start</th>
+                  <th style={{ width: 96 }}>End</th>
+                  <th style={{ width: 60 }} title="Distinct track files in the plan">
+                    Tracks
+                  </th>
+                  <th style={{ width: 60 }} title="Track length in seconds (from the audio DB)">
+                    Dur
+                  </th>
+                  <th style={{ width: 68 }} title="Total booked spots across the whole plan">
+                    T. Spots
+                  </th>
+                  <th style={{ width: 90 }} title="Total airtime — spots × track length">
+                    Duration
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -322,15 +410,12 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                     }`}
                     onClick={() => setSel(i)}
                   >
-                    <td className="mono-sm" style={{ fontWeight: 700 }}>
+                    <td
+                      className="mono-sm"
+                      style={{ fontWeight: 700 }}
+                      title={`${t.fileName} — ${t.path}`}
+                    >
                       {t.code || '—'}
-                    </td>
-                    <td dir="auto">{t.group || '—'}</td>
-                    <td>{t.category || '—'}</td>
-                    <td>{t.status === 'missing' ? '—' : t.timeCount}</td>
-                    <td className="muted">{coversLabel(t.firstDate, t.lastDate)}</td>
-                    <td className="muted" title={t.path}>
-                      {t.fileName}
                       {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
                       {t.status === 'changed' && (
                         <span
@@ -341,9 +426,34 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                         </span>
                       )}
                     </td>
+                    <td dir="auto">{t.group || '—'}</td>
+                    <td>{t.category || '—'}</td>
+                    <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
+                    <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
+                    <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
+                    <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
+                    <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
+                    <td className="num-cell">
+                      {t.status === 'missing' ? '—' : airtime(totalDuration(t))}
+                    </td>
                   </tr>
                 ))}
               </tbody>
+              {templates.length > 1 && (
+                <tfoot>
+                  <tr className="book-total">
+                    <td colSpan={5}>
+                      {templates.length} plan{templates.length === 1 ? '' : 's'}
+                    </td>
+                    <td className="num-cell">{footer.tracks}</td>
+                    <td />
+                    <td className="num-cell">{footer.spots}</td>
+                    <td className="num-cell">
+                      {footer.allKnown ? airtime(footer.seconds) : `≥ ${airtime(footer.seconds)}`}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           )}
 
@@ -536,7 +646,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
                 </div>
                 <div>
-                  <span className="muted">Spots</span> {selected.timeCount}
+                  <span className="muted">Spots</span> {selected.spotCount}
                 </div>
                 <div>
                   <span className="muted">Covers</span>{' '}

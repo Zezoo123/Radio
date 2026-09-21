@@ -756,6 +756,17 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
 }
+/* Numeric plan-table cells line up their digits. */
+.num-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Totals footer under the plans (tracks / spots / total airtime). */
+.book-total td {
+  border-top: 2px solid var(--rule-strong);
+  font-weight: 700;
+  color: var(--text);
+}
 .book-row {
   cursor: pointer;
 }

@@ -5,6 +5,7 @@ import {
   parseElementTemplate,
   playedDayColumns,
   templateGrid,
+  trackTokens,
   type ElementTemplate,
   type TemplateGrid
 } from './core/parsers/elementTemplate'
@@ -61,6 +62,10 @@ export interface TemplateSummary {
   group: string
   code: string
   timeCount: number
+  /** Total booked spots across the whole plan (every token of every day). */
+  spotCount: number
+  /** Per track: the export file name and how many spots it plays in total. */
+  tracks: { name: string; spots: number }[]
   category: string
   /** Earliest/latest date the template covers, `YYYY-MM-DD` (null if empty). */
   firstDate: string | null
@@ -405,6 +410,8 @@ class Session {
           group: '',
           code: overrides.code ?? '',
           timeCount: 0,
+          spotCount: 0,
+          tracks: [],
           category: overrides.category ?? '',
           firstDate: null,
           lastDate: null
@@ -415,6 +422,17 @@ class Session {
       const cols = playedDayColumns(template)
       const iso = (c: { year: number; month: number; day: number }): string =>
         `${c.year}-${String(c.month).padStart(2, '0')}-${String(c.day).padStart(2, '0')}`
+      // Total spots per track file across the whole plan (`1` = the bare code).
+      const spotsByTrack = new Map<string, number>()
+      for (const row of template.timeRows) {
+        for (const raw of row.tracks.values()) {
+          for (const token of trackTokens(raw)) {
+            const name = token === '1' ? template.code : `${template.code}-${token}`
+            spotsByTrack.set(name, (spotsByTrack.get(name) ?? 0) + 1)
+          }
+        }
+      }
+      const tracks = [...spotsByTrack].map(([name, spots]) => ({ name, spots }))
       return {
         fileName,
         path,
@@ -422,6 +440,8 @@ class Session {
         group: template.group,
         code: template.code,
         timeCount: template.timeRows.length,
+        spotCount: tracks.reduce((n, t) => n + t.spots, 0),
+        tracks,
         category: template.category ?? '',
         firstDate: cols.length ? iso(cols[0]) : null,
         lastDate: cols.length ? iso(cols[cols.length - 1]) : null
