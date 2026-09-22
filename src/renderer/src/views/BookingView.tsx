@@ -61,6 +61,22 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const [note, setNote] = useState('')
   const [promos, setPromos] = useState<PromoSummary | null>(null)
   const [airedOpen, setAiredOpen] = useState(false)
+  // Row × needs a second click; the arm times out so it can't linger.
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null)
+  useEffect(() => {
+    if (confirmRemove === null) return
+    const t = setTimeout(() => setConfirmRemove(null), 3000)
+    return () => clearTimeout(t)
+  }, [confirmRemove])
+  function removeClicked(i: number): void {
+    if (confirmRemove !== i) {
+      setConfirmRemove(i)
+      return
+    }
+    setConfirmRemove(null)
+    void removeElement(i)
+  }
+
   /** Plan rows expanded to show their per-track breakdown (by row index). */
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   function toggleExpanded(i: number): void {
@@ -378,6 +394,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   <th title="Distinct track files in the plan">Tracks</th>
                   <th title="Track length in seconds (from the audio DB)">Dur</th>
                   <th title="Total booked spots across the whole plan">T. Spots</th>
+                  <th style={{ width: 40 }} />
                 </tr>
               </thead>
               <tbody>
@@ -428,6 +445,22 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
+                      <td className="row-remove-cell">
+                        <button
+                          className={`row-remove ${confirmRemove === i ? 'armed' : ''}`}
+                          title={
+                            confirmRemove === i
+                              ? 'Click again to remove'
+                              : 'Remove this element (the source file is untouched) — click twice'
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeClicked(i)
+                          }}
+                        >
+                          ×
+                        </button>
+                      </td>
                     </tr>
                     {expanded.has(i) &&
                       t.tracks.map((tr) => {
@@ -441,6 +474,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                             <td />
                             <td className="num-cell">{sec ?? '—'}</td>
                             <td className="num-cell">{tr.spots}</td>
+                            <td />
                           </tr>
                         )
                       })}
@@ -456,6 +490,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                     <td className="num-cell">{footer.tracks}</td>
                     <td />
                     <td className="num-cell">{footer.spots}</td>
+                    <td />
                   </tr>
                 </tfoot>
               )}
@@ -687,16 +722,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   Audio database — it stays loaded from then on).
                 </div>
               )}
-            </div>
-
-            <div className="insp-foot">
-              <button
-                className="btn"
-                onClick={() => sel !== null && removeElement(sel)}
-                title="Remove this element from the session (the source file is untouched)"
-              >
-                Remove element
-              </button>
             </div>
           </>
         )}
