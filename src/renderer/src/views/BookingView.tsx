@@ -322,7 +322,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
       <div className="work-main">
         <div className="work-head">
           <div>
-            <div className="insp-title">Booking order</div>
+            <div className="insp-title">Booking Order</div>
           </div>
           {note && (
             <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
@@ -460,10 +460,6 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
           {selected && selected.status !== 'missing' && (
             <div className="plan-block">
               <div className="row" style={{ alignItems: 'baseline', gap: 14 }}>
-                <span className="plan-title">{selected.code} — plan</span>
-                <span className="kick">
-                  One column per day, one row per hour · AAB = A twice and B once
-                </span>
                 <div className="seg" style={{ marginLeft: 'auto' }}>
                   <button
                     className={`seg-btn ${planMode === 'grid' ? 'on' : ''}`}
