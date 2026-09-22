@@ -637,17 +637,18 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
         ) : (
           <>
             <div>
-              <div className="kick">Selected element</div>
-              <div className="insp-title">{selected.code}</div>
+              <div className="kick">Client</div>
+              <div className="insp-title" dir="auto">
+                {selected.group || '—'}
+              </div>
             </div>
 
             <div className="insp-field">
-              <span className="kick">Element name — export file names follow it</span>
+              <span className="kick">Name</span>
               <input
                 key={`${selected.code}-${sel}`}
                 defaultValue={selected.code}
                 spellCheck={false}
-                title="Edit and press Enter — exported files are named CODE, CODE-A, …"
                 onBlur={(e) => sel !== null && commitCode(sel, e.currentTarget)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') e.currentTarget.blur()
