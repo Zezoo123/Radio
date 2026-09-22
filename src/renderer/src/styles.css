@@ -761,6 +761,11 @@ body {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* Plan-table headers never wrap ("T. Spots" stays on one line); the numeric
+   columns carry no fixed width, so they share the remaining space evenly. */
+.dense-book th {
+  white-space: nowrap;
+}
 /* Totals footer under the plans (tracks / spots / total airtime). */
 .book-total td {
   border-top: 2px solid var(--rule-strong);

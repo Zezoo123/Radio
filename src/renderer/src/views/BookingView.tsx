@@ -383,22 +383,14 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               <thead>
                 <tr>
                   <th style={{ width: 120 }}>Name</th>
-                  <th>Client</th>
+                  <th style={{ width: 180 }}>Client</th>
                   <th style={{ width: 100 }}>Category</th>
-                  <th style={{ width: 96 }}>Start</th>
-                  <th style={{ width: 96 }}>End</th>
-                  <th style={{ width: 60 }} title="Distinct track files in the plan">
-                    Tracks
-                  </th>
-                  <th style={{ width: 60 }} title="Track length in seconds (from the audio DB)">
-                    Dur
-                  </th>
-                  <th style={{ width: 68 }} title="Total booked spots across the whole plan">
-                    T. Spots
-                  </th>
-                  <th style={{ width: 90 }} title="Total airtime — spots × track length">
-                    Duration
-                  </th>
+                  <th style={{ width: 100 }}>Start</th>
+                  <th style={{ width: 100 }}>End</th>
+                  <th title="Distinct track files in the plan">Tracks</th>
+                  <th title="Track length in seconds (from the audio DB)">Dur</th>
+                  <th title="Total booked spots across the whole plan">T. Spots</th>
+                  <th title="Total airtime — spots × track length">Duration</th>
                 </tr>
               </thead>
               <tbody>
