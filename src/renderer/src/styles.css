@@ -901,7 +901,7 @@ body {
    column rules; the DUR header keeps the table's left alignment. */
 .track-tbl th:nth-child(2),
 .track-tbl td:nth-child(2) {
-  width: 64px;
+  width: 60px;
 }
 .track-tbl td:nth-child(2) {
   text-align: center;
