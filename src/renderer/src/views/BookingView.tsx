@@ -392,7 +392,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   <th style={{ width: 100 }}>Start</th>
                   <th style={{ width: 100 }}>End</th>
                   <th title="Distinct track files in the plan">Tracks</th>
-                  <th title="Track length in seconds (from the audio DB)">Dur</th>
+                  <th title="Track length in seconds (from the audio DB)">Duration</th>
                   <th title="Total booked spots across the whole plan">T. Spots</th>
                   <th style={{ width: 40 }} />
                 </tr>
@@ -690,7 +690,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               </select>
             </div>
             <div className="insp-field">
-              <span className="kick">Duration</span>
+              <span className="kick">Total Duration</span>
               <input readOnly value={airtime(totalDuration(selected))} />
             </div>
 
