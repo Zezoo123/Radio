@@ -290,14 +290,13 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
       return d != null ? Math.round(d) : null
     })
 
-  /** The Dur cell: one shared length (`30"` — seconds, the traffic-sheet
-      mark), `Mixed`, or unknown. */
+  /** The Dur cell: one shared length, `Mixed`, or unknown. */
   const durLabel = (t: TemplateSummary): string => {
     const known = rowDurations(t).filter((d): d is number => d != null)
     if (known.length === 0) return '—'
     const unique = [...new Set(known)]
     return unique.length === 1 && known.length === (t.tracks ?? []).length
-      ? `${unique[0]}"`
+      ? String(unique[0])
       : 'Mixed'
   }
 
@@ -314,11 +313,14 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     return sum
   }
 
-  /** Seconds → always `H:MM:SS`, so the column's unit is self-evident. */
+  /** Seconds → `H:MM:SS` / `MM:SS`. */
   const airtime = (s: number | null): string => {
     if (s == null) return '—'
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
     const p = (n: number): string => String(n).padStart(2, '0')
-    return `${Math.floor(s / 3600)}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`
+    return h > 0 ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`
   }
 
   /** `2026-09-01` → `01-09-2026` (the station's plan-table date style). */
@@ -474,7 +476,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                               └ {tr.name}
                             </td>
                             <td />
-                            <td className="num-cell">{sec != null ? `${sec}"` : '—'}</td>
+                            <td className="num-cell">{sec ?? '—'}</td>
                             <td className="num-cell">{tr.spots}</td>
                             <td className="num-cell">
                               {sec != null ? airtime(tr.spots * sec) : '—'}
