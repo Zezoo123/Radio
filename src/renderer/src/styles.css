@@ -895,11 +895,16 @@ body {
 }
 .track-tbl th:nth-child(1),
 .track-tbl td:nth-child(1) {
-  width: 64px;
+  width: 56px;
 }
+/* Wide enough that the centered times show clear air on both sides of the
+   column rules; the DUR header keeps the table's left alignment. */
 .track-tbl th:nth-child(2),
 .track-tbl td:nth-child(2) {
-  width: 52px;
+  width: 56px;
+}
+.track-tbl td:nth-child(2) {
+  text-align: center;
 }
 .track-tbl td:nth-child(3) {
   overflow: hidden;
@@ -1314,6 +1319,20 @@ label {
   font-weight: 800;
   font-size: var(--fs-sm);
   box-shadow: 0 2px 0 var(--accent);
+}
+/* Vertical column rules so the eye tracks a column down the plans; the
+   inspector's Tracks table gets the same treatment. */
+.tbl.dense-book th,
+.tbl.dense-book td,
+.tbl.track-tbl th,
+.tbl.track-tbl td {
+  border-right: 1px solid var(--border);
+}
+.tbl.dense-book th:last-child,
+.tbl.dense-book td:last-child,
+.tbl.track-tbl th:last-child,
+.tbl.track-tbl td:last-child {
+  border-right: none;
 }
 /* Headers stay pinned while the table scrolls (until the table's end passes).
    Background + box-shadow because rows slide underneath and collapsed borders

@@ -147,19 +147,14 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
 
   // --- Add / remove -----------------------------------------------------------
   async function addFiles(): Promise<void> {
-    setNote('')
-    onTemplates(await window.api.addTemplates())
-  }
-
-  async function addFolder(): Promise<void> {
-    const res = await window.api.addTemplatesFolder()
+    const res = await window.api.addTemplates()
     if (!res) return
     const added = res.templates.length - templates.length
     onTemplates(res.templates)
     setNote(
       added === 0 && res.skipped.length === 0
-        ? 'No Excel templates found in that folder'
-        : `Imported ${added} template${added === 1 ? '' : 's'} from the folder` +
+        ? 'No Excel files imported'
+        : `Imported ${added} plan${added === 1 ? '' : 's'}` +
             (res.skipped.length > 0 ? ` — skipped ${res.skipped.join(', ')}` : '')
     )
   }
@@ -327,10 +322,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
       <div className="work-main">
         <div className="work-head">
           <div>
-            <div className="kick">Booking</div>
-            <div className="insp-title">
-              {templates.length} element{templates.length === 1 ? '' : 's'} booked
-            </div>
+            <div className="insp-title">Booking Order</div>
           </div>
           {note && (
             <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>
@@ -338,15 +330,8 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
             </span>
           )}
           <div className="row" style={{ marginLeft: 'auto' }}>
-            <button className="btn" title="Pick one or more element templates" onClick={addFiles}>
-              + Add file
-            </button>
-            <button
-              className="btn"
-              title="Every Excel template inside a directory"
-              onClick={addFolder}
-            >
-              + Add folder
+            <button className="btn" onClick={addFiles}>
+              + Add file(s)
             </button>
             <button
               className="btn"
@@ -365,11 +350,9 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
             <table className="tbl dense-book">
               <thead>
                 <tr>
-                  <th style={{ width: 120 }}>Name</th>
-                  <th style={{ width: 180 }}>Client</th>
-                  <th style={{ width: 100 }}>Category</th>
-                  <th style={{ width: 100 }}>Start</th>
-                  <th style={{ width: 100 }}>End</th>
+                  <th style={{ width: 220 }}>Client</th>
+                  <th style={{ width: 110 }}>Start</th>
+                  <th style={{ width: 110 }}>End</th>
                   <th title="Distinct track files in the plan">Tracks</th>
                   <th title="Track length in seconds (from the audio DB)">Duration</th>
                   <th title="Total booked spots across the whole plan">T. Spots</th>
@@ -385,7 +368,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                       }`}
                       onClick={() => setSel(i)}
                     >
-                      <td title={`${t.fileName} — ${t.path}`}>
+                      <td dir="auto" title={`${t.code} — ${t.fileName}`}>
                         {t.tracks.length > 1 && (
                           <button
                             className={`row-expand ${expanded.has(i) ? 'open' : ''}`}
@@ -402,7 +385,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                             ▸
                           </button>
                         )}
-                        {t.code || '—'}
+                        {t.group || t.code || '—'}
                         {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
                         {t.status === 'changed' && (
                           <span
@@ -413,8 +396,6 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                           </span>
                         )}
                       </td>
-                      <td dir="auto">{t.group || '—'}</td>
-                      <td>{t.category || '—'}</td>
                       <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
                       <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
@@ -443,7 +424,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                         const sec = d != null ? Math.round(d) : null
                         return (
                           <tr key={tr.name} className="track-row">
-                            <td className="track-name" colSpan={5}>
+                            <td className="track-name" colSpan={3}>
                               └ {tr.name}
                             </td>
                             <td />
@@ -459,7 +440,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
               {templates.length > 1 && (
                 <tfoot>
                   <tr className="book-total">
-                    <td colSpan={5}>
+                    <td colSpan={3}>
                       {templates.length} plan{templates.length === 1 ? '' : 's'}
                     </td>
                     <td className="num-cell">{footer.tracks}</td>
@@ -475,10 +456,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
           {selected && selected.status !== 'missing' && (
             <div className="plan-block">
               <div className="row" style={{ alignItems: 'baseline', gap: 14 }}>
-                <span className="plan-title">{selected.code} — plan</span>
-                <span className="kick">
-                  One column per day, one row per hour · AAB = A twice and B once
-                </span>
+                <span className="plan-title">Plan</span>
                 <div className="seg" style={{ marginLeft: 'auto' }}>
                   <button
                     className={`seg-btn ${planMode === 'grid' ? 'on' : ''}`}

@@ -268,20 +268,10 @@ class Session {
     }
   }
 
-  /** Import element templates as adverts: every event gets the ADV category. */
-  async addTemplates(filePaths: string[]): Promise<TemplateSummary[]> {
-    const s = await this.load()
-    for (const filePath of filePaths) {
-      s.templates.push(await this.importFile(filePath))
-    }
-    await this.saveBookings(s)
-    return this.summaries(s)
-  }
-
   /**
-   * Folder import: a directory can hold stray spreadsheets that aren't element
-   * templates, so files that fail to parse are skipped (and reported) instead
-   * of aborting the whole batch.
+   * The one import path (files or a folder's expansion): a batch can hold
+   * stray spreadsheets that aren't element templates, so files that fail to
+   * parse are skipped (and reported) instead of aborting the whole batch.
    */
   async addTemplatesLenient(
     filePaths: string[]

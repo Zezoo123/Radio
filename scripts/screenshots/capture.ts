@@ -137,7 +137,7 @@ test('capture README screenshots', async () => {
 
   // ---- BOOKING: import the demo templates --------------------------------
   await stubOpenDialog(JSON.parse(process.env.SHOT_TEMPLATES!))
-  await page.getByRole('button', { name: '+ Add file' }).click()
+  await page.getByRole('button', { name: '+ Add file(s)' }).click()
   await expect(page.locator('.book-row')).toHaveCount(4)
 
   // Select the first element so the plan grid + inspector fill in.

@@ -91,9 +91,9 @@ const api = {
   setStation: (station: string): Promise<string | null> =>
     ipcRenderer.invoke('station:set', station),
 
-  addTemplates: (): Promise<TemplateSummary[]> => ipcRenderer.invoke('templates:add'),
-  addTemplatesFolder: (): Promise<{ templates: TemplateSummary[]; skipped: string[] } | null> =>
-    ipcRenderer.invoke('templates:addFolder'),
+  /** One picker for booking files (folders too on macOS); null = cancelled. */
+  addTemplates: (): Promise<{ templates: TemplateSummary[]; skipped: string[] } | null> =>
+    ipcRenderer.invoke('templates:add'),
   removeTemplate: (index: number): Promise<TemplateSummary[]> =>
     ipcRenderer.invoke('templates:remove', index),
   relinkTemplate: (index: number): Promise<TemplateSummary[]> =>

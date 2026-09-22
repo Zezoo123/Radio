@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import iconv from 'iconv-lite'
@@ -103,29 +103,35 @@ export function registerIpc(): void {
     return getActiveStation()
   })
 
+  // One picker for files AND folders: macOS offers both in a single dialog;
+  // Windows/Linux dialogs can't, so there it is a multi-file picker (select
+  // every file in a folder with Ctrl+A). Chosen folders expand to their Excel
+  // files (Office lock files like `~$…` excluded); unparseable files are
+  // skipped, not fatal.
   ipcMain.handle('templates:add', async () => {
     const res = await dialog.showOpenDialog({
-      title: 'Add element templates',
-      properties: ['openFile', 'multiSelections'],
+      title: 'Add booking files',
+      properties: [
+        'openFile',
+        'multiSelections',
+        ...(process.platform === 'darwin' ? (['openDirectory'] as const) : [])
+      ],
       filters: [XLSX_FILTER]
     })
-    if (res.canceled || res.filePaths.length === 0) return session.templateSummaries()
-    return session.addTemplates(res.filePaths)
-  })
-
-  // Folder import: every Excel file in the chosen directory (Office lock files
-  // like `~$…` excluded); unparseable ones are skipped, not fatal.
-  ipcMain.handle('templates:addFolder', async () => {
-    const res = await dialog.showOpenDialog({
-      title: 'Add every element template in a folder',
-      properties: ['openDirectory']
-    })
-    if (res.canceled || !res.filePaths[0]) return null
-    const dir = res.filePaths[0]
-    const files = (await readdir(dir))
-      .filter((n) => /\.(xlsx|xlsm)$/i.test(n) && !n.startsWith('~$'))
-      .sort()
-      .map((n) => join(dir, n))
+    if (res.canceled || res.filePaths.length === 0) return null
+    const files: string[] = []
+    for (const p of res.filePaths) {
+      if ((await stat(p)).isDirectory()) {
+        files.push(
+          ...(await readdir(p))
+            .filter((n) => /\.(xlsx|xlsm)$/i.test(n) && !n.startsWith('~$'))
+            .sort()
+            .map((n) => join(p, n))
+        )
+      } else {
+        files.push(p)
+      }
+    }
     return session.addTemplatesLenient(files)
   })
 
