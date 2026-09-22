@@ -299,16 +299,11 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const ddmmyyyy = (iso: string | null): string => (iso ? iso.split('-').reverse().join('-') : '—')
 
   const footer = templates.reduce(
-    (f, t) => {
-      const total = totalDuration(t)
-      return {
-        tracks: f.tracks + (t.tracks?.length ?? 0),
-        spots: f.spots + (t.spotCount ?? 0),
-        seconds: total != null ? f.seconds + total : f.seconds,
-        allKnown: f.allKnown && total != null
-      }
-    },
-    { tracks: 0, spots: 0, seconds: 0, allKnown: true }
+    (f, t) => ({
+      tracks: f.tracks + (t.tracks?.length ?? 0),
+      spots: f.spots + (t.spotCount ?? 0)
+    }),
+    { tracks: 0, spots: 0 }
   )
 
   useEffect(() => {
@@ -383,7 +378,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   <th title="Distinct track files in the plan">Tracks</th>
                   <th title="Track length in seconds (from the audio DB)">Dur</th>
                   <th title="Total booked spots across the whole plan">T. Spots</th>
-                  <th title="Total airtime — spots × track length">Duration</th>
                 </tr>
               </thead>
               <tbody>
@@ -434,9 +428,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
-                      <td className="num-cell">
-                        {t.status === 'missing' ? '—' : airtime(totalDuration(t))}
-                      </td>
                     </tr>
                     {expanded.has(i) &&
                       t.tracks.map((tr) => {
@@ -450,9 +441,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                             <td />
                             <td className="num-cell">{sec ?? '—'}</td>
                             <td className="num-cell">{tr.spots}</td>
-                            <td className="num-cell">
-                              {sec != null ? airtime(tr.spots * sec) : '—'}
-                            </td>
                           </tr>
                         )
                       })}
@@ -468,9 +456,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                     <td className="num-cell">{footer.tracks}</td>
                     <td />
                     <td className="num-cell">{footer.spots}</td>
-                    <td className="num-cell">
-                      {footer.allKnown ? airtime(footer.seconds) : `≥ ${airtime(footer.seconds)}`}
-                    </td>
                   </tr>
                 </tfoot>
               )}
@@ -668,6 +653,10 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="insp-field">
+              <span className="kick">Duration</span>
+              <input readOnly value={airtime(totalDuration(selected))} />
             </div>
 
             <div className="insp-sec">
