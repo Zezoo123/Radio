@@ -350,11 +350,9 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
             <table className="tbl dense-book">
               <thead>
                 <tr>
-                  <th style={{ width: 120 }}>Name</th>
-                  <th style={{ width: 180 }}>Client</th>
-                  <th style={{ width: 100 }}>Category</th>
-                  <th style={{ width: 100 }}>Start</th>
-                  <th style={{ width: 100 }}>End</th>
+                  <th style={{ width: 220 }}>Client</th>
+                  <th style={{ width: 110 }}>Start</th>
+                  <th style={{ width: 110 }}>End</th>
                   <th title="Distinct track files in the plan">Tracks</th>
                   <th title="Track length in seconds (from the audio DB)">Duration</th>
                   <th title="Total booked spots across the whole plan">T. Spots</th>
@@ -370,7 +368,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                       }`}
                       onClick={() => setSel(i)}
                     >
-                      <td title={`${t.fileName} — ${t.path}`}>
+                      <td dir="auto" title={`${t.code} — ${t.fileName}`}>
                         {t.tracks.length > 1 && (
                           <button
                             className={`row-expand ${expanded.has(i) ? 'open' : ''}`}
@@ -387,7 +385,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                             ▸
                           </button>
                         )}
-                        {t.code || '—'}
+                        {t.group || t.code || '—'}
                         {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
                         {t.status === 'changed' && (
                           <span
@@ -398,8 +396,6 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                           </span>
                         )}
                       </td>
-                      <td dir="auto">{t.group || '—'}</td>
-                      <td>{t.category || '—'}</td>
                       <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
                       <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
                       <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
@@ -428,7 +424,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
                         const sec = d != null ? Math.round(d) : null
                         return (
                           <tr key={tr.name} className="track-row">
-                            <td className="track-name" colSpan={5}>
+                            <td className="track-name" colSpan={3}>
                               └ {tr.name}
                             </td>
                             <td />
@@ -444,7 +440,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
               {templates.length > 1 && (
                 <tfoot>
                   <tr className="book-total">
-                    <td colSpan={5}>
+                    <td colSpan={3}>
                       {templates.length} plan{templates.length === 1 ? '' : 's'}
                     </td>
                     <td className="num-cell">{footer.tracks}</td>
