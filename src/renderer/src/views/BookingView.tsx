@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
-import { clampISO, tomorrowISO } from '../lib/dates'
 import { AiredCheckDialog } from './AiredCheckDialog'
 
 interface Props {
@@ -83,7 +82,9 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
-  const [planDate, setPlanDate] = useState('')
+  // Simian-text preview range — defaults to the plan's full played span.
+  const [planStart, setPlanStart] = useState('')
+  const [planEnd, setPlanEnd] = useState('')
   const [planText, setPlanText] = useState('')
   const [note, setNote] = useState('')
   const [promos, setPromos] = useState<PromoSummary | null>(null)
@@ -122,14 +123,15 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     }
     let gone = false
     const t = templates[sel]
-    const date = t.firstDate ? clampISO(tomorrowISO(), t.firstDate, t.lastDate) : ''
-    setPlanDate(date)
+    setPlanStart(t.firstDate ?? '')
+    setPlanEnd(t.lastDate ?? '')
     window.api.templateGrid(sel).then((g) => {
       if (!gone) setPlanGrid(g)
     })
-    const d = toCalendarDate(date)
-    if (d) {
-      window.api.previewTemplate(sel, d, d).then((res) => {
+    const s = toCalendarDate(t.firstDate ?? '')
+    const e = toCalendarDate(t.lastDate ?? '')
+    if (s && e) {
+      window.api.previewTemplate(sel, s, e).then((res) => {
         if (!gone) setPlanText(res.text)
       })
     } else {
@@ -140,15 +142,24 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     }
   }, [sel, templates])
 
-  async function changePlanDate(date: string): Promise<void> {
-    setPlanDate(date)
+  /** Re-preview the Simian text for an edited range (bounds keep each other valid). */
+  async function changePlanRange(startISO: string, endISO: string): Promise<void> {
+    let a = startISO
+    let b = endISO
+    if (a && b && a > b) {
+      if (startISO !== planStart) b = a
+      else a = b
+    }
+    setPlanStart(a)
+    setPlanEnd(b)
     if (sel === null) return
-    const d = toCalendarDate(date)
-    if (!d) {
+    const s = toCalendarDate(a)
+    const e = toCalendarDate(b)
+    if (!s || !e) {
       setPlanText('')
       return
     }
-    const res = await window.api.previewTemplate(sel, d, d)
+    const res = await window.api.previewTemplate(sel, s, e)
     setPlanText(res.text)
   }
 
@@ -516,16 +527,28 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   </button>
                 </div>
                 {planMode === 'text' && (
-                  <label className="kick">
-                    Date{' '}
-                    <input
-                      type="date"
-                      value={planDate}
-                      min={selected.firstDate ?? undefined}
-                      max={selected.lastDate ?? undefined}
-                      onChange={(e) => changePlanDate(e.target.value)}
-                    />
-                  </label>
+                  <>
+                    <label className="kick">
+                      From{' '}
+                      <input
+                        type="date"
+                        value={planStart}
+                        min={selected.firstDate ?? undefined}
+                        max={selected.lastDate ?? undefined}
+                        onChange={(e) => changePlanRange(e.target.value, planEnd)}
+                      />
+                    </label>
+                    <label className="kick">
+                      To{' '}
+                      <input
+                        type="date"
+                        value={planEnd}
+                        min={selected.firstDate ?? undefined}
+                        max={selected.lastDate ?? undefined}
+                        onChange={(e) => changePlanRange(planStart, e.target.value)}
+                      />
+                    </label>
+                  </>
                 )}
               </div>
 
@@ -585,7 +608,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 <textarea
                   className="preview"
                   readOnly
-                  value={planText || '(no rows for this date)'}
+                  value={planText || '(no rows in this range)'}
                   spellCheck={false}
                   dir="auto"
                 />
