@@ -438,14 +438,20 @@ body {
 }
 
 /* Chrome station switcher */
+/* The active station is the topbar's loudest element — a bordered pill with
+   the station color, set a size up from the rest of the chrome. */
 .station-switch {
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px 8px;
+  background: var(--panel);
 }
 .station-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-sm);
 }
 .station-select {
@@ -454,13 +460,13 @@ body {
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: var(--fs-sm);
+  font-weight: 800;
+  font-size: var(--fs-base);
   cursor: pointer;
   padding: 4px 2px;
 }
-.station-select:hover {
-  border-color: var(--border);
+.station-switch:hover {
+  border-color: var(--muted);
 }
 
 /* Sub-navigation under the tab bar for sections hosting two views. */

@@ -277,6 +277,7 @@ export default function App(): JSX.Element {
           </button>
         ))}
         <div className="chrome">
+          <span className="chrome-date">{today}</span>
           <div className="station-switch" title={`Station: ${station}`}>
             <span
               className="station-dot"
@@ -294,7 +295,6 @@ export default function App(): JSX.Element {
               ))}
             </select>
           </div>
-          <span className="chrome-date">{today}</span>
           <span className="chrome-note">{templates.length} booked</span>
           {updateReady && (
             <button
