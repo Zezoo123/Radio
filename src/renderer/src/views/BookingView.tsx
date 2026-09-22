@@ -703,8 +703,8 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 <tbody>
                   {tracks.map((t) => (
                     <tr key={t.code} title={t.name}>
-                      <td className="mono-sm">{t.code}</td>
-                      <td className="mono-sm">{mmss(trackInfo[t.name]?.duration)}</td>
+                      <td>{t.code}</td>
+                      <td className="num-cell">{mmss(trackInfo[t.name]?.duration)}</td>
                       <td dir="auto" title={trackInfo[t.name]?.description ?? t.name}>
                         {trackInfo[t.name]?.description ?? ''}
                       </td>
