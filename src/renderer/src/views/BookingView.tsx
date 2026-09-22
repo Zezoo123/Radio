@@ -636,11 +636,9 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
           </>
         ) : (
           <>
-            <div>
-              <div className="kick">Client</div>
-              <div className="insp-title" dir="auto">
-                {selected.group || '—'}
-              </div>
+            <div className="insp-field">
+              <span className="kick">Client</span>
+              <input dir="auto" readOnly value={selected.group || '—'} />
             </div>
 
             <div className="insp-field">
