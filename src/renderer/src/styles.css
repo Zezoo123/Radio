@@ -793,7 +793,8 @@ body {
   white-space: nowrap;
   background: color-mix(in srgb, var(--accent) 22%, var(--panel));
   color: var(--text);
-  font-weight: 700;
+  font-weight: 800;
+  font-size: var(--fs-sm);
   box-shadow: 0 2px 0 var(--accent);
 }
 /* Totals footer under the plans (tracks / spots / total airtime). */
