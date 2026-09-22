@@ -38,39 +38,11 @@ function monthGroups(days: TemplateGrid['days']): { label: string; span: number 
   return groups
 }
 
-/** `2026-07-01` → `Wed 01 Jul 2026` (the day it starts/ends, for the inspector). */
-function fullDate(iso: string | null): string {
-  const d = iso ? toCalendarDate(iso) : null
-  if (!d) return '—'
-  return new Date(Date.UTC(d.year, d.month - 1, d.day)).toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC'
-  })
-}
-
 /** Seconds → `MM:SS` (empty when unknown). */
 function mmss(seconds?: number): string {
   if (seconds == null) return ''
   const s = Math.round(seconds)
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-}
-
-/** `2026-07-01`, `2026-12-31` → `Jul–Dec 26` (design-style covers label). */
-function coversLabel(first: string | null, last: string | null): string {
-  if (!first || !last) return '—'
-  const f = toCalendarDate(first)
-  const l = toCalendarDate(last)
-  if (!f || !l) return '—'
-  const fm = MONTH_NAMES[f.month - 1]
-  const lm = MONTH_NAMES[l.month - 1]
-  const fy = String(f.year).slice(2)
-  const ly = String(l.year).slice(2)
-  if (f.year !== l.year) return `${fm} ${fy}–${lm} ${ly}`
-  if (f.month !== l.month) return `${fm}–${lm} ${ly}`
-  return `${fm} ${ly}`
 }
 
 /**
@@ -700,28 +672,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
             </div>
 
             <div className="insp-sec">
-              <div className="kick">This plan</div>
-              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
-                <div>
-                  <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
-                </div>
-                <div>
-                  <span className="muted">Spots</span> {selected.spotCount}
-                </div>
-                <div>
-                  <span className="muted">Covers</span>{' '}
-                  {coversLabel(selected.firstDate, selected.lastDate)}
-                </div>
-                <div>
-                  <span className="muted">Starts</span> {fullDate(selected.firstDate)}
-                </div>
-                <div>
-                  <span className="muted">Ends</span> {fullDate(selected.lastDate)}
-                </div>
-              </div>
-              <div className="kick" style={{ marginTop: 4 }}>
-                Tracks in this plan
-              </div>
+              <div className="kick">Tracks in this plan</div>
               <table className="tbl insp-tbl track-tbl">
                 <thead>
                   <tr>
