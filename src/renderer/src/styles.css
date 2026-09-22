@@ -761,6 +761,30 @@ body {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* Chevron that expands a plan into its per-track breakdown. */
+.row-expand {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 6px 0 0;
+  font-size: var(--fs-xs);
+  transition: transform var(--speed) var(--ease);
+  display: inline-block;
+}
+.row-expand.open {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+/* Per-track sub-rows under an expanded plan. */
+.track-row td {
+  background: var(--panel-2);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.track-row .track-name {
+  padding-left: 34px;
+}
 /* Plan-table headers never wrap ("T. Spots" stays on one line); the numeric
    columns carry no fixed width, so they share the remaining space evenly.
    Accent-tinted bar (same recipe as the LOG grid header) so the header row

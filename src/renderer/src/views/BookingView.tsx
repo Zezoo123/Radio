@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 import { clampISO, tomorrowISO } from '../lib/dates'
@@ -88,6 +88,16 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const [note, setNote] = useState('')
   const [promos, setPromos] = useState<PromoSummary | null>(null)
   const [airedOpen, setAiredOpen] = useState(false)
+  /** Plan rows expanded to show their per-track breakdown (by row index). */
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  function toggleExpanded(i: number): void {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  }
 
   useEffect(() => {
     window.api.getPromos().then(setPromos)
@@ -395,40 +405,75 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               </thead>
               <tbody>
                 {templates.map((t, i) => (
-                  <tr
-                    key={`${t.code}-${i}`}
-                    className={`book-row ${sel === i ? 'sel' : ''} ${
-                      t.status === 'missing' ? 'missing' : ''
-                    }`}
-                    onClick={() => setSel(i)}
-                  >
-                    <td
-                      className="mono-sm"
-                      style={{ fontWeight: 700 }}
-                      title={`${t.fileName} — ${t.path}`}
+                  <Fragment key={`${t.code}-${i}`}>
+                    <tr
+                      className={`book-row ${sel === i ? 'sel' : ''} ${
+                        t.status === 'missing' ? 'missing' : ''
+                      }`}
+                      onClick={() => setSel(i)}
                     >
-                      {t.code || '—'}
-                      {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
-                      {t.status === 'changed' && (
-                        <span
-                          className="src-tag changed"
-                          title="The spreadsheet changed on disk since the last import — its current contents were re-read automatically"
-                        >
-                          UPDATED
-                        </span>
-                      )}
-                    </td>
-                    <td dir="auto">{t.group || '—'}</td>
-                    <td>{t.category || '—'}</td>
-                    <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
-                    <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
-                    <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
-                    <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
-                    <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
-                    <td className="num-cell">
-                      {t.status === 'missing' ? '—' : airtime(totalDuration(t))}
-                    </td>
-                  </tr>
+                      <td
+                        className="mono-sm"
+                        style={{ fontWeight: 700 }}
+                        title={`${t.fileName} — ${t.path}`}
+                      >
+                        {t.tracks.length > 1 && (
+                          <button
+                            className={`row-expand ${expanded.has(i) ? 'open' : ''}`}
+                            title={
+                              expanded.has(i)
+                                ? 'Hide the plan’s tracks'
+                                : 'Show each track’s spots and airtime'
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(i)
+                            }}
+                          >
+                            ▸
+                          </button>
+                        )}
+                        {t.code || '—'}
+                        {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
+                        {t.status === 'changed' && (
+                          <span
+                            className="src-tag changed"
+                            title="The spreadsheet changed on disk since the last import — its current contents were re-read automatically"
+                          >
+                            UPDATED
+                          </span>
+                        )}
+                      </td>
+                      <td dir="auto">{t.group || '—'}</td>
+                      <td>{t.category || '—'}</td>
+                      <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
+                      <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
+                      <td className="num-cell">
+                        {t.status === 'missing' ? '—' : airtime(totalDuration(t))}
+                      </td>
+                    </tr>
+                    {expanded.has(i) &&
+                      t.tracks.map((tr) => {
+                        const d = allDur[tr.name]
+                        const sec = d != null ? Math.round(d) : null
+                        return (
+                          <tr key={tr.name} className="track-row">
+                            <td className="mono-sm track-name" colSpan={5}>
+                              └ {tr.name}
+                            </td>
+                            <td />
+                            <td className="num-cell">{sec ?? '—'}</td>
+                            <td className="num-cell">{tr.spots}</td>
+                            <td className="num-cell">
+                              {sec != null ? airtime(tr.spots * sec) : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                  </Fragment>
                 ))}
               </tbody>
               {templates.length > 1 && (
