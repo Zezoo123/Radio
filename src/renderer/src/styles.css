@@ -897,11 +897,12 @@ body {
 .track-tbl td:nth-child(1) {
   width: 64px;
 }
+/* Wide enough that the centered times show clear air on both sides of the
+   column rules; the DUR header keeps the table's left alignment. */
 .track-tbl th:nth-child(2),
 .track-tbl td:nth-child(2) {
-  width: 52px;
+  width: 76px;
 }
-/* Only the times center; the DUR header keeps the table's left alignment. */
 .track-tbl td:nth-child(2) {
   text-align: center;
 }
