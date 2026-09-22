@@ -460,6 +460,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
           {selected && selected.status !== 'missing' && (
             <div className="plan-block">
               <div className="row" style={{ alignItems: 'baseline', gap: 14 }}>
+                <span className="plan-title">Plan</span>
                 <div className="seg" style={{ marginLeft: 'auto' }}>
                   <button
                     className={`seg-btn ${planMode === 'grid' ? 'on' : ''}`}
