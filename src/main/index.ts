@@ -56,7 +56,13 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  if (devIcon && process.platform === 'darwin') app.dock?.setIcon(devIcon)
+  if (devIcon && process.platform === 'darwin') {
+    try {
+      app.dock?.setIcon(devIcon)
+    } catch {
+      /* cosmetic — a bad path must never block the window */
+    }
+  }
   registerIpc()
   setupAutoUpdate()
   createWindow()
