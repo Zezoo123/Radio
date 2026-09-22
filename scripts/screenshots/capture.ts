@@ -135,15 +135,10 @@ test('capture README screenshots', async () => {
   await page.getByRole('button', { name: STATION }).click()
   await expect(page.locator('.tab', { hasText: 'BOOKING' })).toBeVisible()
 
-  // ---- BOOKING: import the demo templates + promos sheet ---------------------
+  // ---- BOOKING: import the demo templates --------------------------------
   await stubOpenDialog(JSON.parse(process.env.SHOT_TEMPLATES!))
   await page.getByRole('button', { name: '+ Add file' }).click()
   await expect(page.locator('.book-row')).toHaveCount(4)
-
-  // The sheet has no row in the Booking table (placement lives on the Grid
-  // tab); the Grid promos layer below is where its content is asserted.
-  await stubOpenDialog([join(ROOT, 'test', 'fixtures', 'Promos.xlsx')])
-  await page.getByRole('button', { name: '+ Promos sheet' }).click()
 
   // Select the first element so the plan grid + inspector fill in.
   await page.locator('.book-row').first().click()
@@ -160,6 +155,9 @@ test('capture README screenshots', async () => {
 
   // ---- GRID: promos layer (blocked hours black, placements visible) ----------
   await page.locator('.seg-btn', { hasText: 'Promos' }).click()
+  // The promos sheet imports here (its Booking button moved to this tab).
+  await stubOpenDialog([join(ROOT, 'test', 'fixtures', 'Promos.xlsx')])
+  await page.getByRole('button', { name: 'Load promos…' }).click()
   await expect(page.locator('.cell-gblocked').first()).toBeVisible()
   // Pick the first program so blackout/excluded/placed cells all show.
   await page.locator('.lib-item').nth(1).locator('.lib-main').click()
