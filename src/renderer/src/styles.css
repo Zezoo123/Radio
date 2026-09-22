@@ -1315,13 +1315,18 @@ label {
   font-size: var(--fs-sm);
   box-shadow: 0 2px 0 var(--accent);
 }
-/* Vertical column rules so the eye tracks a column down the plans. */
+/* Vertical column rules so the eye tracks a column down the plans; the
+   inspector's Tracks table gets the same treatment. */
 .tbl.dense-book th,
-.tbl.dense-book td {
+.tbl.dense-book td,
+.tbl.track-tbl th,
+.tbl.track-tbl td {
   border-right: 1px solid var(--border);
 }
 .tbl.dense-book th:last-child,
-.tbl.dense-book td:last-child {
+.tbl.dense-book td:last-child,
+.tbl.track-tbl th:last-child,
+.tbl.track-tbl td:last-child {
   border-right: none;
 }
 /* Headers stay pinned while the table scrolls (until the table's end passes).
