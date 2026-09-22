@@ -147,19 +147,14 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
 
   // --- Add / remove -----------------------------------------------------------
   async function addFiles(): Promise<void> {
-    setNote('')
-    onTemplates(await window.api.addTemplates())
-  }
-
-  async function addFolder(): Promise<void> {
-    const res = await window.api.addTemplatesFolder()
+    const res = await window.api.addTemplates()
     if (!res) return
     const added = res.templates.length - templates.length
     onTemplates(res.templates)
     setNote(
       added === 0 && res.skipped.length === 0
-        ? 'No Excel templates found in that folder'
-        : `Imported ${added} template${added === 1 ? '' : 's'} from the folder` +
+        ? 'No Excel files imported'
+        : `Imported ${added} plan${added === 1 ? '' : 's'}` +
             (res.skipped.length > 0 ? ` — skipped ${res.skipped.join(', ')}` : '')
     )
   }
@@ -338,15 +333,8 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
             </span>
           )}
           <div className="row" style={{ marginLeft: 'auto' }}>
-            <button className="btn" title="Pick one or more element templates" onClick={addFiles}>
-              + Add file
-            </button>
-            <button
-              className="btn"
-              title="Every Excel template inside a directory"
-              onClick={addFolder}
-            >
-              + Add folder
+            <button className="btn" onClick={addFiles}>
+              + Add file(s)
             </button>
             <button
               className="btn"
