@@ -47,7 +47,7 @@ function fontStack(family: string): string {
 }
 
 const TABS: { id: Section; label: string; sub: string }[] = [
-  { id: 'booking', label: 'BOOKING', sub: 'BOOKING ELEMENTS' },
+  { id: 'booking', label: 'BOOKING', sub: 'BOOKING ORDER' },
   { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
   { id: 'log', label: 'LOG', sub: 'BUILD · EDIT · EXPORT' }
 ]
@@ -277,6 +277,7 @@ export default function App(): JSX.Element {
           </button>
         ))}
         <div className="chrome">
+          <span className="chrome-date">{today}</span>
           <div className="station-switch" title={`Station: ${station}`}>
             <span
               className="station-dot"
@@ -294,7 +295,6 @@ export default function App(): JSX.Element {
               ))}
             </select>
           </div>
-          <span className="chrome-date">{today}</span>
           <span className="chrome-note">{templates.length} booked</span>
           {updateReady && (
             <button
@@ -324,7 +324,6 @@ export default function App(): JSX.Element {
           <BookingView
             templates={templates}
             onTemplates={setTemplates}
-            onConfig={setConfig}
             categories={uiSettings.categories}
           />
         )}

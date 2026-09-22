@@ -438,14 +438,20 @@ body {
 }
 
 /* Chrome station switcher */
+/* The active station is the topbar's loudest element — a bordered pill with
+   the station color, set a size up from the rest of the chrome. */
 .station-switch {
   display: flex;
   align-items: center;
   gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px 8px;
+  background: var(--panel);
 }
 .station-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-sm);
 }
 .station-select {
@@ -454,13 +460,13 @@ body {
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: var(--fs-sm);
+  font-weight: 800;
+  font-size: var(--fs-base);
   cursor: pointer;
   padding: 4px 2px;
 }
-.station-select:hover {
-  border-color: var(--border);
+.station-switch:hover {
+  border-color: var(--muted);
 }
 
 /* Sub-navigation under the tab bar for sections hosting two views. */
@@ -756,6 +762,68 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
 }
+/* Numeric plan-table cells line up their digits. */
+.num-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Per-row remove ×: quiet until hovered, red once armed (two-click). */
+.row-remove-cell {
+  text-align: right;
+}
+.row-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: var(--fs-base);
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+}
+.book-row:hover .row-remove,
+.row-remove.armed {
+  opacity: 1;
+}
+.row-remove:hover {
+  color: var(--danger);
+}
+.row-remove.armed {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Chevron that expands a plan into its per-track breakdown. */
+.row-expand {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 6px 0 0;
+  font-size: var(--fs-xs);
+  transition: transform var(--speed) var(--ease);
+  display: inline-block;
+}
+.row-expand.open {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+/* Per-track sub-rows under an expanded plan. */
+.track-row td {
+  background: var(--panel-2);
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.track-row .track-name {
+  padding-left: 34px;
+}
+/* Totals footer under the plans (tracks / spots / total airtime). */
+.book-total td {
+  border-top: 2px solid var(--rule-strong);
+  font-weight: 700;
+  color: var(--text);
+}
 .book-row {
   cursor: pointer;
 }
@@ -827,7 +895,7 @@ body {
 }
 .track-tbl th:nth-child(1),
 .track-tbl td:nth-child(1) {
-  width: 44px;
+  width: 64px;
 }
 .track-tbl th:nth-child(2),
 .track-tbl td:nth-child(2) {
@@ -1232,10 +1300,20 @@ label {
   font-weight: 400;
 }
 .tbl th {
-  color: var(--muted);
+  color: var(--text);
   font-size: var(--fs-xs);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+/* The Booking plans table's header goes a step further: accent bar + a size
+   up (`.tbl.dense-book` outranks the base rules above). */
+.tbl.dense-book th {
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  box-shadow: 0 2px 0 var(--accent);
 }
 /* Headers stay pinned while the table scrolls (until the table's end passes).
    Background + box-shadow because rows slide underneath and collapsed borders

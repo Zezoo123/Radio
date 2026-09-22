@@ -5,6 +5,13 @@ import { setupAutoUpdate } from './updater'
 
 const isDev = !app.isPackaged
 
+// The packaged Windows app gets its icon from the exe (electron-builder embeds
+// build/icon.ico); dev runs would otherwise show Electron's logo in the window
+// corner, taskbar and Dock.
+const devIcon = isDev
+  ? join(app.getAppPath(), 'build', process.platform === 'darwin' ? 'icon.png' : 'icon.ico')
+  : undefined
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
@@ -13,7 +20,8 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     backgroundColor: '#0f1115',
-    title: 'Radio Scheduler',
+    title: `Radio Scheduler ${app.getVersion()}`,
+    ...(devIcon && process.platform !== 'darwin' ? { icon: devIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -23,6 +31,9 @@ function createWindow(): void {
   })
 
   win.once('ready-to-show', () => win.show())
+
+  // The renderer's <title> would overwrite the versioned window title.
+  win.on('page-title-updated', (e) => e.preventDefault())
 
   // Surface renderer problems to the main-process log (otherwise a failed load
   // just shows a blank window).
@@ -45,6 +56,13 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (devIcon && process.platform === 'darwin') {
+    try {
+      app.dock?.setIcon(devIcon)
+    } catch {
+      /* cosmetic — a bad path must never block the window */
+    }
+  }
   registerIpc()
   setupAutoUpdate()
   createWindow()

@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import type { TemplateGrid, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
-import { clampISO, tomorrowISO } from '../lib/dates'
 import { AiredCheckDialog } from './AiredCheckDialog'
 
 interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
-  onConfig: (c: AppConfig) => void
   /** THE app-wide category list (Settings → Categories). */
   categories: string[]
 }
@@ -39,19 +37,6 @@ function monthGroups(days: TemplateGrid['days']): { label: string; span: number 
   return groups
 }
 
-/** `2026-07-01` → `Wed 01 Jul 2026` (the day it starts/ends, for the inspector). */
-function fullDate(iso: string | null): string {
-  const d = iso ? toCalendarDate(iso) : null
-  if (!d) return '—'
-  return new Date(Date.UTC(d.year, d.month - 1, d.day)).toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC'
-  })
-}
-
 /** Seconds → `MM:SS` (empty when unknown). */
 function mmss(seconds?: number): string {
   if (seconds == null) return ''
@@ -59,39 +44,47 @@ function mmss(seconds?: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
-/** `2026-07-01`, `2026-12-31` → `Jul–Dec 26` (design-style covers label). */
-function coversLabel(first: string | null, last: string | null): string {
-  if (!first || !last) return '—'
-  const f = toCalendarDate(first)
-  const l = toCalendarDate(last)
-  if (!f || !l) return '—'
-  const fm = MONTH_NAMES[f.month - 1]
-  const lm = MONTH_NAMES[l.month - 1]
-  const fy = String(f.year).slice(2)
-  const ly = String(l.year).slice(2)
-  if (f.year !== l.year) return `${fm} ${fy}–${lm} ${ly}`
-  if (f.month !== l.month) return `${fm}–${lm} ${ly}`
-  return `${fm} ${ly}`
-}
-
 /**
  * The BOOKING workbench: every imported Booking element in one table, the
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({ templates, onTemplates, onConfig, categories }: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, categories }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
-  const [planDate, setPlanDate] = useState('')
+  // Simian-text preview range — defaults to the plan's full played span.
+  const [planStart, setPlanStart] = useState('')
+  const [planEnd, setPlanEnd] = useState('')
   const [planText, setPlanText] = useState('')
   const [note, setNote] = useState('')
-  const [promos, setPromos] = useState<PromoSummary | null>(null)
   const [airedOpen, setAiredOpen] = useState(false)
-
+  // Row × needs a second click; the arm times out so it can't linger.
+  const [confirmRemove, setConfirmRemove] = useState<number | null>(null)
   useEffect(() => {
-    window.api.getPromos().then(setPromos)
-  }, [])
+    if (confirmRemove === null) return
+    const t = setTimeout(() => setConfirmRemove(null), 3000)
+    return () => clearTimeout(t)
+  }, [confirmRemove])
+  function removeClicked(i: number): void {
+    if (confirmRemove !== i) {
+      setConfirmRemove(i)
+      return
+    }
+    setConfirmRemove(null)
+    void removeElement(i)
+  }
+
+  /** Plan rows expanded to show their per-track breakdown (by row index). */
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  function toggleExpanded(i: number): void {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  }
 
   // Keep the selection valid as elements come and go; default to the first.
   useEffect(() => {
@@ -112,14 +105,15 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     }
     let gone = false
     const t = templates[sel]
-    const date = t.firstDate ? clampISO(tomorrowISO(), t.firstDate, t.lastDate) : ''
-    setPlanDate(date)
+    setPlanStart(t.firstDate ?? '')
+    setPlanEnd(t.lastDate ?? '')
     window.api.templateGrid(sel).then((g) => {
       if (!gone) setPlanGrid(g)
     })
-    const d = toCalendarDate(date)
-    if (d) {
-      window.api.previewTemplate(sel, d, d).then((res) => {
+    const s = toCalendarDate(t.firstDate ?? '')
+    const e = toCalendarDate(t.lastDate ?? '')
+    if (s && e) {
+      window.api.previewTemplate(sel, s, e).then((res) => {
         if (!gone) setPlanText(res.text)
       })
     } else {
@@ -130,15 +124,24 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     }
   }, [sel, templates])
 
-  async function changePlanDate(date: string): Promise<void> {
-    setPlanDate(date)
+  /** Re-preview the Simian text for an edited range (bounds keep each other valid). */
+  async function changePlanRange(startISO: string, endISO: string): Promise<void> {
+    let a = startISO
+    let b = endISO
+    if (a && b && a > b) {
+      if (startISO !== planStart) b = a
+      else a = b
+    }
+    setPlanStart(a)
+    setPlanEnd(b)
     if (sel === null) return
-    const d = toCalendarDate(date)
-    if (!d) {
+    const s = toCalendarDate(a)
+    const e = toCalendarDate(b)
+    if (!s || !e) {
       setPlanText('')
       return
     }
-    const res = await window.api.previewTemplate(sel, d, d)
+    const res = await window.api.previewTemplate(sel, s, e)
     setPlanText(res.text)
   }
 
@@ -159,14 +162,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
         : `Imported ${added} template${added === 1 ? '' : 's'} from the folder` +
             (res.skipped.length > 0 ? ` — skipped ${res.skipped.join(', ')}` : '')
     )
-  }
-
-  async function addPromosSheet(): Promise<void> {
-    const res = await window.api.openPromos()
-    if (res) {
-      setPromos(res)
-      onConfig(await window.api.getConfig())
-    }
   }
 
   async function removeElement(index: number): Promise<void> {
@@ -241,6 +236,78 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
     window.api.getSimianDb().then((s) => setDbLoaded(Boolean(s)))
   }, [])
 
+  // Track durations for EVERY booked element (the table's Dur / Total Dur
+  // columns) — one batch lookup across all plans.
+  const allTrackNames = useMemo(
+    () => [...new Set(templates.flatMap((t) => (t.tracks ?? []).map((tr) => tr.name)))],
+    [templates]
+  )
+  const [allDur, setAllDur] = useState<Record<string, number>>({})
+  useEffect(() => {
+    if (!dbLoaded || allTrackNames.length === 0) {
+      setAllDur({})
+      return
+    }
+    let gone = false
+    window.api.simianDurations(allTrackNames).then((r) => {
+      if (!gone) setAllDur(r)
+    })
+    return () => {
+      gone = true
+    }
+  }, [dbLoaded, allTrackNames])
+
+  /** Per-track second lengths for a row (rounded; null = not in the DB). */
+  const rowDurations = (t: TemplateSummary): (number | null)[] =>
+    (t.tracks ?? []).map((tr) => {
+      const d = allDur[tr.name]
+      return d != null ? Math.round(d) : null
+    })
+
+  /** The Dur cell: one shared length, `Mixed`, or unknown. */
+  const durLabel = (t: TemplateSummary): string => {
+    const known = rowDurations(t).filter((d): d is number => d != null)
+    if (known.length === 0) return '—'
+    const unique = [...new Set(known)]
+    return unique.length === 1 && known.length === (t.tracks ?? []).length
+      ? String(unique[0])
+      : 'Mixed'
+  }
+
+  /** Total airtime = Σ spots × track length (null while any track is unknown). */
+  const totalDuration = (t: TemplateSummary): number | null => {
+    const tracks = t.tracks ?? []
+    if (tracks.length === 0) return null
+    let sum = 0
+    for (const tr of tracks) {
+      const d = allDur[tr.name]
+      if (d == null) return null
+      sum += tr.spots * Math.round(d)
+    }
+    return sum
+  }
+
+  /** Seconds → `H:MM:SS` / `MM:SS`. */
+  const airtime = (s: number | null): string => {
+    if (s == null) return '—'
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    const p = (n: number): string => String(n).padStart(2, '0')
+    return h > 0 ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`
+  }
+
+  /** `2026-09-01` → `01-09-2026` (the station's plan-table date style). */
+  const ddmmyyyy = (iso: string | null): string => (iso ? iso.split('-').reverse().join('-') : '—')
+
+  const footer = templates.reduce(
+    (f, t) => ({
+      tracks: f.tracks + (t.tracks?.length ?? 0),
+      spots: f.spots + (t.spotCount ?? 0)
+    }),
+    { tracks: 0, spots: 0 }
+  )
+
   useEffect(() => {
     if (!dbLoaded || tracks.length === 0) {
       setTrackInfo({})
@@ -282,13 +349,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               + Add folder
             </button>
             <button
-              className="btn primary"
-              title="Promo spreadsheet — placement is managed on the Grid tab"
-              onClick={addPromosSheet}
-            >
-              + Promos sheet
-            </button>
-            <button
               className="btn"
               title="Compare booked spots against Simian's aired lists (YYMMDD.lst) for a date range"
               onClick={() => setAiredOpen(true)}
@@ -299,51 +359,116 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
         </div>
 
         <div className="work-body">
-          {templates.length === 0 && !promos ? (
-            <p className="empty">Nothing booked yet. Add element templates or the promos sheet.</p>
+          {templates.length === 0 ? (
+            <p className="empty">Nothing booked yet. Add element templates.</p>
           ) : (
             <table className="tbl dense-book">
               <thead>
                 <tr>
-                  <th style={{ width: 130 }}>Name</th>
-                  <th>Client</th>
-                  <th style={{ width: 120 }}>Category</th>
-                  <th style={{ width: 60 }}>Spots</th>
-                  <th style={{ width: 110 }}>Covers</th>
-                  <th>Source file</th>
+                  <th style={{ width: 120 }}>Name</th>
+                  <th style={{ width: 180 }}>Client</th>
+                  <th style={{ width: 100 }}>Category</th>
+                  <th style={{ width: 100 }}>Start</th>
+                  <th style={{ width: 100 }}>End</th>
+                  <th title="Distinct track files in the plan">Tracks</th>
+                  <th title="Track length in seconds (from the audio DB)">Duration</th>
+                  <th title="Total booked spots across the whole plan">T. Spots</th>
+                  <th style={{ width: 40 }} />
                 </tr>
               </thead>
               <tbody>
                 {templates.map((t, i) => (
-                  <tr
-                    key={`${t.code}-${i}`}
-                    className={`book-row ${sel === i ? 'sel' : ''} ${
-                      t.status === 'missing' ? 'missing' : ''
-                    }`}
-                    onClick={() => setSel(i)}
-                  >
-                    <td className="mono-sm" style={{ fontWeight: 700 }}>
-                      {t.code || '—'}
-                    </td>
-                    <td dir="auto">{t.group || '—'}</td>
-                    <td>{t.category || '—'}</td>
-                    <td>{t.status === 'missing' ? '—' : t.timeCount}</td>
-                    <td className="muted">{coversLabel(t.firstDate, t.lastDate)}</td>
-                    <td className="muted" title={t.path}>
-                      {t.fileName}
-                      {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
-                      {t.status === 'changed' && (
-                        <span
-                          className="src-tag changed"
-                          title="The spreadsheet changed on disk since the last import — its current contents were re-read automatically"
+                  <Fragment key={`${t.code}-${i}`}>
+                    <tr
+                      className={`book-row ${sel === i ? 'sel' : ''} ${
+                        t.status === 'missing' ? 'missing' : ''
+                      }`}
+                      onClick={() => setSel(i)}
+                    >
+                      <td title={`${t.fileName} — ${t.path}`}>
+                        {t.tracks.length > 1 && (
+                          <button
+                            className={`row-expand ${expanded.has(i) ? 'open' : ''}`}
+                            title={
+                              expanded.has(i)
+                                ? 'Hide the plan’s tracks'
+                                : 'Show each track’s spots and airtime'
+                            }
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleExpanded(i)
+                            }}
+                          >
+                            ▸
+                          </button>
+                        )}
+                        {t.code || '—'}
+                        {t.status === 'missing' && <span className="src-tag missing">MISSING</span>}
+                        {t.status === 'changed' && (
+                          <span
+                            className="src-tag changed"
+                            title="The spreadsheet changed on disk since the last import — its current contents were re-read automatically"
+                          >
+                            UPDATED
+                          </span>
+                        )}
+                      </td>
+                      <td dir="auto">{t.group || '—'}</td>
+                      <td>{t.category || '—'}</td>
+                      <td className="muted num-cell">{ddmmyyyy(t.firstDate)}</td>
+                      <td className="muted num-cell">{ddmmyyyy(t.lastDate)}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : t.tracks.length}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : durLabel(t)}</td>
+                      <td className="num-cell">{t.status === 'missing' ? '—' : t.spotCount}</td>
+                      <td className="row-remove-cell">
+                        <button
+                          className={`row-remove ${confirmRemove === i ? 'armed' : ''}`}
+                          title={
+                            confirmRemove === i
+                              ? 'Click again to remove'
+                              : 'Remove this element (the source file is untouched) — click twice'
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeClicked(i)
+                          }}
                         >
-                          UPDATED
-                        </span>
-                      )}
-                    </td>
-                  </tr>
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                    {expanded.has(i) &&
+                      t.tracks.map((tr) => {
+                        const d = allDur[tr.name]
+                        const sec = d != null ? Math.round(d) : null
+                        return (
+                          <tr key={tr.name} className="track-row">
+                            <td className="track-name" colSpan={5}>
+                              └ {tr.name}
+                            </td>
+                            <td />
+                            <td className="num-cell">{sec ?? '—'}</td>
+                            <td className="num-cell">{tr.spots}</td>
+                            <td />
+                          </tr>
+                        )
+                      })}
+                  </Fragment>
                 ))}
               </tbody>
+              {templates.length > 1 && (
+                <tfoot>
+                  <tr className="book-total">
+                    <td colSpan={5}>
+                      {templates.length} plan{templates.length === 1 ? '' : 's'}
+                    </td>
+                    <td className="num-cell">{footer.tracks}</td>
+                    <td />
+                    <td className="num-cell">{footer.spots}</td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
             </table>
           )}
 
@@ -369,16 +494,28 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   </button>
                 </div>
                 {planMode === 'text' && (
-                  <label className="kick">
-                    Date{' '}
-                    <input
-                      type="date"
-                      value={planDate}
-                      min={selected.firstDate ?? undefined}
-                      max={selected.lastDate ?? undefined}
-                      onChange={(e) => changePlanDate(e.target.value)}
-                    />
-                  </label>
+                  <>
+                    <label className="kick">
+                      From{' '}
+                      <input
+                        type="date"
+                        value={planStart}
+                        min={selected.firstDate ?? undefined}
+                        max={selected.lastDate ?? undefined}
+                        onChange={(e) => changePlanRange(e.target.value, planEnd)}
+                      />
+                    </label>
+                    <label className="kick">
+                      To{' '}
+                      <input
+                        type="date"
+                        value={planEnd}
+                        min={selected.firstDate ?? undefined}
+                        max={selected.lastDate ?? undefined}
+                        onChange={(e) => changePlanRange(planStart, e.target.value)}
+                      />
+                    </label>
+                  </>
                 )}
               </div>
 
@@ -438,7 +575,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 <textarea
                   className="preview"
                   readOnly
-                  value={planText || '(no rows for this date)'}
+                  value={planText || '(no rows in this range)'}
                   spellCheck={false}
                   dir="auto"
                 />
@@ -494,18 +631,17 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
           </>
         ) : (
           <>
-            <div>
-              <div className="kick">Selected element</div>
-              <div className="insp-title">{selected.code}</div>
+            <div className="insp-field">
+              <span className="kick">Client</span>
+              <input dir="auto" readOnly value={selected.group || '—'} />
             </div>
 
             <div className="insp-field">
-              <span className="kick">Element name — export file names follow it</span>
+              <span className="kick">Name</span>
               <input
                 key={`${selected.code}-${sel}`}
                 defaultValue={selected.code}
                 spellCheck={false}
-                title="Edit and press Enter — exported files are named CODE, CODE-A, …"
                 onBlur={(e) => sel !== null && commitCode(sel, e.currentTarget)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') e.currentTarget.blur()
@@ -528,30 +664,13 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 ))}
               </select>
             </div>
+            <div className="insp-field">
+              <span className="kick">Total Duration</span>
+              <input readOnly value={airtime(totalDuration(selected))} />
+            </div>
 
             <div className="insp-sec">
-              <div className="kick">This plan</div>
-              <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
-                <div>
-                  <span className="muted">Client</span> <span dir="auto">{selected.group}</span>
-                </div>
-                <div>
-                  <span className="muted">Spots</span> {selected.timeCount}
-                </div>
-                <div>
-                  <span className="muted">Covers</span>{' '}
-                  {coversLabel(selected.firstDate, selected.lastDate)}
-                </div>
-                <div>
-                  <span className="muted">Starts</span> {fullDate(selected.firstDate)}
-                </div>
-                <div>
-                  <span className="muted">Ends</span> {fullDate(selected.lastDate)}
-                </div>
-              </div>
-              <div className="kick" style={{ marginTop: 4 }}>
-                Tracks in this plan
-              </div>
+              <div className="kick">Tracks</div>
               <table className="tbl insp-tbl track-tbl">
                 <thead>
                   <tr>
@@ -563,8 +682,8 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                 <tbody>
                   {tracks.map((t) => (
                     <tr key={t.code} title={t.name}>
-                      <td className="mono-sm">{t.code}</td>
-                      <td className="mono-sm">{mmss(trackInfo[t.name]?.duration)}</td>
+                      <td>{t.code}</td>
+                      <td className="num-cell">{mmss(trackInfo[t.name]?.duration)}</td>
                       <td dir="auto" title={trackInfo[t.name]?.description ?? t.name}>
                         {trackInfo[t.name]?.description ?? ''}
                       </td>
@@ -578,16 +697,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                   Audio database — it stays loaded from then on).
                 </div>
               )}
-            </div>
-
-            <div className="insp-foot">
-              <button
-                className="btn"
-                onClick={() => sel !== null && removeElement(sel)}
-                title="Remove this element from the session (the source file is untouched)"
-              >
-                Remove element
-              </button>
             </div>
           </>
         )}
