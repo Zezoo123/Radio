@@ -671,7 +671,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
             </div>
 
             <div className="insp-sec">
-              <div className="kick">Tracks in this plan</div>
+              <div className="kick">Tracks</div>
               <table className="tbl insp-tbl track-tbl">
                 <thead>
                   <tr>
