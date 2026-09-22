@@ -406,11 +406,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                       }`}
                       onClick={() => setSel(i)}
                     >
-                      <td
-                        className="mono-sm"
-                        style={{ fontWeight: 700 }}
-                        title={`${t.fileName} — ${t.path}`}
-                      >
+                      <td title={`${t.fileName} — ${t.path}`}>
                         {t.tracks.length > 1 && (
                           <button
                             className={`row-expand ${expanded.has(i) ? 'open' : ''}`}
@@ -468,7 +464,7 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
                         const sec = d != null ? Math.round(d) : null
                         return (
                           <tr key={tr.name} className="track-row">
-                            <td className="mono-sm track-name" colSpan={5}>
+                            <td className="track-name" colSpan={5}>
                               └ {tr.name}
                             </td>
                             <td />
