@@ -322,10 +322,7 @@ export function BookingView({ templates, onTemplates, categories }: Props): JSX.
       <div className="work-main">
         <div className="work-head">
           <div>
-            <div className="kick">Booking</div>
-            <div className="insp-title">
-              {templates.length} element{templates.length === 1 ? '' : 's'} booked
-            </div>
+            <div className="insp-title">Booking order</div>
           </div>
           {note && (
             <span className="muted" style={{ fontSize: 'var(--fs-xs)' }}>

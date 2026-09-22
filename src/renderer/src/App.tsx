@@ -295,7 +295,6 @@ export default function App(): JSX.Element {
               ))}
             </select>
           </div>
-          <span className="chrome-note">{templates.length} booked</span>
           {updateReady && (
             <button
               className="chip on"
