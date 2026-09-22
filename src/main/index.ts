@@ -5,6 +5,13 @@ import { setupAutoUpdate } from './updater'
 
 const isDev = !app.isPackaged
 
+// The packaged Windows app gets its icon from the exe (electron-builder embeds
+// build/icon.ico); dev runs would otherwise show Electron's logo in the window
+// corner, taskbar and Dock.
+const devIcon = isDev
+  ? join(app.getAppPath(), 'build', process.platform === 'darwin' ? 'icon.png' : 'icon.ico')
+  : undefined
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
@@ -14,6 +21,7 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#0f1115',
     title: `Radio Scheduler ${app.getVersion()}`,
+    ...(devIcon && process.platform !== 'darwin' ? { icon: devIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -48,6 +56,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (devIcon && process.platform === 'darwin') app.dock?.setIcon(devIcon)
   registerIpc()
   setupAutoUpdate()
   createWindow()
