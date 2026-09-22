@@ -1,12 +1,11 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import type { AppConfig, PromoSummary, TemplateGrid, TemplateSummary } from '../../../main/session'
+import type { TemplateGrid, TemplateSummary } from '../../../main/session'
 import { toCalendarDate } from '../App'
 import { AiredCheckDialog } from './AiredCheckDialog'
 
 interface Props {
   templates: TemplateSummary[]
   onTemplates: (t: TemplateSummary[]) => void
-  onConfig: (c: AppConfig) => void
   /** THE app-wide category list (Settings → Categories). */
   categories: string[]
 }
@@ -50,7 +49,7 @@ function mmss(seconds?: number): string {
  * selected element's whole plan (dates × hours) always in view below it, and a
  * right-hand inspector for the element's code, category and range.
  */
-export function BookingView({ templates, onTemplates, onConfig, categories }: Props): JSX.Element {
+export function BookingView({ templates, onTemplates, categories }: Props): JSX.Element {
   const [sel, setSel] = useState<number | null>(null)
   const [planMode, setPlanMode] = useState<'grid' | 'text'>('grid')
   const [planGrid, setPlanGrid] = useState<TemplateGrid | null>(null)
@@ -59,7 +58,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
   const [planEnd, setPlanEnd] = useState('')
   const [planText, setPlanText] = useState('')
   const [note, setNote] = useState('')
-  const [promos, setPromos] = useState<PromoSummary | null>(null)
   const [airedOpen, setAiredOpen] = useState(false)
   // Row × needs a second click; the arm times out so it can't linger.
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null)
@@ -87,10 +85,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
       return next
     })
   }
-
-  useEffect(() => {
-    window.api.getPromos().then(setPromos)
-  }, [])
 
   // Keep the selection valid as elements come and go; default to the first.
   useEffect(() => {
@@ -168,14 +162,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
         : `Imported ${added} template${added === 1 ? '' : 's'} from the folder` +
             (res.skipped.length > 0 ? ` — skipped ${res.skipped.join(', ')}` : '')
     )
-  }
-
-  async function addPromosSheet(): Promise<void> {
-    const res = await window.api.openPromos()
-    if (res) {
-      setPromos(res)
-      onConfig(await window.api.getConfig())
-    }
   }
 
   async function removeElement(index: number): Promise<void> {
@@ -363,13 +349,6 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
               + Add folder
             </button>
             <button
-              className="btn primary"
-              title="Promo spreadsheet — placement is managed on the Grid tab"
-              onClick={addPromosSheet}
-            >
-              + Promos sheet
-            </button>
-            <button
               className="btn"
               title="Compare booked spots against Simian's aired lists (YYMMDD.lst) for a date range"
               onClick={() => setAiredOpen(true)}
@@ -380,8 +359,8 @@ export function BookingView({ templates, onTemplates, onConfig, categories }: Pr
         </div>
 
         <div className="work-body">
-          {templates.length === 0 && !promos ? (
-            <p className="empty">Nothing booked yet. Add element templates or the promos sheet.</p>
+          {templates.length === 0 ? (
+            <p className="empty">Nothing booked yet. Add element templates.</p>
           ) : (
             <table className="tbl dense-book">
               <thead>

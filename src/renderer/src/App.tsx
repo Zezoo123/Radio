@@ -324,7 +324,6 @@ export default function App(): JSX.Element {
           <BookingView
             templates={templates}
             onTemplates={setTemplates}
-            onConfig={setConfig}
             categories={uiSettings.categories}
           />
         )}
