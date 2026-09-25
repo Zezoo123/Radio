@@ -794,9 +794,9 @@ class Session {
     const azanWarnings =
       azanFallbackDates.length > 0
         ? [
-            `AZAN computed (calibrated) for ${azanFallbackDates.length} date(s) without official times` +
+            `Prayer times computed (calibrated) for ${azanFallbackDates.length} date(s) without official times` +
               ` — ${azanFallbackDates.slice(0, 5).join(', ')}${azanFallbackDates.length > 5 ? ', …' : ''}.` +
-              ' Fetch official times in Settings → AZAN.'
+              ' Fetch official times in Settings → Prayer Times.'
           ]
         : []
     return { text, warnings: [...missing, ...azanWarnings, ...warnings, ...promo.warnings] }

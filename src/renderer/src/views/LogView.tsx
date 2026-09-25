@@ -526,7 +526,7 @@ export function LogView({
                 <button
                   className="btn"
                   disabled={!ready}
-                  title="Compose the range from the Grid (clocks + booked elements + promos + azan + music log) and load it here for editing (Ctrl+B)"
+                  title="Compose the range from the Grid (clocks + booked elements + promos + prayer times + music log) and load it here for editing (Ctrl+B)"
                   onClick={buildFromGrid}
                 >
                   Build from Grid
@@ -593,12 +593,12 @@ export function LogView({
               </button>
               <button
                 className={`chip ${config?.includeAzan ? 'on' : ''}`}
-                title="Include the 5 daily azan rows"
+                title="Include the 5 daily prayer-time rows"
                 onClick={async () =>
                   onConfig(await window.api.setIncludeAzan(!config?.includeAzan))
                 }
               >
-                {config?.includeAzan ? '✓ ' : ''}AZAN
+                {config?.includeAzan ? '✓ ' : ''}PRAYER TIMES
               </button>
               <div className="row" style={{ marginLeft: 'auto', gap: 8 }}>
                 <label
@@ -648,7 +648,7 @@ export function LogView({
             <p className="empty">
               {ready
                 ? 'No log open. Build the range from the Grid, or open a .bsi/.txt log.'
-                : 'Nothing to build yet — paint clocks on the Grid or add the booking order first (or turn on AZAN).'}
+                : 'Nothing to build yet — paint clocks on the Grid or add the booking order first (or turn on PRAYER TIMES).'}
             </p>
           ) : (
             <LogGrid
