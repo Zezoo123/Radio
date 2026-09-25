@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { hourlyMarkerLines } from '@core/schedule/hourly'
-import { buildAzanRows, computeAzanLines } from '@core/prayer/azanRows'
+import { buildAzanRows, computeAzanLines, DEFAULT_AZAN_FORMAT } from '@core/prayer/azanRows'
 import { composeDay } from '@core/schedule/compose'
 
 describe('hourly markers', () => {
@@ -44,6 +44,7 @@ describe('azan rows (default format: deckfade 10s before, azan = FEA)', () => {
         isha: '21:00:00'
       },
       {
+        ...DEFAULT_AZAN_FORMAT,
         azanCategory: 'SER',
         lines: [{ offset: 5, cue: '+', name: 'BED', category: 'AUDIO', description: 'after' }]
       }
@@ -51,6 +52,44 @@ describe('azan rows (default format: deckfade 10s before, azan = FEA)', () => {
     // Fajr: azan (SER) at 05:00:00, then the +5s line at 05:00:05.
     expect(rows[0]).toBe('05:00:00|+|AZ22-01RB|SER|AZAN فجر')
     expect(rows[1]).toBe('05:00:05|+|BED|AUDIO|after')
+  })
+
+  it('comment mode emits a comment row per prayer with the configured text', () => {
+    const rows = buildAzanRows(
+      {
+        fajr: '05:00:00',
+        dhuhr: '12:00:00',
+        asr: '15:00:00',
+        maghrib: '19:00:00',
+        isha: '21:00:00'
+      },
+      {
+        ...DEFAULT_AZAN_FORMAT,
+        output: 'comment',
+        comments: { ...DEFAULT_AZAN_FORMAT.comments, fajr: 'أذان الفجر' },
+        lines: []
+      }
+    )
+    expect(rows[0]).toBe('05:00:00|||COMMENT|أذان الفجر')
+    expect(rows[1]).toBe('12:00:00|||COMMENT|AZAN ظهر')
+  })
+
+  it('custom per-prayer file names replace the defaults', () => {
+    const rows = buildAzanRows(
+      {
+        fajr: '05:00:00',
+        dhuhr: '12:00:00',
+        asr: '15:00:00',
+        maghrib: '19:00:00',
+        isha: '21:00:00'
+      },
+      {
+        ...DEFAULT_AZAN_FORMAT,
+        names: { ...DEFAULT_AZAN_FORMAT.names, fajr: 'AZAN-FAGR' },
+        lines: []
+      }
+    )
+    expect(rows[0]).toBe('05:00:00|+|AZAN-FAGR|FEA|AZAN فجر')
   })
 })
 

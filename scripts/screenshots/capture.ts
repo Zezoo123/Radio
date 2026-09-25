@@ -169,7 +169,7 @@ test('capture README screenshots', async () => {
   // → element sections, and ~100 promo rows would push the section headers a
   // full screen away from the azan block.
   await page.locator('.tab', { hasText: 'LOG' }).click()
-  await page.locator('.logwork .chip', { hasText: 'AZAN' }).click()
+  await page.locator('.logwork .chip', { hasText: 'PRAYER TIMES' }).click()
   await page.locator('.logwork .chip', { hasText: 'PROMOS' }).click()
   await page.getByRole('button', { name: 'Build from Grid' }).click()
   await expect(page.locator('.log-grid')).toBeVisible({ timeout: 30_000 })
