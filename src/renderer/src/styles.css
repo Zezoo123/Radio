@@ -1880,6 +1880,29 @@ input[type='color'] {
   overflow: auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
+/* Settings: prayer-times editor + per-prayer name fields. */
+.pt-scroll {
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 10px;
+}
+.pt-tbl input {
+  width: 100%;
+}
+.pt-names {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 10px;
+}
+.pt-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 150px;
+}
+
 /* The aired-check dialog is a review screen — wider than the base modal. */
 .modal.aired-modal {
   width: min(920px, 94vw);

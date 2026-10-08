@@ -556,6 +556,68 @@ export function registerIpc(): void {
     return out
   })
 
+  // --- Prayer times: range view, manual edits, Excel export ------------------
+  const isoOf = (d: CalendarDate): string =>
+    `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+
+  /** Stored/official times when covered, the calibrated fallback otherwise. */
+  const timesForRange = async (
+    start: CalendarDate,
+    end: CalendarDate
+  ): Promise<{ date: string; times: Record<string, string>; source: 'stored' | 'computed' }[]> => {
+    const file = await azanTimesStore.load()
+    return dateRange(start, end).map((date) => {
+      const iso = isoOf(date)
+      const stored = file.times[iso]
+      return stored
+        ? { date: iso, times: stored, source: 'stored' as const }
+        : { date: iso, times: calibratedAzanTimes(date, file.biases), source: 'computed' as const }
+    })
+  }
+
+  ipcMain.handle('azan:timesRange', (_e, { start, end }: RangeArg) => timesForRange(start, end))
+
+  // Manual edits from the Prayer Times form become stored times — exactly what
+  // exports use for covered dates (no more hand-editing azan-times.json).
+  ipcMain.handle(
+    'azan:saveTimes',
+    async (_e, edits: { date: string; times: Record<string, string> }[]) => {
+      const file = await azanTimesStore.load()
+      for (const edit of edits) {
+        file.times[edit.date] = edit.times as (typeof file.times)[string]
+      }
+      // Persisting runs the store's normalization, dropping malformed values.
+      await azanTimesStore.save(file)
+      return coverageOf(await azanTimesStore.load())
+    }
+  )
+
+  ipcMain.handle('azan:exportExcel', async (_e, { start, end }: RangeArg) => {
+    const rows = await timesForRange(start, end)
+    const win = BrowserWindow.getFocusedWindow() ?? undefined
+    const res = await dialog.showSaveDialog(win!, {
+      title: 'Export prayer times',
+      defaultPath: `prayer-times-${isoOf(start)}_${isoOf(end)}.xlsx`,
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }]
+    })
+    if (res.canceled || !res.filePath) return { saved: false }
+    const ExcelJS = (await import('exceljs')).default
+    const wb = new ExcelJS.Workbook()
+    const sheet = wb.addWorksheet('Prayer Times')
+    sheet.columns = [
+      { header: 'Date', key: 'date', width: 14 },
+      { header: 'Fajr', key: 'fajr', width: 11 },
+      { header: 'Dhuhr', key: 'dhuhr', width: 11 },
+      { header: 'Asr', key: 'asr', width: 11 },
+      { header: 'Maghrib', key: 'maghrib', width: 11 },
+      { header: 'Isha', key: 'isha', width: 11 }
+    ]
+    sheet.getRow(1).font = { bold: true }
+    for (const r of rows) sheet.addRow({ date: r.date, ...r.times })
+    await wb.xlsx.writeFile(res.filePath)
+    return { saved: true, path: res.filePath }
+  })
+
   // --- Airing checks ---------------------------------------------------------
   // Pre-air: the booked element spots expected in a date's log (LOG check).
   ipcMain.handle('check:elements', (_e, date: CalendarDate) => session.expectedElements(date))

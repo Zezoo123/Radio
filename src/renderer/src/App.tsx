@@ -48,7 +48,7 @@ function fontStack(family: string): string {
 
 const TABS: { id: Section; label: string; sub: string }[] = [
   { id: 'booking', label: 'BOOKING', sub: 'BOOKING ORDER' },
-  { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · AZAN' },
+  { id: 'grid', label: 'GRID', sub: 'CLOCKS · PROMOS · PRAYER TIMES' },
   { id: 'log', label: 'LOG', sub: 'BUILD · EDIT · EXPORT' }
 ]
 
