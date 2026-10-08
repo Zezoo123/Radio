@@ -506,7 +506,7 @@ export function GridView({
         cls: '',
         style: fmt ? { background: fmt.color, color: '#0b0d11' } : undefined,
         label: fmt ? abbreviate(fmt.name) : '',
-        title: fmt?.name ?? ''
+        title: fmt ? `${fmt.name} — right-click to remove` : ''
       }
     }
     if (layer === 'blocked') {
@@ -903,10 +903,18 @@ export function GridView({
                             style={c.style}
                             title={c.title}
                             onMouseDown={(e) => {
+                              if (e.button !== 0) return
                               e.preventDefault()
                               cellDown(wd, hour)
                             }}
                             onMouseEnter={() => cellEnter(wd, hour)}
+                            onContextMenu={(e) => {
+                              if (layer !== 'clocks') return
+                              e.preventDefault()
+                              if (set.grid.cells[wd]?.[hour] == null) return
+                              setSel({ wd, hour })
+                              assign(wd, hour, null)
+                            }}
                           >
                             {c.label}
                           </td>
