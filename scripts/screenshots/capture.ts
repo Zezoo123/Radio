@@ -149,8 +149,21 @@ test('capture README screenshots', async () => {
   await page.locator('.tab', { hasText: 'GRID' }).click()
   await expect(page.locator('.grid-tbl')).toBeVisible()
   // Monday 07:00 — a painted Morning hour; the inspector shows its rows + azan.
-  await page.locator('.grid-tbl tbody tr').nth(7).locator('td').nth(1).click()
+  const mondaySeven = page.locator('.grid-tbl tbody tr').nth(7).locator('td').nth(1)
+  await mondaySeven.click()
   await expect(page.locator('.gridwork .work-insp .insp-title')).toContainText('07:00')
+  await expect
+    .poll(() => mondaySeven.evaluate((el) => (el as HTMLElement).style.backgroundColor))
+    .toBe('rgb(224, 162, 60)')
+  await mondaySeven.click({ button: 'right' })
+  await expect
+    .poll(() => mondaySeven.evaluate((el) => (el as HTMLElement).style.backgroundColor))
+    .toBe('')
+  await expect(page.locator('.gridwork .work-insp .insp-title')).toContainText('07:00')
+  await mondaySeven.click()
+  await expect
+    .poll(() => mondaySeven.evaluate((el) => (el as HTMLElement).style.backgroundColor))
+    .toBe('rgb(224, 162, 60)')
   await shoot('grid-clocks.png')
 
   // ---- GRID: promos layer (blocked hours black, placements visible) ----------
