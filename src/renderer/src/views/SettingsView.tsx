@@ -3,6 +3,8 @@ import type { Cue } from '../../../main/core/types'
 import type { AzanFormat, AzanLine } from '../../../main/core/prayer/azanRows'
 import type { AzanCoverage } from '../../../preload'
 import type { UiSettings } from '../../../main/uiSettings'
+import type { AzanTimes, PrayerName } from '../../../main/core/prayer/azan'
+import { toCalendarDate } from '../App'
 import { THEMES, type ThemeId } from '../theme'
 import { UI_FONT_DEFAULT, UI_FONT_MAX, UI_FONT_MIN, UI_SCALES, type UiFont } from '../App'
 import { withOpacity } from '../lib/colors'
@@ -10,10 +12,29 @@ import { withOpacity } from '../lib/colors'
 const CUES: Cue[] = ['+', '@', '#']
 const NO_NAME_CATEGORIES = ['MACRO', 'COMMENT']
 
+const PRAYER_COLUMNS: { key: PrayerName; label: string }[] = [
+  { key: 'fajr', label: 'Fajr' },
+  { key: 'dhuhr', label: 'Dhuhr' },
+  { key: 'asr', label: 'Asr' },
+  { key: 'maghrib', label: 'Maghrib' },
+  { key: 'isha', label: 'Isha' }
+]
+
+/** Local YYYY-MM-DD, `delta` days from today. */
+function isoFromToday(delta: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + delta)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`
+}
+
+const TIME_SHAPE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/
+
 /** The Settings sections, in nav order (Appearance deliberately last). */
 const SECTIONS = [
   { id: 'categories', label: 'Categories' },
-  { id: 'azan', label: 'AZAN' },
+  { id: 'azan', label: 'Prayer Times' },
   { id: 'appearance', label: 'Appearance' }
 ] as const
 type SectionId = (typeof SECTIONS)[number]['id']
@@ -58,6 +79,62 @@ export function SettingsView({
   const [azanCoverage, setAzanCoverage] = useState<AzanCoverage | null>(null)
   const [azanFetching, setAzanFetching] = useState(false)
   const [azanFetchNote, setAzanFetchNote] = useState('')
+
+  // Prayer-times viewer/editor (Edit prayer times card).
+  const [ptStart, setPtStart] = useState(() => isoFromToday(0))
+  const [ptEnd, setPtEnd] = useState(() => isoFromToday(13))
+  const [ptRows, setPtRows] = useState<
+    { date: string; times: AzanTimes; source: 'stored' | 'computed' }[]
+  >([])
+  const [ptDirty, setPtDirty] = useState<Set<string>>(new Set())
+  const [ptNote, setPtNote] = useState('')
+
+  async function loadPrayerTimes(): Promise<void> {
+    const s = toCalendarDate(ptStart)
+    const e = toCalendarDate(ptEnd)
+    if (!s || !e) return
+    setPtRows(await window.api.azanTimesRange(s, e))
+    setPtDirty(new Set())
+    setPtNote('')
+  }
+
+  function editPrayerTime(rowIndex: number, prayer: PrayerName, value: string): void {
+    setPtRows((rows) =>
+      rows.map((r, i) => (i === rowIndex ? { ...r, times: { ...r.times, [prayer]: value } } : r))
+    )
+    const date = ptRows[rowIndex]?.date
+    if (date) setPtDirty((prev) => new Set(prev).add(date))
+  }
+
+  async function savePrayerTimes(): Promise<void> {
+    const edits: { date: string; times: AzanTimes }[] = []
+    for (const r of ptRows) {
+      if (!ptDirty.has(r.date)) continue
+      const times = {} as AzanTimes
+      for (const p of PRAYER_COLUMNS) {
+        const v = r.times[p.key].trim()
+        if (!TIME_SHAPE.test(v)) {
+          setPtNote(`${r.date} ${p.label}: "${v}" is not a valid HH:MM time — nothing saved`)
+          return
+        }
+        times[p.key] = v.length === 5 ? `${v}:00` : v
+      }
+      edits.push({ date: r.date, times })
+    }
+    if (edits.length === 0) return
+    setAzanCoverage(await window.api.saveAzanTimes(edits))
+    setPtNote(`Saved ${edits.length} day(s) — exports use these times now`)
+    await loadPrayerTimes()
+    setPtNote(`Saved ${edits.length} day(s) — exports use these times now`)
+  }
+
+  async function exportPrayerExcel(): Promise<void> {
+    const s = toCalendarDate(ptStart)
+    const e = toCalendarDate(ptEnd)
+    if (!s || !e) return
+    const res = await window.api.exportAzanExcel(s, e)
+    setPtNote(res.saved ? `Excel saved to ${res.path}` : '')
+  }
 
   useEffect(() => {
     window.api.getAzanFormat().then(setFormat)
@@ -183,7 +260,7 @@ export function SettingsView({
               <h2>Categories</h2>
               <p className="muted">
                 THE category list — every category dropdown in the app (Booking, Clock rows, the
-                AZAN format) offers exactly these. Give one a highlight and/or text color and every
+                Prayer rows) offers exactly these. Give one a highlight and/or text color and every
                 row of that category is recolored in the log Editor. Applies everywhere, on every
                 station.
               </p>
@@ -311,7 +388,7 @@ export function SettingsView({
           {section === 'azan' && (
             <>
               <section className="card">
-                <h2>Official azan times</h2>
+                <h2>Official prayer times</h2>
                 <p className="muted">
                   The exact published times from the Egyptian Survey Authority (esa.gov.eg). Fetch
                   once and they are stored on this PC — builds never touch the internet. Dates
@@ -328,7 +405,7 @@ export function SettingsView({
                         (azanCoverage.fetchedAt
                           ? ` · fetched ${azanCoverage.fetchedAt.slice(0, 10)}`
                           : '')
-                      : 'Nothing stored yet — all azan times are computed'}
+                      : 'Nothing stored yet — all prayer times are computed'}
                   </span>
                   {azanFetchNote && <span className="muted">{azanFetchNote}</span>}
                 </div>
@@ -339,31 +416,143 @@ export function SettingsView({
               </section>
 
               <section className="card">
-                <h2>AZAN format</h2>
+                <h2>Edit prayer times</h2>
                 <p className="muted">
-                  Each prayer plays its azan at the official time (category below). These extra
-                  lines are emitted around every azan at a second offset — e.g. the deckfade macro
-                  10 seconds before.
+                  The times for any date range — official values where stored, computed otherwise.
+                  Edit a value and Save: it becomes the stored time the exported logs use. Export
+                  the same range as an Excel sheet.
+                </p>
+                <div className="row" style={{ alignItems: 'center' }}>
+                  <label className="kick">
+                    From{' '}
+                    <input type="date" value={ptStart} onChange={(e) => setPtStart(e.target.value)} />
+                  </label>
+                  <label className="kick">
+                    To <input type="date" value={ptEnd} onChange={(e) => setPtEnd(e.target.value)} />
+                  </label>
+                  <button
+                    className="btn"
+                    disabled={!ptStart || !ptEnd || ptStart > ptEnd}
+                    onClick={loadPrayerTimes}
+                  >
+                    Load
+                  </button>
+                  {ptRows.length > 0 && (
+                    <>
+                      <button className="btn primary" disabled={ptDirty.size === 0} onClick={savePrayerTimes}>
+                        Save changes{ptDirty.size > 0 ? ` (${ptDirty.size})` : ''}
+                      </button>
+                      <button className="btn" onClick={exportPrayerExcel}>
+                        Save as Excel…
+                      </button>
+                    </>
+                  )}
+                  {ptNote && <span className="muted">{ptNote}</span>}
+                </div>
+                {ptRows.length > 0 && (
+                  <div className="pt-scroll">
+                    <table className="tbl pt-tbl">
+                      <thead>
+                        <tr>
+                          <th style={{ width: 110 }}>Date</th>
+                          {PRAYER_COLUMNS.map((p) => (
+                            <th key={p.key}>{p.label}</th>
+                          ))}
+                          <th style={{ width: 84 }} />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ptRows.map((r, ri) => (
+                          <tr key={r.date}>
+                            <td className="num-cell">{r.date}</td>
+                            {PRAYER_COLUMNS.map((p) => (
+                              <td key={p.key}>
+                                <input
+                                  value={r.times[p.key]}
+                                  spellCheck={false}
+                                  onChange={(e) => editPrayerTime(ri, p.key, e.target.value)}
+                                />
+                              </td>
+                            ))}
+                            <td className="muted">
+                              {ptDirty.has(r.date) ? 'edited' : r.source === 'computed' ? 'computed' : ''}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              <section className="card">
+                <h2>Prayer rows</h2>
+                <p className="muted">
+                  What the log carries at each prayer time — an audio file per prayer, or just a
+                  comment. The extra lines below are emitted around every prayer at a second
+                  offset — e.g. the deckfade macro 10 seconds before.
                 </p>
 
                 {!format ? (
                   <p className="empty">Loading…</p>
                 ) : (
                   <>
-                    <div className="row" style={{ margin: '8px 0 4px' }}>
-                      <label>
-                        AZAN audio category{' '}
-                        <select
-                          value={format.azanCategory}
-                          onChange={(e) => update({ ...format, azanCategory: e.target.value })}
+                    <div className="row" style={{ margin: '8px 0 4px', alignItems: 'center' }}>
+                      <div className="seg">
+                        <button
+                          className={`seg-btn ${format.output === 'audio' ? 'on' : ''}`}
+                          onClick={() => update({ ...format, output: 'audio' })}
                         >
-                          {optionsFor(format.azanCategory).map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                          Audio files
+                        </button>
+                        <button
+                          className={`seg-btn ${format.output === 'comment' ? 'on' : ''}`}
+                          onClick={() => update({ ...format, output: 'comment' })}
+                        >
+                          Comments
+                        </button>
+                      </div>
+                      {format.output === 'audio' && (
+                        <label>
+                          Category{' '}
+                          <select
+                            value={format.azanCategory}
+                            onChange={(e) => update({ ...format, azanCategory: e.target.value })}
+                          >
+                            {optionsFor(format.azanCategory).map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                    <div className="pt-names">
+                      {PRAYER_COLUMNS.map((p) => (
+                        <label key={p.key} className="pt-name">
+                          <span className="kick">{p.label}</span>
+                          <input
+                            dir="auto"
+                            spellCheck={false}
+                            value={
+                              format.output === 'audio'
+                                ? format.names[p.key]
+                                : format.comments[p.key]
+                            }
+                            onChange={(e) =>
+                              update(
+                                format.output === 'audio'
+                                  ? { ...format, names: { ...format.names, [p.key]: e.target.value } }
+                                  : {
+                                      ...format,
+                                      comments: { ...format.comments, [p.key]: e.target.value }
+                                    }
+                              )
+                            }
+                          />
+                        </label>
+                      ))}
                     </div>
 
                     <table className="tbl">

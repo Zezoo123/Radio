@@ -145,6 +145,20 @@ const api = {
     ipcRenderer.invoke('azan:timesForDate', date),
   getAzanCoverage: (): Promise<AzanCoverage> => ipcRenderer.invoke('azan:officialCoverage'),
   fetchOfficialAzan: (): Promise<AzanFetchOutcome> => ipcRenderer.invoke('azan:fetchOfficial'),
+  /** Prayer times per date over a range (stored/official or computed fallback). */
+  azanTimesRange: (
+    start: CalendarDate,
+    end: CalendarDate
+  ): Promise<{ date: string; times: AzanTimes; source: 'stored' | 'computed' }[]> =>
+    ipcRenderer.invoke('azan:timesRange', { start, end }),
+  /** Manual per-date edits become stored times (what exports use). */
+  saveAzanTimes: (edits: { date: string; times: AzanTimes }[]): Promise<AzanCoverage> =>
+    ipcRenderer.invoke('azan:saveTimes', edits),
+  exportAzanExcel: (
+    start: CalendarDate,
+    end: CalendarDate
+  ): Promise<{ saved: boolean; path?: string }> =>
+    ipcRenderer.invoke('azan:exportExcel', { start, end }),
 
   openPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:open'),
   getPromos: (): Promise<PromoSummary | null> => ipcRenderer.invoke('promos:get'),

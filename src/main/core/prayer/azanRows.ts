@@ -10,7 +10,8 @@ import { azanTimes, CAIRO_EGYPTIAN, PRAYER_ORDER, type AzanOptions, type PrayerN
 
 const DEFAULT_MACRO = 'DECKFADE CURRENT,100,0,10000,UNLOAD,RETURN'
 
-const FILE_NAME: Record<PrayerName, string> = {
+/** The station's historical azan cart names — the filename defaults. */
+export const DEFAULT_PRAYER_NAMES: Record<PrayerName, string> = {
   fajr: 'AZ22-01RB',
   dhuhr: 'AZ22-02RB',
   asr: 'AZ22-03RB',
@@ -18,12 +19,21 @@ const FILE_NAME: Record<PrayerName, string> = {
   isha: 'AZ22-05RB'
 }
 
-const ARABIC_LABEL: Record<PrayerName, string> = {
+export const ARABIC_LABEL: Record<PrayerName, string> = {
   fajr: 'فجر',
   dhuhr: 'ظهر',
   asr: 'عصر',
   maghrib: 'مغرب',
   isha: 'عشاء'
+}
+
+/** Default comment text per prayer (comment mode). */
+export const DEFAULT_PRAYER_COMMENTS: Record<PrayerName, string> = {
+  fajr: 'AZAN فجر',
+  dhuhr: 'AZAN ظهر',
+  asr: 'AZAN عصر',
+  maghrib: 'AZAN مغرب',
+  isha: 'AZAN عشاء'
 }
 
 /** One extra line emitted around each prayer's azan, at a second offset. */
@@ -37,15 +47,25 @@ export interface AzanLine {
   description: string
 }
 
-/** The reusable AZAN format: the azan audio's category + the surrounding lines. */
+/** The reusable prayer-rows format: what plays at each prayer time (an audio
+    cart per prayer, or just a comment) + the surrounding lines. */
 export interface AzanFormat {
   /** Category emitted on the azan audio row itself. */
   azanCategory: string
+  /** `audio` emits the per-prayer cart; `comment` emits a comment row instead. */
+  output: 'audio' | 'comment'
+  /** Cart/file name per prayer (audio mode). */
+  names: Record<PrayerName, string>
+  /** Comment text per prayer (comment mode). */
+  comments: Record<PrayerName, string>
   lines: AzanLine[]
 }
 
 export const DEFAULT_AZAN_FORMAT: AzanFormat = {
   azanCategory: 'FEA',
+  output: 'audio',
+  names: { ...DEFAULT_PRAYER_NAMES },
+  comments: { ...DEFAULT_PRAYER_COMMENTS },
   lines: [{ offset: -10, cue: '@', name: '', category: 'MACRO', description: DEFAULT_MACRO }]
 }
 
@@ -81,13 +101,16 @@ export function buildAzanRows(
     const base = toSeconds(times[prayer])
     rows.push({
       t: base,
-      line: row(
-        toHMS(base),
-        '+',
-        FILE_NAME[prayer],
-        format.azanCategory,
-        `AZAN ${ARABIC_LABEL[prayer]}`
-      )
+      line:
+        format.output === 'comment'
+          ? row(toHMS(base), '', '', 'COMMENT', format.comments[prayer] ?? '')
+          : row(
+              toHMS(base),
+              '+',
+              format.names[prayer] ?? DEFAULT_PRAYER_NAMES[prayer],
+              format.azanCategory,
+              `AZAN ${ARABIC_LABEL[prayer]}`
+            )
     })
     for (const ln of format.lines) {
       const t = base + ln.offset
