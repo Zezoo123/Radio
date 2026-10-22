@@ -16,6 +16,7 @@ import { resolveForDate, seededRngForDate } from './core/format/resolveDay'
 import { sequentialStore } from './sequentials'
 import { sanitizeSequential } from './core/sequential/sanitize'
 import { loadSimianDb, lookupDuration, lookupTrack, type SimianDb } from './core/simianDb'
+import { searchAudio } from './core/audioSearch'
 import { isBsiBuffer, parseBsiLog } from './core/parsers/bsiLog'
 import { parseAiredList } from './core/parsers/airedList'
 import { checkAiredDay, type AiredDayResult } from './core/schedule/airedCheck'
@@ -682,6 +683,16 @@ export function registerIpc(): void {
       return { saved: true, path: res.filePath }
     }
   )
+
+  // List of values for the clock editor's Name cell (F7): file-name search over
+  // the loaded database. `loaded: false` lets the dialog say so instead of
+  // showing an empty list.
+  ipcMain.handle('simian:search', async (_e, query: string, limit: number) => {
+    await simianRestored
+    if (!simianDb) return { loaded: false, hits: [] }
+    const cap = Number.isFinite(limit) ? Math.max(1, Math.min(500, Math.trunc(limit))) : 100
+    return { loaded: true, hits: searchAudio(simianDb.db, String(query ?? ''), cap) }
+  })
 
   // Batch lookup: names → duration + library description + category (names
   // the DB doesn't know are simply absent from the result).

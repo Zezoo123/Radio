@@ -75,6 +75,20 @@ export interface SimianTrack {
   category?: string
 }
 
+/** One audio.mdb entry from the F7 file-name lookup. */
+export interface SimianSearchHit {
+  /** UPPERCASED file name (no extension). */
+  name: string
+  description?: string
+  category?: string
+}
+
+export interface SimianSearchResult {
+  /** False when no audio database is loaded (hits is then empty). */
+  loaded: boolean
+  hits: SimianSearchHit[]
+}
+
 export interface OpenLogResult {
   path: string
   text: string
@@ -247,7 +261,10 @@ const api = {
   simianDurations: (names: string[]): Promise<Record<string, number>> =>
     ipcRenderer.invoke('simian:durations', names),
   simianTracks: (names: string[]): Promise<Record<string, SimianTrack>> =>
-    ipcRenderer.invoke('simian:tracks', names)
+    ipcRenderer.invoke('simian:tracks', names),
+  /** Search the loaded audio database by file name (the clock editor's F7 lookup). */
+  simianSearch: (query: string, limit: number): Promise<SimianSearchResult> =>
+    ipcRenderer.invoke('simian:search', query, limit)
 }
 
 contextBridge.exposeInMainWorld('api', api)

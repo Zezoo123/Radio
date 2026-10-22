@@ -20,7 +20,6 @@ import { tomorrowISO } from '../lib/dates'
 const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 const pad2 = (n: number): string => String(n).padStart(2, '0')
-const abbreviate = (name: string): string => (name.length <= 8 ? name : name.slice(0, 7) + '…')
 
 const PRAYERS: { key: keyof AzanTimes; label: string }[] = [
   { key: 'fajr', label: 'FAGR' },
@@ -505,7 +504,7 @@ export function GridView({
       return {
         cls: '',
         style: fmt ? { background: fmt.color, color: '#0b0d11' } : undefined,
-        label: fmt ? abbreviate(fmt.name) : '',
+        label: fmt ? fmt.name : '',
         title: fmt ? `${fmt.name} — right-click to remove` : ''
       }
     }
@@ -952,6 +951,7 @@ export function GridView({
               onDuplicateFormat={editingDefaults ? duplicateDefaultClock : duplicateFormat}
               onAddCategory={onAddCategory}
               showHour={editingDefaults}
+              audioLookup={window.api.simianSearch}
             />
           </div>
         </div>

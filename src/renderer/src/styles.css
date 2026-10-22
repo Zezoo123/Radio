@@ -1837,6 +1837,10 @@ input[type='color'] {
   cursor: pointer;
   overflow: hidden;
   white-space: nowrap;
+  /* The cell shows the full clock name; an ellipsis appears only when the
+     column is genuinely too narrow (the tooltip carries the whole name). */
+  text-overflow: ellipsis;
+  padding: 0 4px;
 }
 .grid-cell:hover {
   outline: 1px solid var(--accent);
@@ -2900,4 +2904,73 @@ code {
   position: sticky;
   left: 76px;
   display: inline-block;
+}
+
+/* Audio lookup (LOV) dialog — F7 in a clock row's Name / cart cell.
+   Append to the end of styles.css. */
+.modal.lov-modal {
+  width: min(760px, 94vw);
+}
+.lov-input {
+  width: 100%;
+}
+.lov-list {
+  margin-top: 10px;
+  height: min(46vh, 380px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.lov-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) 96px;
+  gap: 12px;
+  align-items: baseline;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.lov-item.on {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.lov-item.on .lov-cat {
+  color: inherit;
+  opacity: 0.85;
+}
+.lov-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lov-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lov-cat {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lov-empty,
+.lov-error {
+  padding: 10px;
+  margin: 0;
+}
+.lov-error {
+  color: var(--danger);
+}
+.lov-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
 }

@@ -3,6 +3,8 @@ import type { Cue } from '../../../main/core/types'
 import type { FormatRow, HourFormat } from '../../../main/core/format/types'
 import { InsertDialog } from './InsertDialog'
 import { HourPickerDialog, hoursSummary } from './HourPickerDialog'
+import { LovDialog } from './LovDialog'
+import type { AudioHit, AudioLookup } from './LovDialog'
 
 const CUES: Cue[] = ['+', '@', '#']
 
@@ -22,6 +24,8 @@ interface Props {
   showHour?: boolean
   /** Hide the built-in clock list (the Grid workbench rail owns selection). */
   hideList?: boolean
+  /** Searches the loaded audio.mdb by file name (the F7 list of values). */
+  audioLookup: AudioLookup
 }
 
 // Sentinel select value that switches a Category cell into "type a new one" mode.
@@ -47,7 +51,8 @@ export function ClockEditor({
   onDuplicateFormat,
   onAddCategory,
   showHour = false,
-  hideList = false
+  hideList = false,
+  audioLookup
 }: Props): JSX.Element {
   const selected = formats.find((f) => f.id === selectedId) ?? null
 
@@ -70,6 +75,30 @@ export function ClockEditor({
 
   // Row index whose Hours picker is open (default clocks only).
   const [hourPickRow, setHourPickRow] = useState<number | null>(null)
+
+  // Row index whose audio lookup (LOV, F7) is open.
+  const [lovRow, setLovRow] = useState<number | null>(null)
+
+  function closeLov(): void {
+    setLovRow(null)
+    // The dialog's search box took focus — hand it back to the Name cell.
+    requestAnimationFrame(() => focusedEl.current?.focus())
+  }
+
+  /** A picked audio item fills the row: file name (the key) + its category/description. */
+  function applyAudioHit(index: number, hit: AudioHit): void {
+    patchRow(index, {
+      name: hit.name,
+      ...(hit.category ? { category: hit.category } : {}),
+      ...(hit.description ? { description: hit.description } : {})
+    })
+    closeLov()
+  }
+
+  function openLovFromToolbar(): void {
+    const row = focusedRow.current
+    if (row != null && focusedField.current === 'name') setLovRow(row)
+  }
 
   // Clock (in the list) awaiting delete confirmation; auto-cancels after a moment.
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -356,8 +385,18 @@ export function ClockEditor({
                           placeholder={
                             noName ? 'N/A' : row.logRow ? 'log file name (optional)' : ''
                           }
-                          title={noName ? `${row.category} rows have no name/cart` : undefined}
+                          title={
+                            noName
+                              ? `${row.category} rows have no name/cart`
+                              : 'F7 — look up a file in audio.mdb'
+                          }
                           {...fieldHandlers(i, 'name')}
+                          onKeyDown={(e) => {
+                            if (e.key === 'F7') {
+                              e.preventDefault()
+                              setLovRow(i)
+                            }
+                          }}
                           onChange={(e) => patchRow(i, { name: e.target.value })}
                         />
                       </td>
@@ -469,6 +508,18 @@ export function ClockEditor({
               >
                 Insert…
               </button>
+              <button
+                className="btn"
+                disabled={activeField !== 'name'}
+                title={
+                  activeField === 'name'
+                    ? 'Look up a file in audio.mdb (F7)'
+                    : 'Click into a Name field first'
+                }
+                onClick={openLovFromToolbar}
+              >
+                Lookup… (F7)
+              </button>
             </div>
           </>
         )}
@@ -480,6 +531,16 @@ export function ClockEditor({
         onPick={insertText}
         onClose={() => setInsertOpen(false)}
       />
+
+      {selected && lovRow != null && selected.rows[lovRow] && (
+        <LovDialog
+          initialQuery={selected.rows[lovRow].name}
+          targetLabel={`Row ${lovRow + 1}`}
+          lookup={audioLookup}
+          onPick={(hit) => applyAudioHit(lovRow, hit)}
+          onClose={closeLov}
+        />
+      )}
 
       {selected && hourPickRow != null && selected.rows[hourPickRow] && (
         <HourPickerDialog
